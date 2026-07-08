@@ -1,0 +1,71 @@
+---
+interface Props {
+  eyebrow: string;
+  title: string;
+  description: string;
+  image: string;
+}
+
+const {
+  eyebrow,
+  title,
+  description,
+  image
+} = Astro.props;
+---
+
+<section class="bg-gray-950 text-white">
+
+  <div class="mx-auto max-w-7xl px-6 py-20">
+
+    <div class="grid items-center gap-12 lg:grid-cols-2">
+
+      <div>
+
+        <p class="font-semibold uppercase tracking-[0.3em] text-yellow-400">
+          {eyebrow}
+        </p>
+
+        <h1 class="mt-4 text-5xl font-bold leading-tight md:text-6xl">
+          {title}
+        </h1>
+
+        <p class="mt-6 text-xl leading-8 text-gray-300">
+          {description}
+        </p>
+
+        <div class="mt-10 flex flex-wrap gap-4">
+
+          <a
+            href="/contact"
+            class="rounded-lg bg-yellow-400 px-8 py-4 font-semibold text-black transition hover:bg-yellow-300"
+          >
+            Get a Quote
+          </a>
+
+          <a
+            href="/portfolio"
+            class="rounded-lg border border-white px-8 py-4 transition hover:bg-white hover:text-black"
+          >
+            View Portfolio
+          </a>
+
+        </div>
+
+      </div>
+
+      <div>
+
+        <img
+          src={image}
+          alt={title}
+          class="rounded-3xl shadow-2xl"
+        />
+
+      </div>
+
+    </div>
+
+  </div>
+
+</section>

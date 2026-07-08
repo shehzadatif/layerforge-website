@@ -1,0 +1,43 @@
+---
+interface Feature {
+  title: string;
+  description: string;
+}
+
+interface Props {
+  heading: string;
+  items: Feature[];
+}
+
+const { heading, items } = Astro.props;
+---
+
+<section class="bg-white py-20">
+
+  <div class="mx-auto max-w-7xl px-6">
+
+    <h2 class="text-center text-4xl font-bold">
+      {heading}
+    </h2>
+
+    <div class="mt-16 grid gap-8 md:grid-cols-2 lg:grid-cols-3">
+
+      {items.map((item) => (
+        <div class="rounded-xl border border-gray-200 p-8 shadow-sm transition hover:shadow-lg">
+
+          <h3 class="text-2xl font-semibold">
+            {item.title}
+          </h3>
+
+          <p class="mt-4 text-gray-600">
+            {item.description}
+          </p>
+
+        </div>
+      ))}
+
+    </div>
+
+  </div>
+
+</section>

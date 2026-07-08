@@ -1,0 +1,37 @@
+---
+import MainLayout from '../../layouts/MainLayout.astro';
+import ServiceHero from '../../components/services/ServiceHero.astro';
+import FeatureGrid from '../../components/services/FeatureGrid.astro';
+---
+
+<MainLayout title="UV Printing Solutions | Layer Forge">
+
+<ServiceHero
+  eyebrow="UV Printing Solutions"
+  title="Bring Your Ideas to Life in Full Color"
+  description="Create vibrant, high-quality custom products with UV printing on acrylic, wood, leather, metal, plastic and many other materials. Perfect for business branding, promotional products and personalized gifts."
+  image="/images/products/uv-printing.png"
+/>
+
+<FeatureGrid
+  heading="What We Can Print"
+  items={[
+    {
+      title: "Business Branding",
+      description:
+        "Business signs, logo displays, office branding and custom promotional products."
+    },
+    {
+      title: "Custom Merchandise",
+      description:
+        "Phone cases, acrylic products, drinkware, gift items and personalized accessories."
+    },
+    {
+      title: "Retail & Display",
+      description:
+        "Point-of-sale displays, labels, signage and colorful marketing materials."
+    }
+  ]}
+/>
+
+</MainLayout>

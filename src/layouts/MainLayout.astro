@@ -1,5 +1,6 @@
 ---
 import '../styles/global.css';
+import Navbar from '../components/layout/Navbar.astro';
 
 interface Props {
   title?: string;
@@ -19,6 +20,10 @@ const {
   </head>
 
   <body>
-    <slot />
+    <Navbar />
+
+    <main>
+      <slot />
+    </main>
   </body>
 </html>

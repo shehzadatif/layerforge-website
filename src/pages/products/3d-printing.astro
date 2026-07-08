@@ -1,0 +1,60 @@
+---
+import MainLayout from '../../layouts/MainLayout.astro';
+import ServiceHero from '../../components/services/ServiceHero.astro';
+---
+---
+
+<MainLayout title="3D Printing Solutions | Layer Forge">
+
+<!-- Hero -->
+
+<ServiceHero
+  eyebrow="3D Printing Solutions"
+  title="Turn Your Ideas Into Reality"
+  description="Whether you need a replacement part, a workshop organizer, a functional prototype or a completely custom design, Layer Forge delivers high-quality 3D printed solutions tailored to your needs."
+  image="/images/products/3d-printing.png"
+/>
+
+<!-- What We Can Create -->
+
+<section class="bg-white py-20">
+
+  <div class="mx-auto max-w-7xl px-6">
+
+    <h2 class="text-4xl font-bold text-center">
+      What We Can Create
+    </h2>
+
+    <div class="mt-16 grid gap-8 md:grid-cols-2 lg:grid-cols-3">
+
+      <div class="rounded-xl border p-8">
+        <h3 class="text-2xl font-semibold">Workshop Organization</h3>
+        <p class="mt-4 text-gray-600">
+          Storage systems, tool holders, battery organizers,
+          wall mounts and garage accessories.
+        </p>
+      </div>
+
+      <div class="rounded-xl border p-8">
+        <h3 class="text-2xl font-semibold">Replacement Parts</h3>
+        <p class="mt-4 text-gray-600">
+          Hard-to-find replacement components,
+          repair parts and custom-fit solutions.
+        </p>
+      </div>
+
+      <div class="rounded-xl border p-8">
+        <h3 class="text-2xl font-semibold">Custom Designs</h3>
+        <p class="mt-4 text-gray-600">
+          Bring your idea to life with custom-designed
+          and professionally printed parts.
+        </p>
+      </div>
+
+    </div>
+
+  </div>
+
+</section>
+
+</MainLayout>
