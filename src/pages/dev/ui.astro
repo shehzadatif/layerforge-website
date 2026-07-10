@@ -1,0 +1,37 @@
+---
+import MainLayout from "../layouts/MainLayout.astro";
+import Button from "../components/ui/Button/Button";
+import Card from "../components/ui/Card/Card";
+---
+
+<MainLayout title="UI Kit">
+
+<section class="min-h-screen bg-slate-100 py-24">
+
+  <div class="mx-auto max-w-5xl px-6">
+
+    <h1 class="mb-10 text-5xl font-bold">
+      Layer Forge UI Kit
+    </h1>
+
+    <Card hover className="max-w-md">
+
+      <h2 class="text-2xl font-bold">
+        Product Card
+      </h2>
+
+      <p class="mt-3 text-slate-600">
+        This is our reusable Card component.
+      </p>
+
+      <Button className="mt-6">
+        Learn More
+      </Button>
+
+    </Card>
+
+  </div>
+
+</section>
+
+</MainLayout>

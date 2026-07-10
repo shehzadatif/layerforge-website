@@ -1,0 +1,101 @@
+---
+import MainLayout from "../layouts/MainLayout.astro";
+import { Button, Card } from "../components/ui";
+---
+
+<MainLayout title="Layer Forge UI Kit">
+  <section class="min-h-screen bg-slate-100 py-24">
+    <div class="mx-auto max-w-7xl px-6">
+
+      <!-- Header -->
+      <div class="mb-16">
+        <h1 class="text-5xl font-bold text-slate-900">
+          Layer Forge UI Kit
+        </h1>
+
+        <p class="mt-4 text-lg text-slate-600">
+          Development playground for reusable UI components.
+        </p>
+      </div>
+
+      <!-- Buttons -->
+      <section class="mb-16">
+        <h2 class="mb-6 text-3xl font-bold">
+          Buttons
+        </h2>
+
+        <div class="flex flex-wrap gap-4">
+          <Button>Primary</Button>
+
+          <Button variant="secondary">
+            Secondary
+          </Button>
+
+          <Button variant="outline">
+            Outline
+          </Button>
+
+          <Button variant="danger">
+            Danger
+          </Button>
+        </div>
+      </section>
+
+      <!-- Cards -->
+      <section>
+        <h2 class="mb-6 text-3xl font-bold">
+          Cards
+        </h2>
+
+        <div class="grid gap-8 md:grid-cols-2 lg:grid-cols-3">
+
+          <Card hover className="max-w-sm">
+            <div class="space-y-4">
+              <h3 class="text-2xl font-bold">
+                Product Card
+              </h3>
+
+              <p class="text-slate-600">
+                This is our reusable Card component.
+              </p>
+
+              <Button>
+                Learn More
+              </Button>
+            </div>
+          </Card>
+
+          <Card className="max-w-sm">
+            <div class="space-y-4">
+              <h3 class="text-2xl font-bold">
+                Static Card
+              </h3>
+
+              <p class="text-slate-600">
+                Card without hover effect.
+              </p>
+            </div>
+          </Card>
+
+          <Card hover clickable className="max-w-sm">
+            <div class="space-y-4">
+              <h3 class="text-2xl font-bold">
+                Clickable Card
+              </h3>
+
+              <p class="text-slate-600">
+                Ready for products and services.
+              </p>
+
+              <Button variant="outline">
+                View Details
+              </Button>
+            </div>
+          </Card>
+
+        </div>
+      </section>
+
+    </div>
+  </section>
+</MainLayout>

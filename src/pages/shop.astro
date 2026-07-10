@@ -1,10 +1,12 @@
 ---
 import MainLayout from "../layouts/MainLayout.astro";
-import { getProducts } from "../services/products";
-
-const products = await getProducts();
+import Shop from "../features/shop/components/Shop/Shop";
 ---
 
-<MainLayout title="Shop">
-  <!-- Render products -->
+<MainLayout title="Layer Forge Shop">
+  <section class="py-20">
+    <div class="mx-auto max-w-7xl px-6">
+      <Shop client:load />
+    </div>
+  </section>
 </MainLayout>
