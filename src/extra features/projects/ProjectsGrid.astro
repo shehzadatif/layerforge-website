@@ -1,0 +1,38 @@
+---
+import { projects } from "../../data/projects";
+import ProjectCard from "./ProjectCard.astro";
+---
+
+<section class="bg-slate-100 py-24">
+
+  <div class="mx-auto max-w-7xl px-6">
+
+    <div class="text-center">
+
+      <p class="font-semibold uppercase tracking-[0.3em] text-yellow-500">
+        OUR WORK
+      </p>
+
+      <h2 class="mt-4 text-5xl font-bold text-slate-900">
+        Featured Projects
+      </h2>
+
+      <p class="mx-auto mt-6 max-w-3xl text-lg text-slate-600">
+        Explore some of the custom projects we've created using 3D printing,
+        laser engraving, and UV printing.
+      </p>
+
+    </div>
+
+   <div class="mt-16 grid gap-8 md:grid-cols-2 xl:grid-cols-3">
+
+  {projects.map((project) => (
+    <ProjectCard {...project} />
+  ))}
+
+</div>
+   
+
+  </div>
+
+</section>

@@ -1,0 +1,18 @@
+---
+import MainLayout from "../layouts/MainLayout.astro";
+import QuoteWizard from "../quote/components/QuoteWizard";
+---
+
+<MainLayout title="Instant Quote | Layer Forge">
+
+<section class="bg-slate-100 py-24">
+
+  <div class="mx-auto max-w-7xl px-6">
+
+    <QuoteWizard client:load />
+
+  </div>
+
+</section>
+
+</MainLayout>

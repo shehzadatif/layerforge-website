@@ -1,0 +1,36 @@
+---
+interface Props {
+  title: string;
+  category: string;
+  image: string;
+  description: string;
+}
+
+const { title, category, image, description } = Astro.props;
+---
+
+<div class="overflow-hidden rounded-2xl bg-white shadow-lg transition duration-300 hover:-translate-y-1 hover:shadow-2xl">
+
+  <img
+    src={image}
+    alt={title}
+    class="h-64 w-full object-cover"
+  />
+
+  <div class="p-6">
+
+    <p class="text-sm font-semibold uppercase tracking-wider text-yellow-500">
+      {category}
+    </p>
+
+    <h3 class="mt-2 text-2xl font-bold text-gray-900">
+      {title}
+    </h3>
+
+    <p class="mt-4 text-gray-600">
+      {description}
+    </p>
+
+  </div>
+
+</div>

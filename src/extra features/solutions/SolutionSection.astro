@@ -1,0 +1,38 @@
+---
+import MainLayout from "../layouts/MainLayout.astro";
+import SolutionSection from "../components/solutions/SolutionSection.astro";
+---
+
+<MainLayout title="Solutions | Layer Forge">
+
+<!-- Hero -->
+
+<SolutionSection
+  title="Workshop & Garage"
+  image="/images/solutions/workshop-garage.png"
+  description="..."
+  features={[
+    "Battery Mounts",
+    "Tool Holders",
+    "Charger Mounts",
+    "Pegboard Accessories",
+    "French Cleat Storage"
+  ]}
+/>
+
+<SolutionSection
+  title="Custom Parts"
+  image="/images/solutions/custom-parts.png"
+  description="..."
+  features={[
+    "Replacement Parts",
+    "Functional Components",
+    "Brackets",
+    "Prototypes",
+    "Custom Fabrication"
+  ]}
+/>
+
+<!-- Repeat for the remaining four services -->
+
+</MainLayout>

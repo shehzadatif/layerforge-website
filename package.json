@@ -12,9 +12,24 @@
     "astro": "astro"
   },
   "dependencies": {
+    "@astrojs/react": "^6.0.1",
+    "@react-three/drei": "^10.7.7",
+    "@react-three/fiber": "^9.6.1",
+    "@supabase/supabase-js": "^2.110.2",
     "@tailwindcss/vite": "^4.3.2",
+    "@types/react": "^19.2.17",
+    "@types/react-dom": "^19.2.3",
     "astro": "^7.0.6",
-    "tailwindcss": "^4.3.2"
+    "lucide-react": "^1.24.0",
+    "react": "^19.2.7",
+    "react-dom": "^19.2.7",
+    "react-dropzone": "^15.0.0",
+    "react-hook-form": "^7.81.0",
+    "tailwindcss": "^4.3.2",
+    "three": "^0.185.1",
+    "three-stdlib": "^2.36.1",
+    "three-stl-loader": "^1.0.6",
+    "zod": "^4.4.3"
   },
   "devDependencies": {
     "eslint": "^10.6.0",

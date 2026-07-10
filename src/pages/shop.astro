@@ -1,0 +1,10 @@
+---
+import MainLayout from "../layouts/MainLayout.astro";
+import { getProducts } from "../services/products";
+
+const products = await getProducts();
+---
+
+<MainLayout title="Shop">
+  <!-- Render products -->
+</MainLayout>

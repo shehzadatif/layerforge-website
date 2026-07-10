@@ -1,0 +1,67 @@
+---
+import MainLayout from "../../layouts/MainLayout.astro";
+---
+
+<MainLayout title="Layer Forge Control Center">
+
+<section class="min-h-screen bg-slate-100">
+
+  <div class="mx-auto max-w-7xl px-6 py-16">
+
+    <h1 class="text-5xl font-bold text-slate-900">
+      Layer Forge Control Center
+    </h1>
+
+    <p class="mt-4 text-lg text-slate-600">
+      Manage products, quotes, orders, customers and manufacturing from one place.
+    </p>
+
+    <div class="mt-12 grid gap-6 md:grid-cols-2 xl:grid-cols-4">
+
+      <a href="/admin/products"
+        class="rounded-2xl bg-white p-8 shadow transition hover:-translate-y-1 hover:shadow-xl">
+
+        <h2 class="text-2xl font-bold">📦 Products</h2>
+        <p class="mt-3 text-slate-600">
+          Manage products, pricing and inventory.
+        </p>
+
+      </a>
+
+      <a href="/admin/quotes"
+        class="rounded-2xl bg-white p-8 shadow transition hover:-translate-y-1 hover:shadow-xl">
+
+        <h2 class="text-2xl font-bold">📄 Quotes</h2>
+        <p class="mt-3 text-slate-600">
+          Review instant and manual quote requests.
+        </p>
+
+      </a>
+
+      <a href="/admin/orders"
+        class="rounded-2xl bg-white p-8 shadow transition hover:-translate-y-1 hover:shadow-xl">
+
+        <h2 class="text-2xl font-bold">🛒 Orders</h2>
+        <p class="mt-3 text-slate-600">
+          Track customer orders and fulfillment.
+        </p>
+
+      </a>
+
+      <a href="/admin/customers"
+        class="rounded-2xl bg-white p-8 shadow transition hover:-translate-y-1 hover:shadow-xl">
+
+        <h2 class="text-2xl font-bold">👥 Customers</h2>
+        <p class="mt-3 text-slate-600">
+          View customer information and order history.
+        </p>
+
+      </a>
+
+    </div>
+
+  </div>
+
+</section>
+
+</MainLayout>
