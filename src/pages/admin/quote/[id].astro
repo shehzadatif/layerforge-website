@@ -1,0 +1,256 @@
+---
+import AdminLayout from "../../../layouts/AdminLayout.astro";
+import { supabaseAdmin } from "../../../lib/supabaseAdmin";
+
+const { id } = Astro.params;
+
+const { data: quote } = await supabaseAdmin
+  .from("quotes")
+  .select("*")
+  .eq("id", id)
+  .single();
+
+if (!quote) {
+  return Astro.redirect("/admin/quotes");
+}
+---
+
+<AdminLayout
+  title="Quote Details"
+  active="quotes"
+>
+
+  <div class="mb-8 flex items-center justify-between">
+    <div>
+      <h1 class="text-4xl font-bold text-slate-900">Quote Details</h1>
+      <p class="mt-2 text-slate-500">{quote.name}</p>
+    </div>
+
+    <a
+      href="/admin/quotes"
+      class="rounded-lg bg-slate-900 px-5 py-3 text-white hover:bg-slate-700"
+    >
+      ← Back
+    </a>
+  </div>
+
+  <div class="mt-8 rounded-2xl bg-white p-8 shadow">
+    <div class="grid gap-8 lg:grid-cols-2">
+      <div class="rounded-2xl bg-white p-8 shadow">
+        <h2 class="mb-6 text-2xl font-bold">Customer</h2>
+        <div class="space-y-4">
+          <p><strong>Name:</strong> {quote.name}</p>
+          <p><strong>Email:</strong> {quote.email}</p>
+          <p><strong>Phone:</strong> {quote.phone}</p>
+          <p><strong>Company:</strong> {quote.company || "-"}</p>
+        </div>
+      </div>
+
+      <div class="rounded-2xl bg-white p-8 shadow">
+        <h2 class="mb-6 text-2xl font-bold">Project</h2>
+        <div class="space-y-4">
+          <p><strong>Service:</strong> {quote.service}</p>
+          <p><strong>Material:</strong> {quote.material}</p>
+          <p><strong>Color:</strong> {quote.color}</p>
+          <p><strong>Quantity:</strong> {quote.quantity}</p>
+        </div>
+      </div>
+
+      <div class="rounded-2xl bg-white p-8 shadow">
+        <h2 class="mb-6 text-2xl font-bold">Customer Notes</h2>
+        <p class="whitespace-pre-wrap">{quote.description || "No notes provided."}</p>
+      </div>
+
+      <div class="rounded-2xl bg-white p-8 shadow">
+        <h2 class="mb-6 text-2xl font-bold">Uploaded File</h2>
+        {quote.file_url ? (
+          <a
+            class="font-semibold text-blue-600 hover:underline"
+            href={`https://pdrxgzppubwlzwojpgmf.supabase.co/storage/v1/object/public/quote-files/${quote.file_url}`}
+            target="_blank"
+          >
+            Download File
+          </a>
+        ) : (
+          <p>No file uploaded.</p>
+        )}
+      </div>
+    </div>
+
+    <hr class="my-10" />
+
+    <h2 class="mb-6 text-2xl font-bold">Admin Actions</h2>
+
+    <form id="quoteForm" class="space-y-6">
+      <input type="hidden" id="quoteId" value={quote.id} />
+
+      <div>
+        <label class="block mb-2 font-semibold">Quoted Price</label>
+        <input
+          id="quotedPrice"
+          type="number"
+          step="0.01"
+          value={quote.quoted_price ?? ""}
+          class="w-full rounded-lg border p-3"
+        />
+      </div>
+
+      <div>
+        <label class="block mb-2 font-semibold">Status</label>
+        <select id="status" class="w-full rounded-lg border p-3">
+          <option selected={quote.status === "New"}>New</option>
+          <option selected={quote.status === "Reviewing"}>Reviewing</option>
+          <option selected={quote.status === "Quoted"}>Quoted</option>
+          <option selected={quote.status === "Approved"}>Approved</option>
+          <option selected={quote.status === "Printing"}>Printing</option>
+          <option selected={quote.status === "Completed"}>Completed</option>
+          <option selected={quote.status === "Delivered"}>Delivered</option>
+        </select>
+      </div>
+
+      <div>
+        <label class="block mb-2 font-semibold">Internal Notes</label>
+        <textarea
+          id="internalNotes"
+          rows="6"
+          class="w-full rounded-lg border p-3"
+        >{quote.internal_notes}</textarea>
+      </div>
+
+    <div class="flex gap-4">
+
+<div class="flex flex-wrap gap-4">
+
+  <button
+    type="button"
+    id="saveQuote"
+    class="rounded-lg bg-yellow-400 px-8 py-3 font-semibold"
+  >
+    Save Changes
+  </button>
+
+  <button
+    type="button"
+    id="sendQuote"
+    class="rounded-lg bg-slate-900 px-8 py-3 font-semibold text-white"
+  >
+    Send Quote
+  </button>
+
+ 
+</div>
+
+</div>
+    </form>
+  </div>
+
+  <script define:vars={{ quoteId: quote.id }}>
+ document
+  .getElementById("saveQuote")
+  ?.addEventListener("click", async () => {
+
+    const button = document.getElementById("saveQuote");
+
+    button.disabled = true;
+    button.textContent = "Saving...";
+
+    try {
+
+      const response = await fetch("/api/admin/update-quote", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          id: quoteId,
+          quoted_price:
+            document.getElementById("quotedPrice").value === ""
+              ? null
+              : Number(document.getElementById("quotedPrice").value),
+          status: document.getElementById("status").value,
+          internal_notes:
+            document.getElementById("internalNotes").value,
+        }),
+      });
+
+      const result = await response.json();
+
+      if (result.success) {
+        button.textContent = "✓ Saved";
+
+        setTimeout(() => {
+          button.textContent = "Save Changes";
+        }, 2000);
+
+      } else {
+        alert(result.error);
+        button.textContent = "Save Changes";
+      }
+
+    } catch (err) {
+
+      alert("Server error.");
+
+      button.textContent = "Save Changes";
+
+    }
+
+    button.disabled = false;
+  });
+
+  document
+    .getElementById("sendQuote")
+    ?.addEventListener("click", async () => {
+
+    const button = document.getElementById("sendQuote");
+
+    button.disabled = true;
+    button.textContent = "Sending...";
+
+    try {
+
+      const response = await fetch("/api/admin/send-quote", {
+
+        method: "POST",
+
+        headers: {
+          "Content-Type": "application/json",
+        },
+
+        body: JSON.stringify({
+          id: quoteId,
+        }),
+
+      });
+
+      const result = await response.json();
+
+      if (result.success) {
+
+        button.textContent = "✓ Sent";
+
+        setTimeout(() => {
+          location.reload();
+        }, 1500);
+
+      } else {
+
+        alert(result.error);
+
+        button.textContent = "Send Quote";
+
+      }
+
+    } catch (err) {
+
+      alert("Unable to send email.");
+
+      button.textContent = "Send Quote";
+
+    }
+
+    button.disabled = false;
+
+});
+  </script>
+</AdminLayout>

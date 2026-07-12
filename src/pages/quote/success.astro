@@ -1,0 +1,92 @@
+---
+import MainLayout from "../../layouts/MainLayout.astro";
+---
+
+<MainLayout title="Quote Submitted">
+
+<section class="bg-slate-50 py-20">
+
+  <div class="mx-auto max-w-2xl px-6">
+
+    <div class="rounded-2xl bg-white p-10 shadow-lg text-center">
+
+      <div class="mb-6 flex justify-center">
+        <div class="flex h-20 w-20 items-center justify-center rounded-full bg-green-100">
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            class="h-10 w-10 text-green-600"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+            stroke-width="2"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              d="M5 13l4 4L19 7"
+            />
+          </svg>
+        </div>
+      </div>
+
+      <h1 class="mb-4 text-4xl font-bold text-slate-900">
+        Quote Request Submitted!
+      </h1>
+
+      <p class="mb-8 text-lg text-slate-600">
+        Thank you for choosing <strong>Layer Forge</strong>.
+      </p>
+
+      <p class="mb-8 text-slate-600">
+        We have successfully received your quote request.
+        Our team will review your files and contact you
+        within <strong>1 business day</strong>.
+      </p>
+
+      <div class="mb-10 rounded-xl border border-blue-200 bg-blue-50 p-5 text-left">
+
+        <h2 class="mb-3 font-semibold text-slate-900">
+          What happens next?
+        </h2>
+
+        <ul class="space-y-2 text-slate-700">
+
+          <li>✅ We review your uploaded file.</li>
+
+          <li>✅ We calculate material and production costs.</li>
+
+          <li>✅ We prepare your personalized quote.</li>
+
+          <li>✅ We email your quote for approval.</li>
+
+          <li>✅ Once approved, production begins.</li>
+
+        </ul>
+
+      </div>
+
+      <div class="flex justify-center gap-4">
+
+        <a
+          href="/"
+          class="rounded-xl bg-yellow-400 px-8 py-3 font-semibold text-slate-900 transition hover:bg-yellow-300"
+        >
+          Back to Home
+        </a>
+
+        <a
+          href="/shop"
+          class="rounded-xl border border-slate-300 px-8 py-3 font-semibold text-slate-700 transition hover:bg-slate-100"
+        >
+          Browse Products
+        </a>
+
+      </div>
+
+    </div>
+
+  </div>
+
+</section>
+
+</MainLayout>

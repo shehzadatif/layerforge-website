@@ -1,0 +1,120 @@
+---
+import AdminLayout from "../../../layouts/AdminLayout.astro";
+import { supabaseAdmin } from "../../../lib/supabaseAdmin";
+import type { ProductImage } from "../../../shop/types/product";
+
+const { id } = Astro.params;
+
+const { data: product } = await supabaseAdmin
+  .from("products")
+  .select(`
+    *,
+    categories(*),
+    product_images(*)
+  `)
+  .eq("id", id)
+  .single();
+
+if (!product) {
+  return Astro.redirect("/admin/products");
+}
+---
+
+<AdminLayout title="Edit Product" active="products">
+
+<div class="mb-8 flex items-center justify-between">
+
+    <div>
+
+        <h1 class="text-4xl font-bold">
+            {product.name}
+        </h1>
+
+        <p class="mt-2 text-slate-500">
+            Edit Product
+        </p>
+
+    </div>
+
+    <a
+        href="/admin/products"
+        class="rounded-lg bg-slate-900 px-5 py-3 text-white"
+    >
+        ← Back
+    </a>
+
+</div>
+
+<div class="grid gap-8 lg:grid-cols-3">
+
+    <div class="lg:col-span-2 rounded-2xl bg-white p-8 shadow">
+
+        <h2 class="mb-6 text-2xl font-bold">
+            Product Details
+        </h2>
+
+        <!-- We'll build this next -->
+
+    </div>
+
+    <div class="rounded-2xl bg-white p-8 shadow">
+
+<form
+    action="/api/admin/upload-product-image"
+    method="POST"
+    enctype="multipart/form-data"
+    class="space-y-4"
+>
+
+<input
+    type="hidden"
+    name="product_id"
+    value={product.id}
+/>
+
+<input
+    type="file"
+    name="images"
+    multiple
+    accept="image/*"
+    class="w-full rounded-lg border p-3"
+/>
+
+<button
+    class="w-full rounded-lg bg-yellow-400 px-4 py-3 font-semibold hover:bg-yellow-300"
+>
+
+Upload Images
+
+</button>
+
+</form>
+
+<div class="mt-8 grid grid-cols-2 gap-4">
+
+{product.product_images?.map((image: ProductImage) => (
+
+<div class="rounded-lg border p-2">
+
+<img
+    src={`https://pdrxgzppubwlzwojpgmf.supabase.cos/${image.image_url}`}
+    class="h-32 w-full rounded object-cover"
+/>
+
+</div>
+
+))}
+
+</div>
+
+        <h2 class="mb-6 text-2xl font-bold">
+            Product Images
+        </h2>
+
+        <!-- Gallery goes here -->
+
+    </div>
+
+</div>
+
+</AdminLayout>

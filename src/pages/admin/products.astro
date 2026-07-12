@@ -1,90 +1,141 @@
 ---
-import MainLayout from "../../layouts/MainLayout.astro";
+import AdminLayout from "../../layouts/AdminLayout.astro";
+import { supabaseAdmin } from "../../lib/supabaseAdmin";
+
+const { data: products, error } = await supabaseAdmin
+  .from("products")
+  .select(`
+    *,
+    categories(name)
+  `)
+  .order("created_at", { ascending: false });
 ---
 
-<MainLayout title="Products | Layer Forge">
+<AdminLayout
+  title="Products"
+  active="products"
+>
 
-<section class="min-h-screen bg-slate-100">
+<div class="mb-8 flex items-center justify-between">
 
-  <div class="mx-auto max-w-7xl px-6 py-16">
+  <div>
+    <h1 class="text-4xl font-bold text-slate-900">
+      Products
+    </h1>
 
-    <div class="flex items-center justify-between">
-
-      <div>
-
-        <h1 class="text-5xl font-bold text-slate-900">
-          Products
-        </h1>
-
-        <p class="mt-2 text-slate-600">
-          Manage your online product catalog.
-        </p>
-
-      </div>
-
-      <a
-        href="/admin/products/new"
-        class="rounded-xl bg-yellow-400 px-6 py-3 font-semibold text-slate-900 hover:bg-yellow-300"
-      >
-        + Add Product
-      </a>
-
-    </div>
-
-    <div class="mt-12 overflow-hidden rounded-2xl bg-white shadow">
-
-      <table class="min-w-full">
-
-        <thead class="bg-slate-900 text-white">
-
-          <tr>
-
-            <th class="px-6 py-4 text-left">Image</th>
-
-            <th class="px-6 py-4 text-left">Product</th>
-
-            <th class="px-6 py-4 text-left">Category</th>
-
-            <th class="px-6 py-4 text-left">Price</th>
-
-            <th class="px-6 py-4 text-left">Stock</th>
-
-            <th class="px-6 py-4 text-center">Actions</th>
-
-          </tr>
-
-        </thead>
-
-        <tbody>
-
-          <tr class="border-b">
-
-            <td class="px-6 py-4">
-              —
-            </td>
-
-            <td class="px-6 py-4 font-semibold">
-              No products yet
-            </td>
-
-            <td class="px-6 py-4">—</td>
-
-            <td class="px-6 py-4">—</td>
-
-            <td class="px-6 py-4">—</td>
-
-            <td class="px-6 py-4 text-center">—</td>
-
-          </tr>
-
-        </tbody>
-
-      </table>
-
-    </div>
-
+    <p class="mt-2 text-slate-500">
+      Manage your product catalog.
+    </p>
   </div>
 
-</section>
+  <a
+    href="/admin/products/new"
+    class="rounded-lg bg-yellow-400 px-6 py-3 font-semibold text-slate-900 hover:bg-yellow-300"
+  >
+    + Add Product
+  </a>
 
-</MainLayout>
+</div>
+
+<div class="overflow-hidden rounded-2xl bg-white shadow">
+
+<table class="min-w-full">
+
+<thead class="bg-slate-100">
+
+<tr>
+
+<th class="px-6 py-4 text-left">Product</th>
+
+<th class="px-6 py-4 text-left">Category</th>
+
+<th class="px-6 py-4 text-right">Price</th>
+
+<th class="px-6 py-4 text-center">Stock</th>
+
+<th class="px-6 py-4 text-center">Status</th>
+
+<th class="px-6 py-4 text-center">Featured</th>
+
+<th class="px-6 py-4 text-right">Action</th>
+
+</tr>
+
+</thead>
+
+<tbody>
+
+{products?.map((product) => (
+
+<tr class="border-b hover:bg-slate-50">
+
+<td class="px-6 py-4">
+
+<div class="font-semibold">
+
+{product.name}
+
+</div>
+
+<div class="text-sm text-slate-500">
+
+{product.sku}
+
+</div>
+
+</td>
+
+<td class="px-6 py-4">
+
+{product.categories?.name ?? "-"}
+
+</td>
+
+<td class="px-6 py-4 text-right">
+
+${Number(product.price ?? 0).toFixed(2)}
+
+</td>
+
+<td class="px-6 py-4 text-center">
+
+{product.stock}
+
+</td>
+
+<td class="px-6 py-4 text-center">
+
+{product.status}
+
+</td>
+
+<td class="px-6 py-4 text-center">
+
+{product.featured ? "⭐" : "-"}
+
+</td>
+
+<td class="px-6 py-4 text-right">
+
+<a
+href={`/admin/products/${product.id}`}
+class="rounded-lg bg-slate-900 px-4 py-2 text-white hover:bg-slate-700"
+>
+
+Edit
+
+</a>
+
+</td>
+
+</tr>
+
+))}
+
+</tbody>
+
+</table>
+
+</div>
+
+</AdminLayout>

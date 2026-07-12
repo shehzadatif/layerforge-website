@@ -1,0 +1,552 @@
+---
+import MainLayout from "../../layouts/MainLayout.astro";
+---
+
+<MainLayout title="UV Printing Quote">
+
+<section class="bg-slate-50 py-16">
+
+  <div class="mx-auto max-w-3xl px-6">
+
+    <div class="rounded-2xl bg-white p-8 shadow-lg">
+
+      <h1 class="mb-2 text-4xl font-bold text-slate-900">
+        UV Printing Quote
+      </h1>
+
+      <p class="mb-10 text-slate-600">
+        Upload your artwork and provide details about the item you would like us
+        to UV print. We'll review your design and send you a personalized quote.
+      </p>
+
+   <form
+  id="quoteForm"
+  enctype="multipart/form-data"
+  class="space-y-8"
+>
+
+<input
+  type="hidden"
+  name="service"
+  value="UV Printing"
+/>
+      <!-- Artwork Upload -->
+    <div>
+
+    <label
+    for="file"
+    class="block text-sm font-semibold text-slate-700"
+    >
+    Artwork / Design File *
+    </label>
+
+  <label
+    for="file"
+    class="mt-2 flex cursor-pointer items-center justify-center rounded-xl border-2 border-dashed border-slate-300 bg-slate-50 px-6 py-10 text-center transition hover:border-yellow-400 hover:bg-yellow-50"
+  >
+
+    <div>
+
+      <svg
+        xmlns="http://www.w3.org/2000/svg"
+        class="mx-auto mb-3 h-10 w-10 text-slate-400"
+        fill="none"
+        viewBox="0 0 24 24"
+        stroke="currentColor"
+        stroke-width="2"
+      >
+        <path
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          d="M7 16V4m0 0L3 8m4-4l4 4M17 8v12m0 0l-4-4m4 4l4-4"
+        />
+      </svg>
+
+      <p class="font-semibold text-slate-700">
+        Click here to upload your file
+      </p>
+
+      <p class="mt-1 text-sm text-slate-500">
+        AI, SVG, PDF, PNG, JPG, JPEG
+      </p>
+
+    </div>
+
+  </label>
+
+  <input
+    id="file"
+    name="file"
+    type="file"
+    accept=".ai,.svg,.pdf,.png,.jpg,.jpeg"
+    class="hidden"
+  />
+
+<!-- Artwork Upload -->
+</div>
+
+<!-- Artwork Quality Notice -->
+<div class="rounded-xl border border-amber-200 bg-amber-50 p-4">
+
+  <p class="text-sm text-amber-800">
+    <strong>Artwork Quality Notice:</strong>
+    For the best print results, please upload a high-resolution image or
+    vector artwork. Low-resolution images may appear blurry or pixelated
+    when printed.
+  </p>
+
+  <ul class="mt-3 list-disc space-y-1 pl-5 text-sm text-amber-800">
+    <li>Preferred formats: AI, SVG, PDF (Vector)</li>
+    <li>Raster images: PNG or JPG at 300 DPI or higher</li>
+    <li>Avoid screenshots, social media images, or heavily compressed files</li>
+  </ul>
+
+</div>
+
+
+
+<!-- Item Type -->
+<div>
+
+</div>
+
+        <!-- Item Type -->
+        <div>
+
+          <label
+            for="itemType"
+            class="block text-sm font-semibold text-slate-700"
+          >
+            Item Type *
+          </label>
+
+          <select
+            id="itemType"
+            name="itemType"
+            required
+            class="mt-2 block w-full rounded-xl border border-slate-300 bg-white p-3 shadow-sm focus:border-yellow-400 focus:outline-none focus:ring-2 focus:ring-yellow-400"
+          >
+            <option value="">Select Item</option>
+            <option>Acrylic Sign</option>
+            <option>PVC Board</option>
+            <option>Metal Plate</option>
+            <option>Glass</option>
+            <option>Wood</option>
+            <option>Plastic</option>
+            <option>Phone Case</option>
+            <option>Keychain</option>
+            <option>Notebook</option>
+            <option>Promotional Item</option>
+            <option>Other</option>
+          </select>
+
+          <p class="mt-2 text-sm text-slate-500">
+            Select the item you would like us to UV print.
+          </p>
+
+        </div>
+
+        <!-- Other Item -->
+        <div>
+
+          <label
+            for="customItem"
+            class="block text-sm font-semibold text-slate-700"
+          >
+            If you selected "Other", please specify
+          </label>
+
+          <input
+            id="customItem"
+            name="customItem"
+            type="text"
+            placeholder="Describe the item..."
+            class="mt-2 block w-full rounded-xl border border-slate-300 bg-white p-3 shadow-sm focus:border-yellow-400 focus:outline-none focus:ring-2 focus:ring-yellow-400"
+          />
+
+        </div>
+
+        <!-- Customer Notice -->
+        <div class="rounded-xl border border-blue-200 bg-blue-50 p-4">
+
+          <p class="text-sm text-blue-800">
+            <strong>Note:</strong>
+            Customers must supply the item to be UV printed. Please provide
+            accurate dimensions below so we can prepare an accurate quote.
+          </p>
+
+        </div>
+
+        <!-- Measurement Units -->
+<div>
+
+  <label class="block text-sm font-semibold text-slate-700">
+    Measurement Units *
+  </label>
+
+  <div class="mt-3 flex gap-6">
+
+    <label class="flex items-center gap-2">
+
+      <input
+        type="radio"
+        name="units"
+        value="mm"
+        checked
+        onchange="updateUnits('mm')"
+        class="h-4 w-4 text-yellow-500 focus:ring-yellow-400"
+      />
+
+      <span>Millimetres (mm)</span>
+
+    </label>
+
+    <label class="flex items-center gap-2">
+
+      <input
+        type="radio"
+        name="units"
+        value="in"
+        onchange="updateUnits('in')"
+        class="h-4 w-4 text-yellow-500 focus:ring-yellow-400"
+      />
+
+      <span>Inches (in)</span>
+
+    </label>
+
+  </div>
+
+</div>
+
+        <!-- Item Dimensions -->
+        <div>
+
+          <label
+            for="itemDimensions"
+            class="block text-sm font-semibold text-slate-700"
+          >
+            Item Dimensions *
+          </label>
+
+          <input
+            id="itemDimensions"
+            name="itemDimensions"
+            type="text"
+            required
+            placeholder="Example: 300 × 200 × 10 mm"
+            class="mt-2 block w-full rounded-xl border border-slate-300 bg-white p-3 shadow-sm focus:border-yellow-400 focus:outline-none focus:ring-2 focus:ring-yellow-400"
+          />
+
+          <p class="mt-2 text-sm text-slate-500">
+            Enter the overall dimensions of the item to be printed.
+          </p>
+
+        </div>
+
+<!-- Measurement Guide -->
+<div class="mt-6 rounded-xl border border-slate-200 bg-slate-50 p-5">
+
+  <h3 class="mb-4 text-lg font-semibold text-slate-900">
+    Measurement Guide
+  </h3>
+
+  <a
+    href="/images/quote/print-area-example.png"
+    target="_blank"
+    rel="noopener noreferrer"
+  >
+    <img
+      src="/images/quote/print-area-example.png"
+      alt="Measurement Guide"
+      class="mx-auto w-full max-w-4xl cursor-zoom-in rounded-xl border border-slate-300 shadow transition hover:scale-[1.02]"
+    />
+  </a>
+
+  <p class="mt-4 text-center text-sm text-slate-600">
+    🔍 Click the image to view it full size.
+  </p>
+
+</div>
+
+
+        <!-- Print Area -->
+        <div>
+
+          <label
+            for="printArea"
+            class="block text-sm font-semibold text-slate-700"
+          >
+            Print Area Size *
+          </label>
+
+          <input
+            id="printArea"
+            name="printArea"
+            type="text"
+            required
+            placeholder="Example: 150 × 75 mm"
+            class="mt-2 block w-full rounded-xl border border-slate-300 bg-white p-3 shadow-sm focus:border-yellow-400 focus:outline-none focus:ring-2 focus:ring-yellow-400"
+          />
+
+          <p class="mt-2 text-sm text-slate-500">
+            Enter the approximate size of the artwork to be printed.
+          </p>
+
+        </div>
+
+
+        <!-- Quantity -->
+        <div>
+
+          <label
+            for="quantity"
+            class="block text-sm font-semibold text-slate-700"
+          >
+            Quantity *
+          </label>
+
+          <input
+            id="quantity"
+            name="quantity"
+            type="number"
+            value="1"
+            min="1"
+            required
+            class="mt-2 block w-full rounded-xl border border-slate-300 bg-white p-3 shadow-sm focus:border-yellow-400 focus:outline-none focus:ring-2 focus:ring-yellow-400"
+          />
+
+        </div>
+
+
+        <!-- Desired Completion Date -->
+        <div>
+
+          <label
+            for="dueDate"
+            class="block text-sm font-semibold text-slate-700"
+          >
+            Desired Completion Date
+          </label>
+
+          <input
+            id="dueDate"
+            name="dueDate"
+            type="date"
+            min={new Date(Date.now() + 3 * 86400000).toISOString().split("T")[0]}
+            class="mt-2 block w-full rounded-xl border border-slate-300 bg-white p-3 shadow-sm focus:border-yellow-400 focus:outline-none focus:ring-2 focus:ring-yellow-400"
+          />
+
+          <p class="mt-2 text-sm text-slate-500">
+            Please allow at least 3 days for production. Rush orders may be accommodated upon request.
+          </p>
+
+          <div class="mt-3 rounded-lg border border-amber-200 bg-amber-50 p-3">
+            <p class="text-sm text-amber-800">
+              <strong>Important:</strong>
+              The selected date is the estimated manufacturing completion date only.
+              It does <strong>not</strong> include shipping, local delivery, or pickup time.
+            </p>
+          </div>
+
+        </div>
+
+        <!-- Delivery Method -->
+        <div>
+
+          <label
+            for="deliveryMethod"
+            class="block text-sm font-semibold text-slate-700"
+          >
+            Delivery Method
+          </label>
+
+          <select
+            id="deliveryMethod"
+            name="deliveryMethod"
+            required
+            class="mt-2 block w-full rounded-xl border border-slate-300 bg-white p-3 shadow-sm focus:border-yellow-400 focus:outline-none focus:ring-2 focus:ring-yellow-400"
+          >
+            <option value="">Select Delivery Method</option>
+            <option>Pickup</option>
+            <option>Local Delivery</option>
+            <option>Shipping</option>
+          </select>
+
+        </div>
+
+        <!-- Customer Information -->
+        <div class="border-t border-slate-200 pt-8">
+
+          <h2 class="mb-6 text-2xl font-bold text-slate-900">
+            Customer Information
+          </h2>
+
+          <div class="grid gap-6 md:grid-cols-2">
+
+            <div>
+              <label for="name" class="block text-sm font-semibold text-slate-700">
+                Full Name *
+              </label>
+
+              <input
+                id="name"
+                name="name"
+                type="text"
+                required
+                class="mt-2 block w-full rounded-xl border border-slate-300 bg-white p-3 shadow-sm focus:border-yellow-400 focus:outline-none focus:ring-2 focus:ring-yellow-400"
+              />
+            </div>
+
+            <div>
+              <label for="email" class="block text-sm font-semibold text-slate-700">
+                Email Address *
+              </label>
+
+              <input
+                id="email"
+                name="email"
+                type="email"
+                required
+                class="mt-2 block w-full rounded-xl border border-slate-300 bg-white p-3 shadow-sm focus:border-yellow-400 focus:outline-none focus:ring-2 focus:ring-yellow-400"
+              />
+            </div>
+
+            <div>
+              <label for="phone" class="block text-sm font-semibold text-slate-700">
+                Phone Number
+              </label>
+
+              <input
+                id="phone"
+                name="phone"
+                type="tel"
+                class="mt-2 block w-full rounded-xl border border-slate-300 bg-white p-3 shadow-sm focus:border-yellow-400 focus:outline-none focus:ring-2 focus:ring-yellow-400"
+              />
+            </div>
+
+            <div>
+              <label for="company" class="block text-sm font-semibold text-slate-700">
+                Company
+              </label>
+
+              <input
+                id="company"
+                name="company"
+                type="text"
+                class="mt-2 block w-full rounded-xl border border-slate-300 bg-white p-3 shadow-sm focus:border-yellow-400 focus:outline-none focus:ring-2 focus:ring-yellow-400"
+              />
+            </div>
+
+          </div>
+
+        </div>
+
+        <!-- Project Details -->
+        <div>
+
+          <label
+            for="notes"
+            class="block text-sm font-semibold text-slate-700"
+          >
+            Project Details
+          </label>
+
+          <textarea
+            id="notes"
+            name="notes"
+            rows="6"
+            placeholder="Describe where you would like the artwork printed, preferred print size, colors, and any special instructions..."
+            class="mt-2 block w-full rounded-xl border border-slate-300 bg-white p-3 shadow-sm focus:border-yellow-400 focus:outline-none focus:ring-2 focus:ring-yellow-400"
+          ></textarea>
+
+        </div>
+               
+        <!-- Request Quote Button -->
+        <div class="flex justify-center pt-6">
+
+          <button
+            type="submit"
+            class="rounded-xl bg-yellow-400 px-12 py-4 text-lg font-semibold text-slate-900 shadow transition hover:bg-yellow-300"
+          >
+            Request Quote
+          </button>
+
+        </div>
+
+      </form>
+
+    </div>
+
+  </div>
+
+</section>
+<script is:inline>
+
+function updateUnits(unit) {
+
+  const itemDimensions = document.getElementById("itemDimensions");
+  const printArea = document.getElementById("printArea");
+
+  if (!itemDimensions || !printArea) return;
+
+  if (unit === "mm") {
+    itemDimensions.placeholder = "Example: 300 × 200 × 10 mm";
+    printArea.placeholder = "Example: 150 × 75 mm";
+  } else {
+    itemDimensions.placeholder = "Example: 12 × 8 × 0.5 in";
+    printArea.placeholder = "Example: 6 × 3 in";
+  }
+
+}
+
+const form = document.getElementById("quoteForm");
+
+form?.addEventListener("submit", async (e) => {
+
+  e.preventDefault();
+
+  const submitButton = form.querySelector("button[type='submit']");
+  const originalText = submitButton.textContent;
+
+  submitButton.disabled = true;
+  submitButton.textContent = "Submitting...";
+
+  try {
+
+    const formData = new FormData(form);
+
+    const response = await fetch("/api/quote", {
+      method: "POST",
+      body: formData,
+    });
+
+    const result = await response.json();
+
+    if (result.success) {
+
+      window.location.href = result.redirect;
+      return;
+
+    }
+
+    alert(result.error || "Unable to submit quote.");
+
+  } catch (err) {
+
+    console.error(err);
+    alert("Unexpected server error.");
+
+  }
+
+  submitButton.disabled = false;
+  submitButton.textContent = originalText;
+
+});
+
+</script>
+</MainLayout>
+
+        
+
+        

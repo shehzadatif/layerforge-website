@@ -1,0 +1,394 @@
+---
+import MainLayout from "../../layouts/MainLayout.astro";
+---
+
+<MainLayout title="Laser Engraving Quote">
+
+<section class="bg-slate-50 py-16">
+
+  <div class="mx-auto max-w-3xl px-6">
+
+    <div class="rounded-2xl bg-white p-8 shadow-lg">
+
+      <h1 class="mb-2 text-4xl font-bold text-slate-900">
+        Laser Engraving Quote
+      </h1>
+
+      <p class="mb-10 text-slate-600">
+        Upload your artwork and tell us about your engraving project. We'll
+        review your design and send you a personalized quote.
+      </p>
+
+   <form
+      id="quoteForm"
+      enctype="multipart/form-data"
+      class="space-y-8"
+    >
+      <input
+        type="hidden"
+        name="service"
+        value="Laser Engraving"
+      />
+
+      <section class="space-y-6">
+        <h2 class="text-2xl font-bold text-slate-900">Artwork Upload</h2>
+
+        <div>
+          <label
+            for="file"
+            class="block text-sm font-semibold text-slate-700"
+          >
+            Artwork / Design File *
+          </label>
+
+          <label
+            for="file"
+            class="mt-3 flex cursor-pointer items-center justify-center rounded-xl border-2 border-dashed border-slate-300 bg-slate-50 px-6 py-10 text-center transition hover:border-yellow-400 hover:bg-yellow-50"
+          >
+            <div>
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                class="mx-auto mb-3 h-10 w-10 text-slate-400"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                stroke-width="2"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  d="M7 16V4m0 0L3 8m4-4l4 4M17 8v12m0 0l-4-4m4 4l4-4"
+                />
+              </svg>
+
+              <p class="font-semibold text-slate-700">
+                Click here to upload your file
+              </p>
+
+              <p class="mt-1 text-sm text-slate-500">
+                AI, SVG, PDF, PNG, JPG, JPEG
+              </p>
+            </div>
+          </label>
+
+          <input
+            id="file"
+            name="file"
+            type="file"
+            accept=".ai,.svg,.pdf,.png,.jpg,.jpeg"
+            class="hidden"
+          />
+        </div>
+      </section>
+
+      <section class="space-y-6 border-t border-slate-200 pt-8">
+        <h2 class="text-2xl font-bold text-slate-900">Item Details</h2>
+
+        <div class="space-y-6">
+          <div>
+            <label
+              for="itemType"
+              class="block text-sm font-semibold text-slate-700"
+            >
+              Item Type *
+            </label>
+
+            <select
+              id="itemType"
+              name="itemType"
+              required
+              class="mt-2 block w-full rounded-xl border border-slate-300 bg-white p-3 shadow-sm focus:border-yellow-400 focus:outline-none focus:ring-2 focus:ring-yellow-400"
+            >
+              <option value="">Select Item</option>
+              <option>Tumbler</option>
+              <option>Flask</option>
+              <option>Mug</option>
+              <option>Water Bottle</option>
+              <option>Cutting Board</option>
+              <option>Coaster</option>
+              <option>Plaque</option>
+              <option>Keychain</option>
+              <option>Knife</option>
+              <option>Wallet</option>
+              <option>Notebook</option>
+              <option>Sign</option>
+              <option>Other</option>
+            </select>
+
+            <p class="mt-2 text-sm text-slate-500">
+              Select the item you would like engraved.
+            </p>
+          </div>
+
+          <div class="rounded-xl border border-slate-300 bg-slate-50 p-4">
+            <label class="flex items-start gap-3">
+              <input
+                id="customerSupplied"
+                name="customerSupplied"
+                type="checkbox"
+                value="Yes"
+                class="mt-1 h-5 w-5 rounded border-slate-300 text-yellow-500 focus:ring-yellow-400"
+              />
+
+              <div>
+                <span class="font-semibold text-slate-900">
+                  I will provide the selected item.
+                </span>
+
+                <p class="mt-1 text-sm text-slate-600">
+                  Check this box if you already own the selected item and will bring or ship it to Layer Forge for engraving.
+                </p>
+              </div>
+            </label>
+          </div>
+
+          <div>
+            <label
+              for="customItem"
+              class="block text-sm font-semibold text-slate-700"
+            >
+              If you selected "Other", please specify
+            </label>
+
+            <input
+              id="customItem"
+              name="customItem"
+              type="text"
+              placeholder="Example: Baseball Bat, Axe, Guitar, Trophy..."
+              class="mt-2 block w-full rounded-xl border border-slate-300 bg-white p-3 shadow-sm focus:border-yellow-400 focus:outline-none focus:ring-2 focus:ring-yellow-400"
+            />
+          </div>
+
+          <div class="grid gap-6 md:grid-cols-2">
+            <div>
+              <label
+                for="quantity"
+                class="block text-sm font-semibold text-slate-700"
+              >
+                Quantity *
+              </label>
+
+              <input
+                id="quantity"
+                name="quantity"
+                type="number"
+                value="1"
+                min="1"
+                required
+                class="mt-2 block w-full rounded-xl border border-slate-300 bg-white p-3 shadow-sm focus:border-yellow-400 focus:outline-none focus:ring-2 focus:ring-yellow-400"
+              />
+            </div>
+
+            <div>
+              <label
+                for="deliveryMethod"
+                class="block text-sm font-semibold text-slate-700"
+              >
+                Delivery Method
+              </label>
+
+              <select
+                id="deliveryMethod"
+                name="deliveryMethod"
+                class="mt-2 block w-full rounded-xl border border-slate-300 bg-white p-3 shadow-sm focus:border-yellow-400 focus:outline-none focus:ring-2 focus:ring-yellow-400"
+              >
+                <option value="">Select Delivery Method</option>
+                <option>Pickup</option>
+                <option>Local Delivery</option>
+                <option>Shipping</option>
+              </select>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="space-y-6 border-t border-slate-200 pt-8">
+        <h2 class="text-2xl font-bold text-slate-900">Schedule</h2>
+
+        <div>
+          <label
+            for="dueDate"
+            class="block text-sm font-semibold text-slate-700"
+          >
+            Desired Completion Date
+          </label>
+
+          <input
+            id="dueDate"
+            name="dueDate"
+            type="date"
+            min={new Date(Date.now() + 3 * 86400000).toISOString().split("T")[0]}
+            class="mt-2 block w-full rounded-xl border border-slate-300 bg-white p-3 shadow-sm focus:border-yellow-400 focus:outline-none focus:ring-2 focus:ring-yellow-400"
+          />
+
+          <p class="mt-2 text-sm text-slate-500">
+            Please allow at least 3 days for production. Rush orders may be accommodated upon request.
+          </p>
+
+          <div class="mt-3 rounded-lg border border-amber-200 bg-amber-50 p-3">
+            <p class="text-sm text-amber-800">
+              <strong>Important:</strong>
+              The selected date is the estimated manufacturing completion date only.
+              It does <strong>not</strong> include shipping, local delivery, or pickup time.
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <section class="space-y-6 border-t border-slate-200 pt-8">
+        <h2 class="text-2xl font-bold text-slate-900">Customer Information</h2>
+
+        <div class="grid gap-6 md:grid-cols-2">
+          <div>
+            <label
+              for="name"
+              class="block text-sm font-semibold text-slate-700"
+            >
+              Full Name *
+            </label>
+
+            <input
+              id="name"
+              name="name"
+              type="text"
+              required
+              class="mt-2 block w-full rounded-xl border border-slate-300 bg-white p-3 shadow-sm focus:border-yellow-400 focus:outline-none focus:ring-2 focus:ring-yellow-400"
+            />
+          </div>
+
+          <div>
+            <label
+              for="email"
+              class="block text-sm font-semibold text-slate-700"
+            >
+              Email Address *
+            </label>
+
+            <input
+              id="email"
+              name="email"
+              type="email"
+              required
+              class="mt-2 block w-full rounded-xl border border-slate-300 bg-white p-3 shadow-sm focus:border-yellow-400 focus:outline-none focus:ring-2 focus:ring-yellow-400"
+            />
+          </div>
+
+          <div>
+            <label
+              for="phone"
+              class="block text-sm font-semibold text-slate-700"
+            >
+              Phone Number
+            </label>
+
+            <input
+              id="phone"
+              name="phone"
+              type="tel"
+              class="mt-2 block w-full rounded-xl border border-slate-300 bg-white p-3 shadow-sm focus:border-yellow-400 focus:outline-none focus:ring-2 focus:ring-yellow-400"
+            />
+          </div>
+
+          <div>
+            <label
+              for="company"
+              class="block text-sm font-semibold text-slate-700"
+            >
+              Company
+            </label>
+
+            <input
+              id="company"
+              name="company"
+              type="text"
+              class="mt-2 block w-full rounded-xl border border-slate-300 bg-white p-3 shadow-sm focus:border-yellow-400 focus:outline-none focus:ring-2 focus:ring-yellow-400"
+            />
+          </div>
+        </div>
+      </section>
+
+      <section class="space-y-6 border-t border-slate-200 pt-8">
+        <h2 class="text-2xl font-bold text-slate-900">Project Details</h2>
+
+        <label
+          for="notes"
+          class="block text-sm font-semibold text-slate-700"
+        >
+          Description
+        </label>
+
+        <textarea
+          id="notes"
+          name="notes"
+          rows="6"
+          placeholder="Describe the engraving, preferred placement, dimensions, personalization text, or any special instructions..."
+          class="mt-2 block w-full rounded-xl border border-slate-300 bg-white p-3 shadow-sm focus:border-yellow-400 focus:outline-none focus:ring-2 focus:ring-yellow-400"
+        ></textarea>
+      </section>
+
+      <div class="flex justify-center pt-6">
+        <button
+          type="submit"
+          class="rounded-xl bg-yellow-400 px-12 py-4 text-lg font-semibold text-slate-900 shadow transition hover:bg-yellow-300"
+        >
+          Request Quote
+        </button>
+      </div>
+    </form>
+
+    </div>
+
+  </div>
+
+</section>
+
+<script is:inline>
+
+const form = document.getElementById("quoteForm");
+
+form?.addEventListener("submit", async (e) => {
+
+  e.preventDefault();
+
+  const submitButton = form.querySelector("button[type='submit']");
+  const originalText = submitButton.textContent;
+
+  submitButton.disabled = true;
+  submitButton.textContent = "Submitting...";
+
+  try {
+
+    const formData = new FormData(form);
+
+    const response = await fetch("/api/quote", {
+      method: "POST",
+      body: formData,
+    });
+
+    const result = await response.json();
+
+    if (result.success) {
+
+      window.location.href = result.redirect;
+
+      return;
+
+    }
+
+    alert(result.error || "Unable to submit quote.");
+
+  } catch (err) {
+
+    console.error(err);
+
+    alert("Unexpected server error.");
+
+  }
+
+  submitButton.disabled = false;
+  submitButton.textContent = originalText;
+
+});
+
+</script>
+</MainLayout>

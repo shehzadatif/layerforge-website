@@ -1,0 +1,266 @@
+---
+import AdminLayout from "../../layouts/AdminLayout.astro";
+import { supabaseAdmin } from "../../lib/supabaseAdmin";
+
+const url = new URL(Astro.request.url);
+
+const search = url.searchParams.get("search") ?? "";
+const service = url.searchParams.get("service") ?? "";
+const status = url.searchParams.get("status") ?? "";
+
+let query = supabaseAdmin
+  .from("quotes")
+  .select("*")
+  .order("created_at", { ascending: false });
+
+if (search) {
+  query = query.or(
+    `name.ilike.%${search}%,email.ilike.%${search}%,quote_number.ilike.%${search}%`
+  );
+}
+
+if (service) {
+  query = query.eq("service", service);
+}
+
+if (status) {
+  query = query.eq("status", status);
+}
+
+const { data: quotes } = await query;
+
+function statusClass(status: string) {
+  switch (status) {
+    case "New":
+      return "bg-blue-100 text-blue-700";
+
+    case "Reviewing":
+      return "bg-yellow-100 text-yellow-700";
+
+    case "Quoted":
+      return "bg-purple-100 text-purple-700";
+
+    case "Approved":
+      return "bg-green-100 text-green-700";
+
+    case "Printing":
+      return "bg-indigo-100 text-indigo-700";
+
+    case "Completed":
+      return "bg-emerald-100 text-emerald-700";
+
+    case "Delivered":
+      return "bg-slate-200 text-slate-700";
+
+    default:
+      return "bg-slate-100 text-slate-700";
+  }
+}
+---
+
+<AdminLayout title="Quotes" active="quotes">
+
+<div class="mb-8 flex items-center justify-between">
+
+  <div>
+
+    <h1 class="text-4xl font-bold text-slate-900">
+      Quotes
+    </h1>
+
+    <p class="mt-2 text-slate-500">
+      Manage customer quote requests.
+    </p>
+
+  </div>
+
+</div>
+
+<div class="overflow-hidden rounded-2xl bg-white shadow">
+
+<form
+  method="GET"
+  class="mb-6 grid gap-4 rounded-2xl bg-white p-6 shadow md:grid-cols-4"
+>
+
+  <input
+    type="text"
+    name="search"
+    value={search}
+    placeholder="Search quote, customer or email..."
+    class="rounded-lg border p-3"
+  />
+
+  <select
+    name="service"
+    class="rounded-lg border p-3"
+  >
+    <option value="">All Services</option>
+    <option value="3D Printing" selected={service==="3D Printing"}>3D Printing</option>
+    <option value="Laser Engraving" selected={service==="Laser Engraving"}>Laser Engraving</option>
+    <option value="UV Printing" selected={service==="UV Printing"}>UV Printing</option>
+  </select>
+
+  <select
+    name="status"
+    class="rounded-lg border p-3"
+  >
+    <option value="">All Status</option>
+    <option value="New" selected={status==="New"}>New</option>
+    <option value="Reviewing" selected={status==="Reviewing"}>Reviewing</option>
+    <option value="Quoted" selected={status==="Quoted"}>Quoted</option>
+    <option value="Approved" selected={status==="Approved"}>Approved</option>
+    <option value="Printing" selected={status==="Printing"}>Printing</option>
+    <option value="Completed" selected={status==="Completed"}>Completed</option>
+    <option value="Delivered" selected={status==="Delivered"}>Delivered</option>
+  </select>
+
+  <button
+    type="submit"
+    class="rounded-lg bg-slate-900 px-6 py-3 font-semibold text-white hover:bg-slate-700"
+  >
+    Apply Filters
+  </button>
+
+</form>    
+
+<table class="min-w-full">
+
+<thead class="border-b bg-slate-100">
+
+<tr>
+
+<th class="px-6 py-4 text-left text-sm font-semibold">
+Quote
+</th>
+
+<th class="px-6 py-4 text-left text-sm font-semibold">
+Customer
+</th>
+
+<th class="px-6 py-4 text-left text-sm font-semibold">
+Service
+</th>
+
+<th class="px-6 py-4 text-left text-sm font-semibold">
+Material
+</th>
+
+<th class="px-6 py-4 text-center text-sm font-semibold">
+Qty
+</th>
+
+<th class="px-6 py-4 text-right text-sm font-semibold">
+Price
+</th>
+
+<th class="px-6 py-4 text-center text-sm font-semibold">
+Status
+</th>
+
+<th class="px-6 py-4 text-left text-sm font-semibold">
+Received
+</th>
+
+<th class="px-6 py-4 text-right text-sm font-semibold">
+Action
+</th>
+
+</tr>
+
+</thead>
+
+<tbody>
+
+{quotes?.map((quote) => (
+
+<tr class="border-b transition hover:bg-slate-50">
+
+<td class="px-6 py-4 font-semibold text-slate-900">
+
+{quote.quote_number ?? "—"}
+
+</td>
+
+<td class="px-6 py-4">
+
+<div class="font-semibold">
+{quote.name}
+</div>
+
+<div class="text-sm text-slate-500">
+{quote.email}
+</div>
+
+</td>
+
+<td class="px-6 py-4">
+
+{quote.service}
+
+</td>
+
+<td class="px-6 py-4">
+
+{quote.material || "—"}
+
+</td>
+
+<td class="px-6 py-4 text-center">
+
+{quote.quantity}
+
+</td>
+
+<td class="px-6 py-4 text-right font-semibold">
+
+{quote.quoted_price != null
+  ? `$${Number(quote.quoted_price).toFixed(2)}`
+  : "—"}
+
+</td>
+
+<td class="px-6 py-4 text-center">
+
+<span
+class={`rounded-full px-3 py-1 text-sm font-semibold ${statusClass(
+quote.status
+)}`}
+>
+
+{quote.status}
+
+</span>
+
+</td>
+
+<td class="px-6 py-4">
+
+{new Date(quote.created_at).toLocaleDateString()}
+
+</td>
+
+<td class="px-6 py-4 text-right">
+
+<a
+href={`/admin/quote/${quote.id}`}
+class="inline-flex items-center rounded-lg bg-slate-900 px-4 py-2 text-sm font-semibold text-white transition hover:bg-yellow-400 hover:text-slate-900"
+>
+
+View
+
+</a>
+
+</td>
+
+</tr>
+
+))}
+
+</tbody>
+
+</table>
+
+</div>
+
+</AdminLayout>

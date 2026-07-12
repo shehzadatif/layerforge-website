@@ -1,0 +1,75 @@
+---
+import MainLayout from "../../layouts/MainLayout.astro";
+import { products } from "../../features/shop/data/products";
+
+export function getStaticPaths() {
+  return products.map((product) => ({
+    params: {
+      slug: product.slug,
+    },
+    props: {
+      product,
+    },
+  }));
+}
+
+const { product } = Astro.props;
+---
+
+<MainLayout title={product.name}>
+
+<section class="bg-slate-50 py-20">
+
+  <div class="mx-auto max-w-7xl px-6">
+
+    <div class="grid gap-12 lg:grid-cols-2">
+
+      <img
+        src={product.images?.[0] || "/images/products/placeholder.webp"}
+        alt={product.name}
+        class="w-full rounded-2xl bg-white shadow"
+      />
+
+      <div>
+
+        <p class="mb-2 text-sm uppercase text-slate-500">
+          {product.category}
+        </p>
+
+        <h1 class="mb-6 text-5xl font-bold">
+          {product.name}
+        </h1>
+
+        <p class="mb-8 text-lg text-slate-600">
+          {product.description}
+        </p>
+
+        <div class="mb-8 text-4xl font-bold">
+          CAD ${product.price.toFixed(2)}
+        </div>
+
+        {
+          product.type === "standard" ? (
+
+            <button class="rounded-xl bg-yellow-400 px-8 py-4 font-semibold">
+              Add to Cart
+            </button>
+
+          ) : (
+
+            <button class="rounded-xl bg-slate-900 px-8 py-4 font-semibold text-white">
+              Customize & Quote
+            </button>
+
+          )
+        }
+
+      </div>
+
+    </div>
+
+  </div>
+
+</section>
+
+</MainLayout>

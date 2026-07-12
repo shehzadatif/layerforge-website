@@ -1,0 +1,98 @@
+---
+interface Props {
+  title: string;
+  description: string;
+  service: string;
+}
+
+const {
+  title,
+  description,
+  service,
+} = Astro.props;
+---
+
+<div class="mx-auto max-w-3xl px-6">
+
+  <div class="rounded-2xl bg-white p-8 shadow-lg">
+
+    <h1 class="mb-2 text-4xl font-bold text-slate-900">
+      {title}
+    </h1>
+
+    <p class="mb-10 text-slate-600">
+      {description}
+    </p>
+
+    <form
+      id="quoteForm"
+      enctype="multipart/form-data"
+      class="space-y-8"
+    >
+
+      <input
+        type="hidden"
+        name="service"
+        value={service}
+      />
+
+      <slot />
+
+    </form>
+
+  </div>
+
+</div>
+
+<script is:inline>
+
+const form = document.getElementById("quoteForm");
+
+form?.addEventListener("submit", async (e) => {
+
+  e.preventDefault();
+
+  const submitButton =
+    form.querySelector("button[type='submit']");
+
+  const originalText = submitButton.innerText;
+
+  submitButton.disabled = true;
+  submitButton.innerText = "Submitting...";
+
+  try {
+
+    const formData = new FormData(form);
+
+    const response = await fetch("/api/quote", {
+
+      method:"POST",
+
+      body:formData
+
+    });
+
+    const result = await response.json();
+
+    if(result.success){
+
+      window.location.href=result.redirect;
+
+      return;
+
+    }
+
+    alert(result.error);
+
+  } catch(err){
+
+    alert("Unexpected server error.");
+
+  }
+
+  submitButton.disabled=false;
+  submitButton.innerText=originalText;
+
+});
+
+</script>

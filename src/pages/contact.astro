@@ -1,16 +1,275 @@
 ---
-import MainLayout from '../layouts/MainLayout.astro';
+import MainLayout from "../layouts/MainLayout.astro";
 ---
 
-<MainLayout title="About | Layer Forge">
+<MainLayout title="Contact Us | Layer Forge">
 
-<section class="mx-auto max-w-7xl px-6 py-24">
+<section class="bg-slate-50 py-20">
 
-<h1 class="text-5xl font-bold">About</h1>
+  <div class="mx-auto max-w-7xl px-6">
 
-<p class="mt-6 text-lg">
-This page is under construction.
-</p>
+    <!-- Hero -->
+
+    <div class="mx-auto max-w-4xl text-center">
+
+      <h1 class="text-5xl font-bold text-slate-900">
+        Contact Us
+      </h1>
+
+      <p class="mt-6 text-xl leading-8 text-slate-600">
+        Have a project or personal, business requirements for 3D printing, Laser Engraving and UV Printing, let us know.
+      </p>
+
+    </div>
+
+    <!-- Content -->
+
+   <div class="mt-20 grid items-stretch gap-10 lg:grid-cols-5">
+
+      <!-- Contact Information -->
+
+      <div class="lg:col-span-2">
+
+        <div class="flex h-full flex-col rounded-3xl bg-slate-900 p-10 text-white shadow-xl">
+
+          <h2 class="text-3xl font-bold">
+            Get in Touch
+          </h2>
+
+          <p class="mt-5 leading-7 text-slate-300">
+            Whether you're requesting a quote, checking on an order,
+            or simply have a question, we're happy to help.
+          </p>
+
+          <div class="mt-10 space-y-8">
+
+            <div>
+
+              <h3 class="font-semibold text-yellow-400">
+                Email
+              </h3>
+
+              <p class="mt-2 text-slate-300">
+                support@layerforgecanada.com
+              </p>
+
+            </div>
+
+            <div>
+
+              <h3 class="font-semibold text-yellow-400">
+                Phone
+              </h3>
+
+              <p class="mt-2 text-slate-300">
+                (403) XXX-XXXX
+              </p>
+
+            </div>
+
+            <div>
+
+              <h3 class="font-semibold text-yellow-400">
+                Location
+              </h3>
+
+              <p class="mt-2 text-slate-300">
+                Surrrey, BC
+                <br />
+                Canada
+              </p>
+
+            </div>
+
+            <div>
+
+              <h3 class="font-semibold text-yellow-400">
+                Business Hours
+              </h3>
+
+              <p class="mt-2 text-slate-300">
+                Monday – Friday
+                <br />
+                9:00 AM – 6:00 PM
+              </p>
+
+            </div>
+
+          </div>
+
+        </div>
+
+      </div>
+
+      <!-- Contact Form -->
+
+      <div class="lg:col-span-3">
+
+        <div class="flex h-full flex-col rounded-3xl bg-white p-10 shadow-xl">
+
+          <h2 class="text-3xl font-bold text-slate-900">
+            Send us a Message
+          </h2>
+
+          <p class="mt-3 text-slate-600">
+            Fill out the form below and we'll respond as soon as possible.
+          </p>
+
+          <form
+            action="/contact-success"
+            method="GET"
+            class="mt-10 space-y-6"
+          >
+
+            <div class="grid gap-6 md:grid-cols-2">
+
+              <div>
+
+                <label
+                  for="name"
+                  class="block text-sm font-semibold text-slate-700"
+                >
+                  Full Name *
+                </label>
+
+                <input
+                  id="name"
+                  name="name"
+                  type="text"
+                  required
+                  class="mt-2 w-full rounded-xl border border-slate-300 p-3 focus:border-yellow-400 focus:outline-none focus:ring-2 focus:ring-yellow-400"
+                />
+
+              </div>
+
+              <div>
+
+                <label
+                  for="email"
+                  class="block text-sm font-semibold text-slate-700"
+                >
+                  Email Address *
+                </label>
+
+                <input
+                  id="email"
+                  name="email"
+                  type="email"
+                  required
+                  class="mt-2 w-full rounded-xl border border-slate-300 p-3 focus:border-yellow-400 focus:outline-none focus:ring-2 focus:ring-yellow-400"
+                />
+
+              </div>
+
+              <div>
+
+                <label
+                  for="phone"
+                  class="block text-sm font-semibold text-slate-700"
+                >
+                  Phone Number
+                </label>
+
+                <input
+                  id="phone"
+                  name="phone"
+                  type="tel"
+                  class="mt-2 w-full rounded-xl border border-slate-300 p-3 focus:border-yellow-400 focus:outline-none focus:ring-2 focus:ring-yellow-400"
+                />
+
+              </div>
+
+              <div>
+
+                <label
+                  for="subject"
+                  class="block text-sm font-semibold text-slate-700"
+                >
+                  Subject *
+                </label>
+
+                <input
+                  id="subject"
+                  name="subject"
+                  type="text"
+                  required
+                  class="mt-2 w-full rounded-xl border border-slate-300 p-3 focus:border-yellow-400 focus:outline-none focus:ring-2 focus:ring-yellow-400"
+                />
+
+              </div>
+
+            </div>
+                        <div>
+
+              <label
+                for="message"
+                class="block text-sm font-semibold text-slate-700"
+              >
+                Message *
+              </label>
+
+              <textarea
+                id="message"
+                name="message"
+                rows="8"
+                required
+                placeholder="Tell us about your project or ask us a question..."
+                class="mt-2 w-full rounded-xl border border-slate-300 p-3 focus:border-yellow-400 focus:outline-none focus:ring-2 focus:ring-yellow-400"
+              ></textarea>
+
+            </div>
+
+            <div class="pt-4">
+
+              <button
+                type="submit"
+                class="w-full rounded-xl bg-yellow-400 px-8 py-4 text-lg font-semibold text-slate-900 transition hover:bg-yellow-300"
+              >
+                Send Inquiry
+              </button>
+
+            </div>
+
+          </form>
+
+        </div>
+
+      </div>
+
+    </div>
+
+    <!-- Quote CTA -->
+
+    <div class="mt-20">
+
+      <div class="rounded-3xl bg-yellow-400 p-12 text-center shadow-xl">
+
+        <h2 class="text-4xl font-bold text-slate-900">
+          Looking for Pricing?
+        </h2>
+
+        <p class="mx-auto mt-5 max-w-3xl text-lg leading-8 text-slate-800">
+          If you're ready to start your project, complete one of our detailed
+          quote request forms instead. This allows us to provide accurate
+          pricing and turnaround times.
+        </p>
+
+        <a
+          href="/quote"
+          class="mt-8 inline-flex rounded-xl bg-slate-900 px-10 py-4 text-lg font-semibold text-white transition hover:bg-slate-800"
+        >
+          Request a Quote
+        </a>
+
+      </div>
+
+    </div>
+
+    <!-- Service Area -->
+
+    
+
+  </div>
 
 </section>
 

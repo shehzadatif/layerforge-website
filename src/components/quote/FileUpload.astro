@@ -1,0 +1,99 @@
+---
+interface Props {
+  label: string;
+  accept: string;
+  help: string;
+  required?: boolean;
+}
+
+const {
+  label,
+  accept,
+  help,
+  required = false,
+} = Astro.props;
+---
+
+<div>
+
+  <label
+    for="file"
+    class="block text-sm font-semibold text-slate-700"
+  >
+    {label}
+    {required ? " *" : ""}
+  </label>
+
+  <label
+    for="file"
+    class="mt-2 flex cursor-pointer items-center justify-center rounded-xl border-2 border-dashed border-slate-300 bg-slate-50 px-6 py-10 text-center transition hover:border-yellow-400 hover:bg-yellow-50"
+  >
+
+    <div>
+
+      <svg
+        xmlns="http://www.w3.org/2000/svg"
+        class="mx-auto mb-3 h-10 w-10 text-slate-400"
+        fill="none"
+        viewBox="0 0 24 24"
+        stroke="currentColor"
+        stroke-width="2"
+      >
+        <path
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          d="M7 16V4m0 0L3 8m4-4l4 4M17 8v12m0 0l-4-4m4 4l4-4"
+        />
+      </svg>
+
+      <p class="font-semibold text-slate-700">
+        Click here to upload your file
+      </p>
+
+      <p class="mt-2 text-sm text-slate-500">
+        {help}
+      </p>
+
+      <p class="mt-1 text-xs text-slate-400">
+        Maximum file size: 100 MB
+      </p>
+
+      <p
+        id="selectedFile"
+        class="mt-4 font-medium text-green-600"
+      >
+      </p>
+
+    </div>
+
+  </label>
+
+  <input
+    id="file"
+    name="file"
+    type="file"
+    accept={accept}
+    required={required}
+    class="hidden"
+  />
+
+</div>
+
+<script is:inline>
+const fileInput = document.getElementById("file");
+const fileName = document.getElementById("selectedFile");
+
+fileInput?.addEventListener("change", () => {
+
+  if (!fileInput.files.length) {
+
+    fileName.textContent = "";
+
+    return;
+
+  }
+
+  fileName.textContent = `Selected: ${fileInput.files[0].name}`;
+
+});
+</script>

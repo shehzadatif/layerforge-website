@@ -1,0 +1,85 @@
+---
+import MainLayout from "../layouts/MainLayout.astro";
+---
+
+<MainLayout title="Message Sent | Layer Forge">
+
+<section class="bg-slate-50 py-24">
+
+  <div class="mx-auto max-w-3xl px-6">
+
+    <div class="rounded-3xl bg-white p-12 text-center shadow-xl">
+
+      <!-- Success Icon -->
+
+      <div class="mx-auto flex h-24 w-24 items-center justify-center rounded-full bg-green-100">
+
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          class="h-12 w-12 text-green-600"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+          stroke-width="2"
+        >
+          <path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            d="M5 13l4 4L19 7"
+          />
+        </svg>
+
+      </div>
+
+      <h1 class="mt-8 text-4xl font-bold text-slate-900">
+        Message Sent!
+      </h1>
+
+      <p class="mt-6 text-lg leading-8 text-slate-600">
+        Thank you for contacting <strong>Layer Forge</strong>.
+        We've received your message and will respond as soon as possible.
+      </p>
+
+      <div class="mt-10 rounded-2xl border border-blue-200 bg-blue-50 p-6">
+
+        <h2 class="text-xl font-semibold text-slate-900">
+          What Happens Next?
+        </h2>
+
+        <ul class="mt-4 space-y-3 text-left text-slate-700">
+
+          <li>✓ We'll review your message.</li>
+
+          <li>✓ A team member will contact you shortly.</li>
+
+          <li>✓ If your inquiry requires a quote, we'll guide you through the next steps.</li>
+
+        </ul>
+
+      </div>
+
+      <div class="mt-10 flex flex-col justify-center gap-4 sm:flex-row">
+
+        <a
+          href="/"
+          class="rounded-xl bg-slate-900 px-8 py-4 font-semibold text-white transition hover:bg-slate-800"
+        >
+          Return Home
+        </a>
+
+        <a
+          href="/quote"
+          class="rounded-xl bg-yellow-400 px-8 py-4 font-semibold text-slate-900 transition hover:bg-yellow-300"
+        >
+          Request a Quote
+        </a>
+
+      </div>
+
+    </div>
+
+  </div>
+
+</section>
+
+</MainLayout>

@@ -1,0 +1,35 @@
+---
+interface Props {
+  required?: boolean;
+}
+
+const {
+  required = false,
+} = Astro.props;
+---
+
+<div>
+  <label
+    for="deliveryMethod"
+    class="block text-sm font-semibold text-slate-700"
+  >
+    Delivery Method
+    {required ? "*" : ""}
+  </label>
+
+  <select
+    id="deliveryMethod"
+    name="deliveryMethod"
+    required={required}
+    class="mt-2 block w-full rounded-xl border border-slate-300 bg-white p-3 shadow-sm transition focus:border-yellow-400 focus:outline-none focus:ring-2 focus:ring-yellow-400"
+  >
+    <option value="">Select Delivery Method</option>
+    <option value="Pickup">Pickup</option>
+    <option value="Local Delivery">Local Delivery</option>
+    <option value="Shipping">Shipping</option>
+  </select>
+
+  <p class="mt-2 text-sm text-slate-500">
+    Select how you would like to receive your completed order.
+  </p>
+</div>

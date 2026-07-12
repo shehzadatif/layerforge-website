@@ -1,0 +1,406 @@
+---
+import MainLayout from "../../layouts/MainLayout.astro";
+---
+
+<MainLayout title="3D Printing Quote">
+
+<section class="bg-slate-50 py-16">
+
+  <div class="mx-auto max-w-3xl px-6">
+
+    <div class="rounded-2xl bg-white p-8 shadow-lg">
+
+      <h1 class="mb-2 text-4xl font-bold text-slate-900">
+        3D Printing Quote
+      </h1>
+
+      <p class="mb-10 text-slate-600">
+        Upload your 3D model and tell us about your project. We'll review your
+        file and send you a personalized quote.
+      </p>
+
+<form
+  id="quoteForm"
+  enctype="multipart/form-data"
+  class="space-y-8"
+>
+
+<input
+  type="hidden"
+  name="service"
+  value="3D Printing"
+/>
+
+       <!-- 3D Model Upload -->
+<div>
+
+  <label
+    for="file"
+    class="block text-sm font-semibold text-slate-700"
+  >
+    3D Model File *
+  </label>
+
+  <label
+    for="file"
+    class="mt-2 flex cursor-pointer items-center justify-center rounded-xl border-2 border-dashed border-slate-300 bg-slate-50 px-6 py-10 text-center transition hover:border-yellow-400 hover:bg-yellow-50"
+  >
+
+    <div>
+
+      <svg
+        xmlns="http://www.w3.org/2000/svg"
+        class="mx-auto mb-3 h-10 w-10 text-slate-400"
+        fill="none"
+        viewBox="0 0 24 24"
+        stroke="currentColor"
+        stroke-width="2"
+      >
+        <path
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          d="M7 16V4m0 0L3 8m4-4l4 4M17 8v12m0 0l-4-4m4 4l4-4"
+        />
+      </svg>
+
+      <p class="font-semibold text-slate-700">
+        Click here to upload your 3D model
+      </p>
+
+      <p class="mt-1 text-sm text-slate-500">
+        Supported formats: STL, 3MF, OBJ, STEP, STP
+      </p>
+
+      <p class="mt-1 text-xs text-slate-400">
+        Maximum file size: 100 MB
+      </p>
+
+    </div>
+
+  </label>
+
+  <input
+    id="file"
+    name="file"
+    type="file"
+    accept=".stl,.3mf,.obj,.step,.stp"
+    class="hidden"
+  />
+
+</div>
+
+<!-- Project Name -->
+<div>
+
+  <label
+    for="projectName"
+    class="block text-sm font-semibold text-slate-700"
+  >
+    Project Name *
+  </label>
+
+  <input
+    id="projectName"
+    name="projectName"
+    type="text"
+    required
+    placeholder="Example: RC Car Chassis"
+    class="mt-2 block w-full rounded-xl border border-slate-300 bg-white p-3 shadow-sm focus:border-yellow-400 focus:outline-none focus:ring-2 focus:ring-yellow-400"
+  />
+
+</div>
+
+        <!-- Material -->
+        <div>
+          <label
+            for="material"
+            class="block text-sm font-semibold text-slate-700"
+          >
+            Material *
+          </label>
+
+          <select
+            id="material"
+            name="material"
+            required
+            class="mt-2 block w-full rounded-xl border border-slate-300 bg-white p-3 shadow-sm focus:border-yellow-400 focus:outline-none focus:ring-2 focus:ring-yellow-400"
+          >
+            <option value="">Select Material</option>
+            <option>PLA</option>
+            <option>PETG</option>
+            <option>ABS</option>
+            <option>TPU</option>
+          </select>
+        </div>
+
+        <!-- Color -->
+        <div>
+          <label
+            for="color"
+            class="block text-sm font-semibold text-slate-700"
+          >
+            Color
+          </label>
+
+          <select
+            id="color"
+            name="color"
+            class="mt-2 block w-full rounded-xl border border-slate-300 bg-white p-3 shadow-sm focus:border-yellow-400 focus:outline-none focus:ring-2 focus:ring-yellow-400"
+          >
+            <option value="">Select a color</option>
+            <option>Black</option>
+            <option>White</option>
+            <option>Blue</option>
+            <option>Red</option>
+            <option>Yellow</option>
+            <option>Grey</option>
+            <option>Green</option>
+          </select>
+        </div>
+
+        <!-- Quantity -->
+        <div>
+          <label
+            for="quantity"
+            class="block text-sm font-semibold text-slate-700"
+          >
+            Quantity *
+          </label>
+
+          <input
+            id="quantity"
+            name="quantity"
+            type="number"
+            value="1"
+            min="1"
+            required
+            class="mt-2 block w-full rounded-xl border border-slate-300 bg-white p-3 shadow-sm focus:border-yellow-400 focus:outline-none focus:ring-2 focus:ring-yellow-400"
+          />
+        </div>
+
+        <!-- Infill -->
+        <div>
+          <label
+            for="infill"
+            class="block text-sm font-semibold text-slate-700"
+          >
+            Infill
+          </label>
+
+          <select
+            id="infill"
+            name="infill"
+            class="mt-2 block w-full rounded-xl border border-slate-300 bg-white p-3 shadow-sm focus:border-yellow-400 focus:outline-none focus:ring-2 focus:ring-yellow-400"
+          >
+            <option>10%</option>
+            <option selected>20%</option>
+            <option>30%</option>
+          </select>
+
+          <p class="mt-2 text-sm text-slate-500">
+            Most functional parts print well between 20% and 30% infill.
+          </p>
+        </div>
+
+        <!-- Completion Date -->
+        <div>
+          <label
+            for="dueDate"
+            class="block text-sm font-semibold text-slate-700"
+          >
+            Desired Completion Date
+          </label>
+
+          <input
+            id="dueDate"
+            name="dueDate"
+            type="date"
+            min={new Date(Date.now() + 3 * 86400000).toISOString().split("T")[0]}
+            class="mt-2 block w-full rounded-xl border border-slate-300 bg-white p-3 shadow-sm focus:border-yellow-400 focus:outline-none focus:ring-2 focus:ring-yellow-400"
+          />
+
+          <p class="mt-2 text-sm text-slate-500">
+            Please allow at least 3 days for production. Rush orders may be accommodated upon request.
+          </p>
+
+          <div class="mt-3 rounded-lg border border-amber-200 bg-amber-50 p-3">
+            <p class="text-sm text-amber-800">
+              <strong>Important:</strong>
+              The selected date is the estimated manufacturing completion date
+              only. It does <strong>not</strong> include shipping, local delivery,
+              or pickup time.
+            </p>
+          </div>
+        </div>
+
+        <!-- Delivery -->
+        <div>
+          <label
+            for="deliveryMethod"
+            class="block text-sm font-semibold text-slate-700"
+          >
+            Delivery Method
+          </label>
+
+          <select
+            id="deliveryMethod"
+            name="deliveryMethod"
+            class="mt-2 block w-full rounded-xl border border-slate-300 bg-white p-3 shadow-sm focus:border-yellow-400 focus:outline-none focus:ring-2 focus:ring-yellow-400"
+          >
+            <option value="">Select Delivery Method</option>
+            <option>Pickup</option>
+            <option>Local Delivery</option>
+            <option>Shipping</option>
+          </select>
+        </div>
+
+        <!-- Customer Information -->
+        <div class="border-t border-slate-200 pt-8">
+
+          <h2 class="mb-6 text-2xl font-bold text-slate-900">
+            Customer Information
+          </h2>
+
+          <div class="grid gap-6 md:grid-cols-2">
+
+            <div>
+              <label for="name" class="block text-sm font-semibold text-slate-700">
+                Full Name *
+              </label>
+
+              <input
+                id="name"
+                name="name"
+                type="text"
+                required
+                class="mt-2 block w-full rounded-xl border border-slate-300 bg-white p-3 shadow-sm focus:border-yellow-400 focus:outline-none focus:ring-2 focus:ring-yellow-400"
+              />
+            </div>
+
+            <div>
+              <label for="email" class="block text-sm font-semibold text-slate-700">
+                Email Address *
+              </label>
+
+              <input
+                id="email"
+                name="email"
+                type="email"
+                required
+                class="mt-2 block w-full rounded-xl border border-slate-300 bg-white p-3 shadow-sm focus:border-yellow-400 focus:outline-none focus:ring-2 focus:ring-yellow-400"
+              />
+            </div>
+
+            <div>
+              <label for="phone" class="block text-sm font-semibold text-slate-700">
+                Phone Number
+              </label>
+
+              <input
+                id="phone"
+                name="phone"
+                type="tel"
+                class="mt-2 block w-full rounded-xl border border-slate-300 bg-white p-3 shadow-sm focus:border-yellow-400 focus:outline-none focus:ring-2 focus:ring-yellow-400"
+              />
+            </div>
+
+            <div>
+              <label for="company" class="block text-sm font-semibold text-slate-700">
+                Company
+              </label>
+
+              <input
+                id="company"
+                name="company"
+                type="text"
+                class="mt-2 block w-full rounded-xl border border-slate-300 bg-white p-3 shadow-sm focus:border-yellow-400 focus:outline-none focus:ring-2 focus:ring-yellow-400"
+              />
+            </div>
+
+          </div>
+
+        </div>
+
+        <!-- Notes -->
+        <div>
+          <label
+            for="notes"
+            class="block text-sm font-semibold text-slate-700"
+          >
+            Project Notes
+          </label>
+
+          <textarea
+            id="notes"
+            name="notes"
+            rows="6"
+            placeholder="Tell us anything about your project..."
+            class="mt-2 block w-full rounded-xl border border-slate-300 bg-white p-3 shadow-sm focus:border-yellow-400 focus:outline-none focus:ring-2 focus:ring-yellow-400"
+          ></textarea>
+        </div>
+
+        <!-- Submit -->
+        <div class="flex justify-center pt-6">
+
+          <button
+            type="submit"
+            class="rounded-xl bg-yellow-400 px-12 py-4 text-lg font-semibold text-slate-900 shadow transition hover:bg-yellow-300"
+          >
+            Request Quote
+          </button>
+
+        </div>
+
+      </form>
+
+    </div>
+
+  </div>
+
+</section>
+<script is:inline>
+const form = document.getElementById("quoteForm");
+
+form?.addEventListener("submit", async (e) => {
+  e.preventDefault();
+
+  const submitButton = form.querySelector("button[type='submit']");
+  const originalText = submitButton.innerText;
+
+  submitButton.disabled = true;
+  submitButton.innerText = "Submitting...";
+
+  try {
+
+    const formData = new FormData(form);
+
+    const response = await fetch("/api/quote", {
+      method: "POST",
+      body: formData,
+    });
+
+    const result = await response.json();
+
+    if (result.success) {
+      window.location.href = result.redirect;
+      return;
+    }
+
+    alert(result.error || "Unable to submit your quote.");
+
+  } catch (err) {
+
+    console.error(err);
+
+    alert("Unexpected server error.");
+
+  } finally {
+
+    submitButton.disabled = false;
+    submitButton.innerText = originalText;
+
+  }
+
+});
+</script>
+</MainLayout>

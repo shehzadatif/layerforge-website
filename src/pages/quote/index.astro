@@ -1,0 +1,179 @@
+---
+import MainLayout from "../../layouts/MainLayout.astro";
+---
+
+<MainLayout title="Request a Quote | Layer Forge">
+
+<section class="bg-slate-50 py-20">
+
+  <div class="mx-auto max-w-7xl px-6">
+
+    <!-- Hero -->
+
+    <div class="mx-auto max-w-4xl text-center">
+
+      <h1 class="text-5xl font-bold text-slate-900">
+        Request a Quote
+      </h1>
+
+      <p class="mt-6 text-xl leading-8 text-slate-600">
+        Choose the service you're interested in. We'll review your project
+        requirements and provide a personalized quote with pricing,
+        turnaround time and available options.
+      </p>
+
+    </div>
+
+    <!-- Services -->
+
+    <div class="mt-20 grid gap-10 lg:grid-cols-3">
+
+      <!-- 3D Printing -->
+
+      <div class="overflow-hidden rounded-2xl bg-white shadow-lg transition duration-300 hover:-translate-y-1 hover:shadow-xl">
+
+        <img
+          src="/images/services/3d-printing.png"
+          alt="3D Printing"
+          class="h-56 w-full object-cover"
+        />
+
+        <div class="p-8">
+
+          <h2 class="text-3xl font-bold text-slate-900">
+            3D Printing
+          </h2>
+
+          <p class="mt-4 text-slate-600">
+            Functional parts, prototypes, replacement components and custom
+            manufacturing.
+          </p>
+
+          <ul class="mt-6 space-y-2 text-slate-700">
+
+            <li>✓ PLA / PETG / ABS</li>
+            <li>✓ Custom Colours</li>
+            <li>✓ Production Runs</li>
+
+          </ul>
+
+          <a
+            href="/quote/3d-printing"
+            class="mt-8 flex h-12 items-center justify-center rounded-xl bg-yellow-400 font-semibold text-slate-900 transition hover:bg-yellow-300"
+          >
+            Start Quote
+          </a>
+
+        </div>
+
+      </div>
+
+      <!-- Laser Engraving -->
+
+      <div class="overflow-hidden rounded-2xl bg-white shadow-lg transition duration-300 hover:-translate-y-1 hover:shadow-xl">
+
+        <img
+          src="/images/services/laser-engraving.png"
+          alt="Laser Engraving"
+          class="h-56 w-full object-cover"
+        />
+
+        <div class="p-8">
+
+          <h2 class="text-3xl font-bold text-slate-900">
+            Laser Engraving
+          </h2>
+
+          <p class="mt-4 text-slate-600">
+            Personalized gifts, drinkware, awards, plaques and business
+            branding.
+          </p>
+
+          <ul class="mt-6 space-y-2 text-slate-700">
+
+            <li>✓ Stainless Steel</li>
+            <li>✓ Wood</li>
+            <li>✓ Glass & Acrylic</li>
+
+          </ul>
+
+          <a
+            href="/quote/laser-engraving"
+            class="mt-8 flex h-12 items-center justify-center rounded-xl bg-yellow-400 font-semibold text-slate-900 transition hover:bg-yellow-300"
+          >
+            Start Quote
+          </a>
+
+        </div>
+
+      </div>
+
+      <!-- UV Printing -->
+
+      <div class="overflow-hidden rounded-2xl bg-white shadow-lg transition duration-300 hover:-translate-y-1 hover:shadow-xl">
+
+        <img
+          src="/images/services/uv-printing.png"
+          alt="UV Printing"
+          class="h-56 w-full object-cover"
+        />
+
+        <div class="p-8">
+
+          <h2 class="text-3xl font-bold text-slate-900">
+            UV Printing
+          </h2>
+
+          <p class="mt-4 text-slate-600">
+            High-resolution full-colour printing on rigid and customer-supplied
+            materials.
+          </p>
+
+          <ul class="mt-6 space-y-2 text-slate-700">
+
+            <li>✓ Acrylic</li>
+            <li>✓ Metal</li>
+            <li>✓ Plastic & Wood</li>
+
+          </ul>
+
+          <a
+            href="/quote/uv-printing"
+            class="mt-8 flex h-12 items-center justify-center rounded-xl bg-yellow-400 font-semibold text-slate-900 transition hover:bg-yellow-300"
+          >
+            Start Quote
+          </a>
+
+        </div>
+
+      </div>
+
+    </div>
+
+    <!-- Bottom CTA -->
+
+    <div class="mt-20 rounded-3xl bg-slate-900 px-10 py-14 text-center text-white">
+
+      <h2 class="text-4xl font-bold">
+        Not Sure Which Service You Need?
+      </h2>
+
+      <p class="mx-auto mt-5 max-w-3xl text-lg text-slate-300">
+        Contact us with your project details and we'll recommend the best
+        manufacturing process for your application.
+      </p>
+
+      <a
+        href="/contact"
+        class="mt-8 inline-flex rounded-xl bg-yellow-400 px-10 py-4 text-lg font-semibold text-slate-900 transition hover:bg-yellow-300"
+      >
+        Contact Us
+      </a>
+
+    </div>
+
+  </div>
+
+</section>
+
+</MainLayout>

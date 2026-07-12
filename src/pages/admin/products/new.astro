@@ -1,0 +1,186 @@
+---
+import AdminLayout from "../../../layouts/AdminLayout.astro";
+import { supabaseAdmin } from "../../../lib/supabaseAdmin";
+
+const { data: categories } = await supabaseAdmin
+  .from("categories")
+  .select("*")
+  .order("name");
+---
+
+<AdminLayout title="Add Product" active="products">
+
+<div class="mb-8">
+    <h1 class="text-4xl font-bold">Add Product</h1>
+    <p class="mt-2 text-slate-500">
+        Create a new product.
+    </p>
+</div>
+
+<form
+    action="/api/admin/products"
+    method="POST"
+    class="space-y-6 rounded-2xl bg-white p-8 shadow"
+>
+
+<div>
+<label class="mb-2 block font-semibold">Product Name</label>
+<input
+name="name"
+required
+class="w-full rounded-lg border p-3"
+/>
+</div>
+
+<div>
+<label class="mb-2 block font-semibold">Category</label>
+
+<select
+name="category_id"
+required
+class="w-full rounded-lg border p-3"
+>
+
+{categories?.map(category => (
+
+<option value={category.id}>
+
+{category.name}
+
+</option>
+
+))}
+
+</select>
+
+</div>
+
+<div>
+<label class="mb-2 block font-semibold">
+Short Description
+</label>
+
+<textarea
+name="short_description"
+rows="3"
+class="w-full rounded-lg border p-3"
+></textarea>
+
+</div>
+
+<div>
+<label class="mb-2 block font-semibold">
+Description
+</label>
+
+<textarea
+name="description"
+rows="6"
+class="w-full rounded-lg border p-3"
+></textarea>
+
+</div>
+
+<div class="grid gap-6 md:grid-cols-2">
+
+<div>
+<label class="mb-2 block font-semibold">
+Price
+</label>
+
+<input
+type="number"
+step="0.01"
+name="price"
+class="w-full rounded-lg border p-3"
+/>
+
+</div>
+
+<div>
+
+<label class="mb-2 block font-semibold">
+Sale Price
+</label>
+
+<input
+type="number"
+step="0.01"
+name="sale_price"
+class="w-full rounded-lg border p-3"
+/>
+
+</div>
+
+</div>
+
+<div class="grid gap-6 md:grid-cols-2">
+
+<div>
+
+<label class="mb-2 block font-semibold">
+SKU
+</label>
+
+<input
+name="sku"
+class="w-full rounded-lg border p-3"
+/>
+
+</div>
+
+<div>
+
+<label class="mb-2 block font-semibold">
+Stock
+</label>
+
+<input
+type="number"
+name="stock"
+value="0"
+class="w-full rounded-lg border p-3"
+/>
+
+</div>
+
+</div>
+
+<div class="flex items-center gap-6">
+
+<label class="flex items-center gap-2">
+
+<input
+type="checkbox"
+name="featured"
+/>
+
+Featured
+
+</label>
+
+<label class="flex items-center gap-2">
+
+<input
+type="checkbox"
+name="active"
+checked
+/>
+
+Active
+
+</label>
+
+</div>
+
+<button
+class="rounded-lg bg-yellow-400 px-8 py-3 font-semibold hover:bg-yellow-300"
+>
+
+Save Product
+
+</button>
+
+</form>
+
+</AdminLayout>
