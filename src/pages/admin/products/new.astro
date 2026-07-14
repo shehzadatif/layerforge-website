@@ -6,6 +6,14 @@ const { data: categories } = await supabaseAdmin
   .from("categories")
   .select("*")
   .order("name");
+
+  const { data: materials } = await supabaseAdmin
+  .from("materials")
+  .select("*")
+  .eq("active", true)
+  .order("sort_order");
+
+ 
 ---
 
 <AdminLayout title="Add Product" active="products">
@@ -20,6 +28,7 @@ const { data: categories } = await supabaseAdmin
 <form
     action="/api/admin/products"
     method="POST"
+    enctype="multipart/form-data"
     class="space-y-6 rounded-2xl bg-white p-8 shadow"
 >
 
@@ -83,36 +92,43 @@ class="w-full rounded-lg border p-3"
 
 <div class="grid gap-6 md:grid-cols-2">
 
-<div>
-<label class="mb-2 block font-semibold">
-Price
-</label>
+  <div>
 
-<input
-type="number"
-step="0.01"
-name="price"
-class="w-full rounded-lg border p-3"
-/>
+    <label class="mb-2 block font-semibold">
+      PLA Base Price
+    </label>
+
+    <p class="mb-2 text-sm text-slate-500">
+      This is the base price. Prices for other materials will be calculated automatically.
+    </p>
+
+    <input
+      type="number"
+      step="0.01"
+      name="price"
+      class="w-full rounded-lg border p-3"
+    />
+
+  </div>
+
+  <div>
+
+    <label class="mb-2 block font-semibold">
+      Sale Price (Optional)
+    </label>
+
+    <input
+      type="number"
+      step="0.01"
+      name="sale_price"
+      class="w-full rounded-lg border p-3"
+    />
+
+  </div>
 
 </div>
 
-<div>
 
-<label class="mb-2 block font-semibold">
-Sale Price
-</label>
-
-<input
-type="number"
-step="0.01"
-name="sale_price"
-class="w-full rounded-lg border p-3"
-/>
-
-</div>
-
-</div>
 
 <div class="grid gap-6 md:grid-cols-2">
 
@@ -146,6 +162,141 @@ class="w-full rounded-lg border p-3"
 
 </div>
 
+<hr class="my-8" />
+
+<hr class="my-8" />
+
+<div class="rounded-xl border p-6">
+
+ <h2 class="mb-2 text-xl font-bold">
+Available Materials
+</h2>
+
+<p class="mb-6 text-sm text-slate-500">
+Select the materials customers can order this product in.
+</p>
+
+  <div class="grid gap-3 md:grid-cols-2">
+
+    {materials?.map((material) => (
+
+      <label class="flex items-center gap-3 rounded-lg border p-3">
+
+        <input
+          type="checkbox"
+          name="materials"
+          value={material.id}
+        />
+
+        <div>
+
+          <div class="font-semibold">
+            {material.name}
+          </div>
+
+          <div class="text-sm text-slate-500">
+  +{material.markup_percent}% from PLA price
+</div>
+
+        </div>
+
+      </label>
+
+    ))}
+
+  </div>
+
+</div>
+
+<div>
+
+  <label class="mb-3 block text-lg font-semibold">
+    Product Images
+  </label>
+
+  <input
+    id="images"
+    type="file"
+    name="images"
+    multiple
+    accept="image/*"
+    class="block w-full rounded-lg border p-3"
+  />
+
+  <p class="mt-2 text-sm text-slate-500">
+    Select one or more images.
+  </p>
+
+  <div
+    id="imagePreview"
+    class="mt-6 grid grid-cols-2 gap-4 md:grid-cols-4"
+  ></div>
+
+</div>
+
+<script>
+
+const input = document.getElementById("images");
+const preview = document.getElementById("imagePreview");
+
+input?.addEventListener("change", () => {
+
+  preview.innerHTML = "";
+
+  [...input.files].forEach(file => {
+
+    const reader = new FileReader();
+
+    reader.onload = e => {
+
+      const card = document.createElement("div");
+
+      card.className =
+        "rounded-xl border bg-white p-2 shadow";
+
+      card.innerHTML = `
+        <div class="flex aspect-square items-center justify-center rounded-lg bg-slate-100 overflow-hidden">
+          <img
+            src="${e.target.result}"
+            class="max-h-full max-w-full object-contain"
+          />
+        </div>
+
+        <p class="mt-2 truncate text-xs text-center">
+          ${file.name}
+        </p>
+      `;
+
+      preview.appendChild(card);
+
+    };
+
+    reader.readAsDataURL(file);
+
+  });
+
+});
+
+</script>
+
+<script>
+const input = document.getElementById("images");
+const output = document.getElementById("selectedFiles");
+
+input?.addEventListener("change", () => {
+  const files = [...input.files];
+
+  if (files.length === 0) {
+    output.textContent = "No images selected.";
+    return;
+  }
+
+  output.innerHTML = files
+    .map(file => `• ${file.name}`)
+    .join("<br>");
+});
+</script>
+
 <div class="flex items-center gap-6">
 
 <label class="flex items-center gap-2">
@@ -174,11 +325,10 @@ Active
 </div>
 
 <button
+type="submit"
 class="rounded-lg bg-yellow-400 px-8 py-3 font-semibold hover:bg-yellow-300"
 >
-
 Save Product
-
 </button>
 
 </form>

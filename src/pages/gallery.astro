@@ -2,7 +2,7 @@
 import MainLayout from "../layouts/MainLayout.astro";
 import { supabaseAdmin } from "../lib/supabaseAdmin";
 
-const { data: products, error } = await supabaseAdmin
+const { data: products } = await supabaseAdmin
   .from("products")
   .select(`
     *,
@@ -11,41 +11,37 @@ const { data: products, error } = await supabaseAdmin
   `)
   .eq("status", "Active")
   .order("created_at", { ascending: false });
-
-if (error) {
-  console.error(error);
-}
 ---
 
-<MainLayout title="Shop | Layer Forge">
+<MainLayout title="Project Gallery | Layer Forge">
 
-<section class="bg-slate-50 py-20">
+<section class="py-20">
 
   <div class="mx-auto max-w-7xl px-6">
 
     <div class="mb-12 text-center">
 
       <h1 class="text-5xl font-bold">
-        Shop
+        Project Gallery
       </h1>
 
       <p class="mt-4 text-lg text-slate-600">
-        Browse our 3D printed products.
+        Browse examples of our custom fabrication work.
       </p>
 
     </div>
 
-    <div class="grid gap-8 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+    <div class="grid gap-8 sm:grid-cols-2 lg:grid-cols-3">
 
       {products?.map((product) => {
 
-        const cover = (product.product_images ?? [])
-          .sort((a, b) => a.sort_order - b.sort_order)[0];
+        const cover = product.product_images
+          ?.sort((a, b) => a.sort_order - b.sort_order)[0];
 
         return (
 
           <a
-            href={`/shop/${product.slug}`}
+            href={`/gallery/${product.slug}`}
             class="overflow-hidden rounded-2xl bg-white shadow transition hover:-translate-y-1 hover:shadow-xl"
           >
 
@@ -55,8 +51,8 @@ if (error) {
 
                 <img
                   src={`${import.meta.env.PUBLIC_SUPABASE_URL}/storage/v1/object/public/product-images/${cover.image_url}`}
-                  alt={product.name}
                   class="h-full w-full object-cover"
+                  alt={product.name}
                 />
 
               ) : (
@@ -75,25 +71,9 @@ if (error) {
                 {product.name}
               </h2>
 
-              <p class="mt-2 text-sm text-slate-500">
-                {product.categories?.name ?? "General"}
-              </p>
-
-              <p class="mt-4 line-clamp-2 text-slate-600">
+              <p class="mt-2 text-slate-500 line-clamp-3">
                 {product.short_description}
               </p>
-
-              <div class="mt-6 flex items-center justify-between">
-
-                <span class="text-2xl font-bold">
-                  CAD ${Number(product.price ?? 0).toFixed(2)}
-                </span>
-
-                <span class="rounded-lg bg-yellow-400 px-4 py-2 font-semibold text-slate-900">
-                  View
-                </span>
-
-              </div>
 
             </div>
 

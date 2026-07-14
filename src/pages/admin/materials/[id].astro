@@ -1,0 +1,138 @@
+---
+import AdminLayout from "../../../layouts/AdminLayout.astro";
+import { supabaseAdmin } from "../../../lib/supabaseAdmin";
+
+const { id } = Astro.params;
+
+const { data: material } = await supabaseAdmin
+  .from("materials")
+  .select("*")
+  .eq("id", id)
+  .single();
+
+if (!material) {
+  return Astro.redirect("/admin/materials");
+}
+---
+
+<AdminLayout title="Edit Material" active="materials">
+
+<div class="mb-8 flex items-center justify-between">
+
+  <div>
+    <h1 class="text-4xl font-bold">
+      Edit Material
+    </h1>
+
+    <p class="mt-2 text-slate-500">
+      {material.name}
+    </p>
+  </div>
+
+  <a
+    href="/admin/materials"
+    class="rounded-lg bg-slate-900 px-5 py-3 text-white hover:bg-slate-700"
+  >
+    ← Back
+  </a>
+
+</div>
+
+<form
+  action="/api/admin/update-material"
+  method="POST"
+  class="space-y-6 rounded-2xl bg-white p-8 shadow"
+>
+
+<input
+type="hidden"
+name="id"
+value={material.id}
+/>
+
+<div>
+
+<label class="mb-2 block font-semibold">
+Material Name
+</label>
+
+<input
+name="name"
+value={material.name}
+class="w-full rounded-lg border p-3"
+/>
+
+</div>
+
+<div class="grid gap-6 md:grid-cols-2">
+
+<div>
+
+<label class="mb-2 block font-semibold">
+Markup %
+</label>
+
+<input
+type="number"
+step="0.01"
+name="markup_percent"
+value={material.markup_percent}
+class="w-full rounded-lg border p-3"
+/>
+
+</div>
+
+<div>
+
+<label class="mb-2 block font-semibold">
+Production Days
+</label>
+
+<input
+type="number"
+name="default_production_days"
+value={material.default_production_days}
+class="w-full rounded-lg border p-3"
+/>
+
+</div>
+
+</div>
+
+<div>
+
+<label class="mb-2 block font-semibold">
+Description
+</label>
+
+<textarea
+name="description"
+rows="5"
+class="w-full rounded-lg border p-3"
+>{material.description}</textarea>
+
+</div>
+
+<label class="flex items-center gap-2">
+
+<input
+type="checkbox"
+name="active"
+checked={material.active}
+/>
+
+Active
+
+</label>
+
+<button
+class="rounded-lg bg-yellow-400 px-8 py-3 font-semibold hover:bg-yellow-300"
+>
+
+Save Changes
+
+</button>
+
+</form>
+
+</AdminLayout>

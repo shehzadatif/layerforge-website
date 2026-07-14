@@ -33,27 +33,39 @@ export const POST: APIRoute = async ({ request }) => {
         ? "Active"
         : "Inactive";
 
+        const selectedMaterials = formData
+  .getAll("materials")
+  .map(String);
+
+  console.log("Selected Materials:", selectedMaterials);
+
+for (const [key, value] of formData.entries()) {
+  console.log(key, value);
+}
+
     const slug = name
       .toLowerCase()
       .trim()
       .replace(/[^a-z0-9]+/g, "-")
       .replace(/^-|-$/g, "");
 
-    const { error } = await supabaseAdmin
-      .from("products")
-      .insert({
-        name,
-        slug,
-        category_id,
-        short_description,
-        description,
-        price,
-        sale_price,
-        sku,
-        stock,
-        featured,
-        status,
-      });
+   const { data: product, error } = await supabaseAdmin
+  .from("products")
+  .insert({
+    name,
+    slug,
+    category_id,
+    short_description,
+    description,
+    price,
+    sale_price,
+    sku,
+    stock,
+    featured,
+    status,
+  })
+  .select()
+  .single();
 
     if (error) {
       console.error(error);
@@ -68,6 +80,23 @@ export const POST: APIRoute = async ({ request }) => {
         }
       );
     }
+
+if (selectedMaterials.length > 0) {
+
+  const rows = selectedMaterials.map((materialId) => ({
+    product_id: product.id,
+    material_id: materialId,
+  }));
+
+  const { error: materialError } = await supabaseAdmin
+    .from("product_materials")
+    .insert(rows);
+
+  if (materialError) {
+    console.error(materialError);
+  }
+
+}
 
     return new Response(null, {
       status: 302,

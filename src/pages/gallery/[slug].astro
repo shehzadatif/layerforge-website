@@ -1,0 +1,173 @@
+---
+import MainLayout from "../../layouts/MainLayout.astro";
+import { supabaseAdmin } from "../../lib/supabaseAdmin";
+
+const { slug } = Astro.params;
+
+const { data: product } = await supabaseAdmin
+  .from("products")
+  .select(`
+    *,
+    categories(name),
+    product_images(*)
+  `)
+  .eq("slug", slug)
+  .single();
+
+if (!product) {
+  return Astro.redirect("/gallery");
+}
+
+const images = (product.product_images ?? []).sort(
+  (a, b) => a.sort_order - b.sort_order
+);
+
+const cover = images[0];
+---
+
+<MainLayout title={`${product.name} | Layer Forge`}>
+
+<section class="py-20">
+
+  <div class="mx-auto max-w-7xl px-6">
+
+    <div class="mb-10">
+      <a
+        href="/gallery"
+        class="text-yellow-600 hover:text-yellow-700"
+      >
+        ← Back to Gallery
+      </a>
+    </div>
+
+    <div class="grid gap-12 lg:grid-cols-2">
+
+      <!-- Images -->
+
+      <div>
+
+        <div class="overflow-hidden rounded-2xl border bg-white shadow">
+
+          {cover ? (
+
+            <img
+              src={`${import.meta.env.PUBLIC_SUPABASE_URL}/storage/v1/object/public/product-images/${cover.image_url}`}
+              alt={product.name}
+              class="w-full object-contain bg-slate-100"
+            />
+
+          ) : (
+
+            <div class="flex h-96 items-center justify-center text-slate-400">
+
+              No Image Available
+
+            </div>
+
+          )}
+
+        </div>
+
+        {images.length > 1 && (
+
+          <div class="mt-6 grid grid-cols-4 gap-4">
+
+            {images.map((image) => (
+
+              <a
+                href={`${import.meta.env.PUBLIC_SUPABASE_URL}/storage/v1/object/public/product-images/${image.image_url}`}
+                target="_blank"
+              >
+
+                <div class="overflow-hidden rounded-lg border bg-white p-2 hover:border-yellow-400">
+
+                  <img
+                    src={`${import.meta.env.PUBLIC_SUPABASE_URL}/storage/v1/object/public/product-images/${image.image_url}`}
+                    class="aspect-square w-full object-contain"
+                    alt={product.name}
+                  />
+
+                </div>
+
+              </a>
+
+            ))}
+
+          </div>
+
+        )}
+
+      </div>
+
+      <!-- Product Details -->
+
+      <div>
+
+        <p class="text-sm font-semibold uppercase tracking-widest text-yellow-600">
+
+          {product.categories?.name}
+
+        </p>
+
+        <h1 class="mt-3 text-5xl font-bold text-slate-900">
+
+          {product.name}
+
+        </h1>
+
+        {product.price && (
+
+          <p class="mt-6 text-3xl font-bold">
+
+            From CAD ${Number(product.price).toFixed(2)}
+
+          </p>
+
+        )}
+
+        {product.short_description && (
+
+          <p class="mt-6 text-xl text-slate-600">
+
+            {product.short_description}
+
+          </p>
+
+        )}
+
+        <div class="mt-10">
+
+          <h2 class="mb-3 text-xl font-semibold">
+
+            Description
+
+          </h2>
+
+          <div class="prose max-w-none whitespace-pre-line text-slate-600">
+
+            {product.description}
+
+          </div>
+
+        </div>
+
+        <div class="mt-12">
+
+          <a
+            href={`/quote?product=${encodeURIComponent(product.name)}`}
+            class="inline-flex rounded-xl bg-yellow-400 px-8 py-4 font-semibold text-slate-900 transition hover:bg-yellow-300"
+          >
+            Request Similar Quote
+          </a>
+
+        </div>
+
+      </div>
+
+    </div>
+
+  </div>
+
+</section>
+
+</MainLayout>

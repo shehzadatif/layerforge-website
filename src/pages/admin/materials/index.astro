@@ -1,0 +1,111 @@
+---
+import AdminLayout from "../../../layouts/AdminLayout.astro";
+import { supabaseAdmin } from "../../../lib/supabaseAdmin";
+
+const { data: materials, error } = await supabaseAdmin
+  .from("materials")
+  .select("*")
+  .order("sort_order");
+
+if (error) {
+  console.error(error);
+}
+---
+
+<AdminLayout title="Materials" active="materials">
+
+<div class="mb-8 flex items-center justify-between">
+
+  <div>
+    <h1 class="text-4xl font-bold text-slate-900">
+      Materials
+    </h1>
+
+    <p class="mt-2 text-slate-500">
+      Manage manufacturing materials.
+    </p>
+  </div>
+
+  <a
+    href="/admin/materials/new"
+    class="rounded-lg bg-yellow-400 px-6 py-3 font-semibold text-slate-900 hover:bg-yellow-300"
+  >
+    + Add Material
+  </a>
+
+</div>
+
+<div class="overflow-hidden rounded-2xl bg-white shadow">
+
+  <table class="min-w-full">
+
+    <thead class="bg-slate-100">
+
+      <tr>
+        <th class="px-6 py-4 text-left">Material</th>
+        <th class="px-6 py-4 text-center">Markup</th>
+        <th class="px-6 py-4 text-center">Production</th>
+        <th class="px-6 py-4 text-center">Status</th>
+        <th class="px-6 py-4 text-right">Action</th>
+      </tr>
+
+    </thead>
+
+    <tbody>
+
+      {materials && materials.length > 0 ? (
+
+        materials.map((material) => (
+
+          <tr class="border-b hover:bg-slate-50">
+
+            <td class="px-6 py-4 font-semibold">
+              {material.name}
+            </td>
+
+            <td class="px-6 py-4 text-center">
+              {material.markup_percent}%
+            </td>
+
+            <td class="px-6 py-4 text-center">
+              {material.default_production_days} days
+            </td>
+
+            <td class="px-6 py-4 text-center">
+              {material.active ? "✅ Active" : "❌ Inactive"}
+            </td>
+
+            <td class="px-6 py-4 text-right">
+
+              <a
+                href={`/admin/materials/${material.id}`}
+                class="rounded-lg bg-slate-900 px-4 py-2 text-white hover:bg-slate-700"
+              >
+                Edit
+              </a>
+
+            </td>
+
+          </tr>
+
+        ))
+
+      ) : (
+
+        <tr>
+
+          <td colspan="5" class="p-8 text-center text-slate-500">
+            No materials found.
+          </td>
+
+        </tr>
+
+      )}
+
+    </tbody>
+
+  </table>
+
+</div>
+
+</AdminLayout>

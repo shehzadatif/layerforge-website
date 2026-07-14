@@ -1,19 +1,41 @@
 ---
 import MainLayout from "../../layouts/MainLayout.astro";
-import { products } from "../../features/shop/data/products";
+import { supabaseAdmin } from "../../lib/supabaseAdmin";
+import ProductConfigurator from "../../features/shop/components/ProductConfigurator/ProductConfigurator";
 
-export function getStaticPaths() {
-  return products.map((product) => ({
-    params: {
-      slug: product.slug,
-    },
-    props: {
-      product,
-    },
-  }));
+export const prerender = false;
+
+const { slug } = Astro.params;
+
+const { data: product } = await supabaseAdmin
+  .from("products")
+  .select(`
+    *,
+    categories(name),
+    product_images(*),
+    product_materials(
+      material_id,
+      override_markup_percent,
+      materials(
+        id,
+        name,
+        markup_percent,
+        default_production_days
+      )
+    )
+  `)
+  .eq("slug", slug)
+  .single();
+
+if (!product) {
+  return Astro.redirect("/shop");
 }
 
-const { product } = Astro.props;
+const images = (product.product_images ?? []).sort(
+  (a, b) => a.sort_order - b.sort_order
+);
+
+const cover = images[0];
 ---
 
 <MainLayout title={product.name}>
@@ -24,16 +46,62 @@ const { product } = Astro.props;
 
     <div class="grid gap-12 lg:grid-cols-2">
 
-      <img
-        src={product.images?.[0] || "/images/products/placeholder.webp"}
-        alt={product.name}
-        class="w-full rounded-2xl bg-white shadow"
-      />
+      <!-- Images -->
+
+      <div>
+
+        <div class="overflow-hidden rounded-2xl bg-white shadow">
+
+          {
+            cover ? (
+
+              <img
+                src={`${import.meta.env.PUBLIC_SUPABASE_URL}/storage/v1/object/public/product-images/${cover.image_url}`}
+                alt={product.name}
+                class="w-full object-contain"
+              />
+
+            ) : (
+
+              <div class="flex h-96 items-center justify-center">
+
+                No Image
+
+              </div>
+
+            )
+          }
+
+        </div>
+
+        {
+          images.length > 1 && (
+
+            <div class="mt-6 grid grid-cols-4 gap-3">
+
+              {images.map((image) => (
+
+                <img
+                  src={`${import.meta.env.PUBLIC_SUPABASE_URL}/storage/v1/object/public/product-images/${image.image_url}`}
+                  alt={product.name}
+                  class="aspect-square rounded-lg border object-cover cursor-pointer"
+                />
+
+              ))}
+
+            </div>
+
+          )
+        }
+
+      </div>
+
+      <!-- Product Information -->
 
       <div>
 
         <p class="mb-2 text-sm uppercase text-slate-500">
-          {product.category}
+          {product.categories?.name}
         </p>
 
         <h1 class="mb-6 text-5xl font-bold">
@@ -44,25 +112,10 @@ const { product } = Astro.props;
           {product.description}
         </p>
 
-        <div class="mb-8 text-4xl font-bold">
-          CAD ${product.price.toFixed(2)}
-        </div>
-
-        {
-          product.type === "standard" ? (
-
-            <button class="rounded-xl bg-yellow-400 px-8 py-4 font-semibold">
-              Add to Cart
-            </button>
-
-          ) : (
-
-            <button class="rounded-xl bg-slate-900 px-8 py-4 font-semibold text-white">
-              Customize & Quote
-            </button>
-
-          )
-        }
+        <ProductConfigurator
+          client:load
+          product={product}
+        />
 
       </div>
 
