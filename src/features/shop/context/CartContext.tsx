@@ -22,11 +22,15 @@ type CartItem = {
 type CartContextType = {
   cart: CartItem[];
   addToCart: (item: CartItem) => void;
- removeFromCart: (
-  id: string,
-  materialId: string
-) => void;
-  updateQuantity: (id: string, qty: number) => void;
+  removeFromCart: (
+    id: string,
+    materialId: string
+  ) => void;
+  updateQuantity: (
+    id: string,
+    materialId: string,
+    qty: number
+  ) => void;
   clearCart: () => void;
 };
 
@@ -59,17 +63,17 @@ export function CartProvider({
 
     setCart((current) => {
 
-   const existing = current.find(
-  (p) =>
-    p.id === item.id &&
-    p.materialId === item.materialId
-);
+      const existing = current.find(
+        (p) =>
+          p.id === item.id &&
+          p.materialId === item.materialId
+      );
 
       if (existing) {
 
         return current.map((p) =>
-        p.id === item.id &&
-p.materialId === item.materialId
+          p.id === item.id &&
+          p.materialId === item.materialId
             ? {
                 ...p,
                 quantity: p.quantity + item.quantity,
@@ -85,20 +89,42 @@ p.materialId === item.materialId
 
   }
 
-function removeFromCart(
-  id: string,
-  materialId: string
-) {
-  setCart((c) =>
-    c.filter(
-      (i) =>
-        !(
-          i.id === id &&
-          i.materialId === materialId
-        )
-    )
-  );
-}
+  function removeFromCart(
+    id: string,
+    materialId: string
+  ) {
+
+    setCart((current) =>
+      current.filter(
+        (item) =>
+          !(
+            item.id === id &&
+            item.materialId === materialId
+          )
+      )
+    );
+
+  }
+
+  function updateQuantity(
+    id: string,
+    materialId: string,
+    quantity: number
+  ) {
+
+    setCart((current) =>
+      current.map((item) =>
+        item.id === id &&
+        item.materialId === materialId
+          ? {
+              ...item,
+              quantity,
+            }
+          : item
+      )
+    );
+
+  }
 
   function clearCart() {
     setCart([]);
@@ -128,8 +154,9 @@ export function useCart() {
 
   const ctx = useContext(CartContext);
 
-  if (!ctx)
+  if (!ctx) {
     throw new Error("CartProvider missing");
+  }
 
   return ctx;
 

@@ -1,7 +1,8 @@
 ---
 import MainLayout from "../../layouts/MainLayout.astro";
 import { supabaseAdmin } from "../../lib/supabaseAdmin";
-import ProductConfigurator from "../../features/shop/components/ProductConfigurator/ProductConfigurator";
+import ProductGallery from "../../features/shop/components/ProductGallery/ProductGallery";
+import ProductConfiguratorWithProvider from "../../features/shop/components/ProductConfigurator/ProductConfiguratorWithProvider";
 
 export const prerender = false;
 
@@ -15,7 +16,6 @@ const { data: product } = await supabaseAdmin
     product_images(*),
     product_materials(
       material_id,
-      override_markup_percent,
       materials(
         id,
         name,
@@ -31,11 +31,14 @@ if (!product) {
   return Astro.redirect("/shop");
 }
 
-const images = (product.product_images ?? []).sort(
-  (a, b) => a.sort_order - b.sort_order
-);
+const imageUrls = (product.product_images ?? [])
+  .sort((a, b) => a.sort_order - b.sort_order)
+  .map(
+    (image) =>
+      `${import.meta.env.PUBLIC_SUPABASE_URL}/storage/v1/object/public/product-images/${image.image_url}`
+  );
 
-const cover = images[0];
+const cover = imageUrls[0] ?? "";
 ---
 
 <MainLayout title={product.name}>
@@ -46,55 +49,13 @@ const cover = images[0];
 
     <div class="grid gap-12 lg:grid-cols-2">
 
-      <!-- Images -->
+      <!-- Product Gallery -->
 
-      <div>
-
-        <div class="overflow-hidden rounded-2xl bg-white shadow">
-
-          {
-            cover ? (
-
-              <img
-                src={`${import.meta.env.PUBLIC_SUPABASE_URL}/storage/v1/object/public/product-images/${cover.image_url}`}
-                alt={product.name}
-                class="w-full object-contain"
-              />
-
-            ) : (
-
-              <div class="flex h-96 items-center justify-center">
-
-                No Image
-
-              </div>
-
-            )
-          }
-
-        </div>
-
-        {
-          images.length > 1 && (
-
-            <div class="mt-6 grid grid-cols-4 gap-3">
-
-              {images.map((image) => (
-
-                <img
-                  src={`${import.meta.env.PUBLIC_SUPABASE_URL}/storage/v1/object/public/product-images/${image.image_url}`}
-                  alt={product.name}
-                  class="aspect-square rounded-lg border object-cover cursor-pointer"
-                />
-
-              ))}
-
-            </div>
-
-          )
-        }
-
-      </div>
+      <ProductGallery
+        client:load
+        images={imageUrls}
+        productName={product.name}
+      />
 
       <!-- Product Information -->
 
@@ -112,9 +73,10 @@ const cover = images[0];
           {product.description}
         </p>
 
-        <ProductConfigurator
+        <ProductConfiguratorWithProvider
           client:load
           product={product}
+          image={cover}
         />
 
       </div>

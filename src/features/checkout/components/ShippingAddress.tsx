@@ -1,0 +1,132 @@
+import type { CheckoutForm } from "../types";
+import type { Province } from "../../../lib/taxes";
+
+interface Props {
+  form: CheckoutForm;
+  errors: Record<string, string>;
+  updateField: (
+    field: keyof CheckoutForm,
+    value: string
+  ) => void;
+}
+
+export default function ShippingAddress({
+  form,
+  errors,
+  updateField,
+}: Props) {
+  return (
+    <div className="rounded-2xl bg-white p-8 shadow">
+
+      <h2 className="mb-6 text-2xl font-bold">
+        Shipping Address
+      </h2>
+
+      <div className="grid gap-5">
+
+        <div>
+          <input
+            value={form.address}
+            onChange={(e) =>
+              updateField("address", e.target.value)
+            }
+            placeholder="Street Address"
+            className={`w-full rounded-xl border p-4 ${
+              errors.address ? "border-red-500" : ""
+            }`}
+          />
+
+          {errors.address && (
+            <p className="mt-1 text-sm text-red-600">
+              {errors.address}
+            </p>
+          )}
+        </div>
+
+        <input
+          value={form.unit}
+          onChange={(e) =>
+            updateField("unit", e.target.value)
+          }
+          placeholder="Apartment / Unit"
+          className="rounded-xl border p-4"
+        />
+
+        <div className="grid gap-5 md:grid-cols-2">
+
+          <div>
+
+            <input
+              value={form.city}
+              onChange={(e) =>
+                updateField("city", e.target.value)
+              }
+              placeholder="City"
+              className={`w-full rounded-xl border p-4 ${
+                errors.city ? "border-red-500" : ""
+              }`}
+            />
+
+            {errors.city && (
+              <p className="mt-1 text-sm text-red-600">
+                {errors.city}
+              </p>
+            )}
+
+          </div>
+
+          <div>
+
+            <input
+              value={form.postalCode}
+              onChange={(e) =>
+                updateField(
+                  "postalCode",
+                  e.target.value
+                )
+              }
+              placeholder="Postal Code"
+              className={`w-full rounded-xl border p-4 ${
+                errors.postalCode
+                  ? "border-red-500"
+                  : ""
+              }`}
+            />
+
+            {errors.postalCode && (
+              <p className="mt-1 text-sm text-red-600">
+                {errors.postalCode}
+              </p>
+            )}
+
+          </div>
+
+        </div>
+
+        <select
+          value={form.province}
+          onChange={(e) =>
+            updateField(
+              "province",
+              e.target.value as Province
+            )
+          }
+          className="rounded-xl border p-4"
+        >
+          <option value="BC">British Columbia</option>
+          <option value="AB">Alberta</option>
+          <option value="SK">Saskatchewan</option>
+          <option value="MB">Manitoba</option>
+          <option value="ON">Ontario</option>
+          <option value="QC">Quebec</option>
+          <option value="NB">New Brunswick</option>
+          <option value="NS">Nova Scotia</option>
+          <option value="PE">Prince Edward Island</option>
+          <option value="NL">Newfoundland & Labrador</option>
+        </select>
+
+      </div>
+
+    </div>
+  );
+}

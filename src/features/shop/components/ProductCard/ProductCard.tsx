@@ -8,8 +8,12 @@ interface ProductCardProps {
 
 export default function ProductCard({ product }: ProductCardProps) {
   const handleClick = () => {
-    window.location.href = `/shop/${product.slug}`;
-  };
+  console.log("CLICKED");
+  console.log(product);
+  alert(product.slug);
+};
+
+console.log("PRODUCT CARD COMPONENT RENDERED");
 
   return (
     <Card

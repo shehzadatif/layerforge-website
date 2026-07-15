@@ -1,21 +1,21 @@
 ---
 import MainLayout from "../layouts/MainLayout.astro";
-import CartPage from "../features/cart/components/CartPage";
+import CheckoutPage from "../features/checkout/components/CheckoutPage";
 
 export const prerender = false;
 ---
 
-<MainLayout title="Shopping Cart | Layer Forge">
+<MainLayout title="Checkout | Layer Forge">
 
 <section class="bg-slate-50 py-20">
 
   <div class="mx-auto max-w-7xl px-6">
 
     <h1 class="mb-10 text-5xl font-bold">
-      Shopping Cart
+      Checkout
     </h1>
 
-    <CartPage client:load />
+    <CheckoutPage client:load />
 
   </div>
 

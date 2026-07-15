@@ -5,6 +5,10 @@ dist/
 
 # dependencies
 node_modules/
+.dist
+.astro
+.env
+.env.local
 
 # logs
 npm-debug.log*

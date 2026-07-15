@@ -9,7 +9,7 @@ export async function getProducts() {
       product_images(*),
       product_variants(*)
     `)
-    .eq("status", "active")
+    .eq("status", "Active")
     .order("name");
 
   if (error) {

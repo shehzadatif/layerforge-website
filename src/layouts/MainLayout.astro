@@ -1,13 +1,14 @@
 ---
-import '../styles/global.css';
-import Navbar from '../components/layout/Navbar.astro';
+import "../styles/global.css";
+import Navbar from "../components/layout/Navbar.astro";
+import AppToaster from "../components/layout/AppToaster";
 
 interface Props {
   title?: string;
 }
 
 const {
-  title = 'Layer Forge'
+  title = "Layer Forge",
 } = Astro.props;
 ---
 
@@ -20,10 +21,12 @@ const {
   </head>
 
   <body>
+<AppToaster client:load />
     <Navbar />
 
     <main>
       <slot />
     </main>
+
   </body>
 </html>
