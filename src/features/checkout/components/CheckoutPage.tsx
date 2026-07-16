@@ -1,15 +1,14 @@
 import { useMemo, useState } from "react";
-import { loadStripe } from "@stripe/stripe-js";
+import { useCheckout } from "../hooks/useCheckout";
 import { getCart } from "../../cart/cartStorage";
-import { TAX_RATES, type Province } from "../../../lib/taxes";
 import ContactForm from "./ContactForm";
 import DeliveryMethod from "./DeliveryMethod";
 import ShippingAddress from "./ShippingAddress";
 
+
 export default function CheckoutPage() {
   const cart = getCart();
-  const [province, setProvince] = useState<Province>("BC");
-  const [email, setEmail] = useState("");
+
 
 const {
   form,
@@ -18,45 +17,22 @@ const {
   validate,
 } = useCheckout();
 
-  const subtotal = useMemo(
-    () => cart.reduce((sum,item)=>sum + item.price * item.quantity,0),
-    [cart]
-  );
+ const subtotal = useMemo(
+  () => cart.reduce((sum, item) => sum + item.price * item.quantity, 0),
+  [cart]
+);
 
-  const rates = TAX_RATES[province];
-  const shipping = 0;
-
-  const gst = subtotal * rates.gst;
-  const pst = subtotal * rates.pst;
-  const hst = subtotal * rates.hst;
-  const qst = subtotal * rates.qst;
-
-  const total = subtotal + shipping + gst + pst + hst + qst;
-
-  function validateForm() {
-  const newErrors: Record<string, string> = {};
-
-  if (!email.trim()) newErrors.email = "Email is required.";
-  if (!firstName.trim()) newErrors.firstName = "First name is required.";
-  if (!lastName.trim()) newErrors.lastName = "Last name is required.";
-  if (!phone.trim()) newErrors.phone = "Phone number is required.";
-
-  if (deliveryMethod === "shipping") {
-    if (!address.trim()) newErrors.address = "Street address is required.";
-    if (!city.trim()) newErrors.city = "City is required.";
-    if (!postalCode.trim()) newErrors.postalCode = "Postal code is required.";
+ 
+async function handleCheckout() {
+  if (cart.length === 0) {
+    alert("Your cart is empty.");
+    return;
   }
 
-  setErrors(newErrors);
+  if (!validate()) {
+    return;
+  }
 
-  return Object.keys(newErrors).length === 0;
-}
-
-if (!validateForm()) {
-  return;
-}
-
-  async function handleCheckout() {
   try {
     const response = await fetch(
       "/api/create-checkout-session",
@@ -66,17 +42,21 @@ if (!validateForm()) {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          items: cart,
-        }),
+  items: cart,
+  customer: form,
+}),
       }
     );
 
-    const data = await response.json();
+ if (!response.ok) {
+  throw new Error("Unable to create checkout session.");
+}
 
-    if (!data.url) {
-      alert("Unable to start checkout.");
-      return;
-    }
+const data = await response.json();
+
+if (!data.url) {
+  throw new Error("Checkout session did not return a URL.");
+}
 
     window.location.href = data.url;
 
@@ -99,12 +79,14 @@ if (!validateForm()) {
             updateField={updateField}
             />
 
-     <DeliveryMethod
-  deliveryMethod={deliveryMethod}
-  setDeliveryMethod={setDeliveryMethod}
+<DeliveryMethod
+  deliveryMethod={form.deliveryMethod}
+  setDeliveryMethod={(method) =>
+    updateField("deliveryMethod", method)
+  }
 />
 
-      {deliveryMethod === "shipping" && (
+      {form.deliveryMethod === "shipping" && (
   <ShippingAddress
     form={form}
     errors={errors}
@@ -112,7 +94,7 @@ if (!validateForm()) {
   />
 )}
 
-        {deliveryMethod==="pickup" && (
+        {form.deliveryMethod==="pickup" && (
           <div className="rounded-2xl bg-white p-8 shadow">
             <h2 className="mb-6 text-2xl font-bold">Pickup Information</h2>
             <div className="rounded-xl bg-slate-100 p-6">
@@ -153,32 +135,45 @@ if (!validateForm()) {
 
           <div className="mb-3 flex justify-between"><span>Subtotal</span><span>CAD ${subtotal.toFixed(2)}</span></div>
 
-          <div className="mb-3 flex justify-between">
-            <span>Delivery</span>
-            <span className="text-slate-500">
-              {deliveryMethod==="pickup" ? "Local Pickup" : "Calculated after address"}
-            </span>
-          </div>
+ <div className="mb-3 flex justify-between">
+  <span>Taxes & Shipping</span>
+  <span className="text-slate-500">
+    Calculated at secure checkout
+  </span>
+</div>
 
-          {gst>0 && <div className="mb-3 flex justify-between"><span>GST</span><span>CAD ${gst.toFixed(2)}</span></div>}
-          {pst>0 && <div className="mb-3 flex justify-between"><span>PST</span><span>CAD ${pst.toFixed(2)}</span></div>}
-          {hst>0 && <div className="mb-3 flex justify-between"><span>HST</span><span>CAD ${hst.toFixed(2)}</span></div>}
-          {qst>0 && <div className="mb-3 flex justify-between"><span>QST</span><span>CAD ${qst.toFixed(2)}</span></div>}
+<div className="mb-3 flex justify-between">
+  <span>Delivery Method</span>
+  <span className="text-slate-500">
+    {form.deliveryMethod === "pickup"
+      ? "Local Pickup"
+      : "Ship to Address"}
+  </span>
+</div>
 
-          <hr className="my-6"/>
+<hr className="my-6" />
 
-          <div className="flex justify-between text-2xl font-bold">
-            <span>Estimated Total</span>
-            <span>CAD ${total.toFixed(2)}</span>
-          </div>
+<div className="flex justify-between text-2xl font-bold">
+  <span>Subtotal</span>
+  <span>CAD ${subtotal.toFixed(2)}</span>
+</div>
+
+<p className="mt-4 text-sm text-slate-500 leading-6">
+  Your final total, including applicable taxes and shipping, will be
+  calculated securely during the next step in Stripe Checkout.
+</p>
 
           <button
           
   onClick={handleCheckout}
   className="mt-8 w-full rounded-xl bg-yellow-400 py-4 text-lg font-semibold hover:bg-yellow-300"
 >
-  Continue to Payment
+  Continue to Secure Checkout
 </button>
+<p className="mt-4 text-center text-xs text-slate-500">
+  Secure checkout powered by Stripe. Taxes and shipping are calculated
+  based on your delivery details.
+</p>
 
         </div>
       </div>

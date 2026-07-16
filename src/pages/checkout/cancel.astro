@@ -1,0 +1,51 @@
+---
+import MainLayout from "../../layouts/MainLayout.astro";
+---
+
+<MainLayout title="Payment Cancelled | Layer Forge">
+  <section class="mx-auto max-w-3xl px-6 py-20">
+
+    <div class="rounded-2xl bg-white p-10 shadow-lg text-center">
+
+      <div class="mb-6 text-6xl">
+        ⚠️
+      </div>
+
+      <h1 class="mb-4 text-4xl font-bold">
+        Payment Cancelled
+      </h1>
+
+      <p class="mb-8 text-lg text-slate-600">
+        Your payment was not completed.
+      </p>
+
+      <div class="rounded-xl bg-slate-50 p-6 text-left">
+
+        <p class="text-slate-600">
+          Your cart has not been lost. You can return to checkout whenever you're ready.
+        </p>
+
+      </div>
+
+      <div class="mt-10 flex flex-col gap-4 sm:flex-row sm:justify-center">
+
+        <a
+          href="/checkout"
+          class="rounded-xl bg-yellow-500 px-8 py-4 font-semibold text-white hover:bg-yellow-600"
+        >
+          Return to Checkout
+        </a>
+
+        <a
+          href="/shop"
+          class="rounded-xl border px-8 py-4 font-semibold hover:bg-slate-100"
+        >
+          Continue Shopping
+        </a>
+
+      </div>
+
+    </div>
+
+  </section>
+</MainLayout>

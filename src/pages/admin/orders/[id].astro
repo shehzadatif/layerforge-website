@@ -1,0 +1,371 @@
+---
+import AdminLayout from "../../../layouts/AdminLayout.astro";
+import { getOrder } from "../../../lib/orders";
+
+const { id } = Astro.params;
+
+if (!id) {
+  return Astro.redirect("/admin/orders");
+}
+
+const order = await getOrder(id);
+---
+
+<AdminLayout
+  title={`Order ${order.order_number ?? ""}`}
+  active="orders"
+>
+
+<div class="mb-8 flex items-center justify-between">
+
+  <div>
+    <h1 class="text-4xl font-bold">
+      Order #{order.order_number ?? order.id.slice(0, 8)}
+    </h1>
+
+    <p class="mt-2 text-slate-500">
+      Placed on {new Date(order.created_at).toLocaleString()}
+    </p>
+  </div>
+
+  <a
+    href="/admin/orders"
+    class="rounded-xl bg-slate-900 px-5 py-3 font-semibold text-white hover:bg-slate-700"
+  >
+    ← Back to Orders
+  </a>
+
+</div>
+
+<div class="grid gap-8 lg:grid-cols-3">
+
+  <!-- Customer -->
+
+  <div class="rounded-2xl bg-white p-8 shadow">
+
+    <h2 class="mb-6 text-2xl font-bold">
+      Customer
+    </h2>
+
+    <div class="space-y-3">
+
+      <p>
+        <span class="font-semibold">Name:</span><br />
+        {order.customer_name}
+      </p>
+
+      <p>
+        <span class="font-semibold">Email:</span><br />
+        {order.email}
+      </p>
+
+      <p>
+        <span class="font-semibold">Phone:</span><br />
+        {order.phone}
+      </p>
+
+    </div>
+
+  </div>
+
+  <!-- Shipping -->
+
+  <div class="rounded-2xl bg-white p-8 shadow">
+
+    <h2 class="mb-6 text-2xl font-bold">
+      Delivery
+    </h2>
+
+    <div class="space-y-3">
+
+      <p>
+        <span class="font-semibold">Method:</span><br />
+        {order.delivery_method}
+      </p>
+
+      <p>
+        <span class="font-semibold">Address:</span><br />
+        {order.shipping_address}
+      </p>
+
+      {
+        order.unit && (
+          <p>
+            <span class="font-semibold">Unit:</span><br />
+            {order.unit}
+          </p>
+        )
+      }
+
+      <p>
+        {order.city}, {order.province}
+      </p>
+
+      <p>
+        {order.postal_code}
+      </p>
+
+    </div>
+
+  </div>
+
+  <!-- Status -->
+
+  <div class="rounded-2xl bg-white p-8 shadow">
+
+    <h2 class="mb-6 text-2xl font-bold">
+      Status
+    </h2>
+
+    <div class="space-y-6">
+
+      <div>
+
+        <div class="mb-2 text-sm text-slate-500">
+          Payment
+        </div>
+
+       <span
+  class={`rounded-full px-4 py-2 font-semibold ${
+    order.order_status === "Preparing"
+      ? "bg-yellow-100 text-yellow-700"
+      : order.order_status === "3D Printing"
+      ? "bg-blue-100 text-blue-700"
+      : order.order_status === "Laser Engraving"
+      ? "bg-orange-100 text-orange-700"
+      : order.order_status === "UV Printing"
+      ? "bg-purple-100 text-purple-700"
+      : order.order_status === "Ready"
+      ? "bg-green-100 text-green-700"
+      : order.order_status === "Shipped"
+      ? "bg-indigo-100 text-indigo-700"
+      : order.order_status === "Completed"
+      ? "bg-emerald-100 text-emerald-700"
+      : order.order_status === "Cancelled"
+      ? "bg-red-100 text-red-700"
+      : "bg-slate-100 text-slate-700"
+  }`}
+>
+          {order.payment_status}
+        </span>
+
+      </div>
+
+      <div>
+
+        <div class="mb-2 text-sm text-slate-500">
+          Production
+        </div>
+
+        <span class={`rounded-full px-4 py-2 font-semibold ${
+          order.order_status === "Completed"
+            ? "bg-green-100 text-green-700"
+            : order.order_status === "Processing"
+            ? "bg-blue-100 text-blue-700"
+            : "bg-slate-100 text-slate-700"
+        }`}>
+          {order.order_status}
+        </span>
+
+      </div>
+<hr class="my-6" />
+
+<h3 class="mb-4 font-semibold">
+  Update Status
+</h3>
+
+<div class="grid grid-cols-2 gap-3">
+
+  <button
+    type="button"
+    onclick="updateStatus('Preparing')"
+    class="rounded-lg bg-slate-200 px-4 py-3 hover:bg-slate-300"
+  >
+    🟡 Preparing
+  </button>
+
+  <button
+    type="button"
+    onclick="updateStatus('3D Printing')"
+    class="rounded-lg bg-blue-500 px-4 py-3 text-white hover:bg-blue-600"
+  >
+    🖨️ 3D Printing
+  </button>
+
+  <button
+    type="button"
+    onclick="updateStatus('Laser Engraving')"
+    class="rounded-lg bg-orange-500 px-4 py-3 text-white hover:bg-orange-600"
+  >
+    🔥 Laser Engraving
+  </button>
+
+  <button
+    type="button"
+    onclick="updateStatus('UV Printing')"
+    class="rounded-lg bg-purple-600 px-4 py-3 text-white hover:bg-purple-700"
+  >
+    🎨 UV Printing
+  </button>
+
+  <button
+    type="button"
+    onclick="updateStatus('Ready')"
+    class="rounded-lg bg-green-500 px-4 py-3 text-white hover:bg-green-600"
+  >
+    📦 Ready
+  </button>
+
+  <button
+    type="button"
+    onclick="updateStatus('Shipped')"
+    class="rounded-lg bg-indigo-600 px-4 py-3 text-white hover:bg-indigo-700"
+  >
+    🚚 Shipped
+  </button>
+
+  <button
+    type="button"
+    onclick="updateStatus('Completed')"
+    class="rounded-lg bg-emerald-700 px-4 py-3 text-white hover:bg-emerald-800"
+  >
+    ✅ Completed
+  </button>
+
+  <button
+    type="button"
+    onclick="updateStatus('Cancelled')"
+    class="rounded-lg bg-red-600 px-4 py-3 text-white hover:bg-red-700"
+  >
+    ❌ Cancelled
+  </button>
+
+</div>
+
+
+    </div>
+
+  </div>
+
+</div>
+
+<!-- Products -->
+
+<div class="mt-8 rounded-2xl bg-white p-8 shadow">
+
+  <h2 class="mb-6 text-2xl font-bold">
+    Products
+  </h2>
+
+  <table class="min-w-full">
+
+    <thead>
+
+      <tr class="border-b">
+
+        <th class="pb-4 text-left">Product</th>
+        <th class="pb-4 text-left">Material</th>
+        <th class="pb-4 text-center">Qty</th>
+        <th class="pb-4 text-right">Unit Price</th>
+        <th class="pb-4 text-right">Total</th>
+
+      </tr>
+
+    </thead>
+
+    <tbody>
+
+      {
+        order.order_items.map((item: any) => (
+
+          <tr class="border-b">
+
+            <td class="py-4">
+              {item.product_name}
+            </td>
+
+            <td class="py-4">
+              {item.material}
+            </td>
+
+            <td class="py-4 text-center">
+              {item.quantity}
+            </td>
+
+            <td class="py-4 text-right">
+              CAD ${Number(item.unit_price).toFixed(2)}
+            </td>
+
+            <td class="py-4 text-right font-semibold">
+              CAD ${Number(item.total_price).toFixed(2)}
+            </td>
+
+          </tr>
+
+        ))
+      }
+
+    </tbody>
+
+  </table>
+
+</div>
+
+<!-- Totals -->
+
+<div class="mt-8 ml-auto w-full max-w-md rounded-2xl bg-white p-8 shadow">
+
+  <div class="mb-4 flex justify-between">
+    <span>Subtotal</span>
+    <span>CAD ${Number(order.subtotal).toFixed(2)}</span>
+  </div>
+
+  <div class="mb-4 flex justify-between">
+    <span>Shipping</span>
+    <span>CAD ${Number(order.shipping).toFixed(2)}</span>
+  </div>
+
+  <div class="mb-4 flex justify-between">
+    <span>Tax</span>
+    <span>CAD ${Number(order.tax).toFixed(2)}</span>
+  </div>
+
+  <hr class="my-6" />
+
+  <div class="flex justify-between text-2xl font-bold">
+    <span>Total</span>
+    <span>CAD ${Number(order.total).toFixed(2)}</span>
+  </div>
+
+</div>
+
+<script define:vars={{ orderId: order.id }}>
+  window.updateStatus = async function (status) {
+    try {
+      const response = await fetch("/api/admin/update-order-status", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          orderId,
+          status,
+        }),
+      });
+
+      const result = await response.json();
+
+      if (!result.success) {
+        alert("Unable to update status.");
+        return;
+      }
+
+      location.reload();
+    } catch (err) {
+      console.error(err);
+      alert("Unable to update status.");
+    }
+  };
+</script>
+
+</AdminLayout>

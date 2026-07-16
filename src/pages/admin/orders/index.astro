@@ -1,0 +1,154 @@
+---
+import AdminLayout from "../../../layouts/AdminLayout.astro";
+import { getOrders } from "../../../lib/orders";
+
+const orders = await getOrders();
+---
+
+<AdminLayout
+  title="Orders"
+  active="orders"
+>
+
+<div class="mb-8 flex items-center justify-between">
+  <div>
+    <h1 class="text-4xl font-bold">Orders</h1>
+    <p class="mt-2 text-slate-500">
+      Manage customer orders and production.
+    </p>
+  </div>
+</div>
+
+<div class="overflow-x-auto rounded-2xl bg-white shadow">
+
+  <table class="min-w-full divide-y divide-slate-200">
+
+    <thead class="bg-slate-900 text-white">
+
+      <tr>
+
+        <th class="px-6 py-4 text-left">Order</th>
+<th class="px-6 py-4 text-left">Customer</th>
+<th class="px-6 py-4 text-left">Payment</th>
+<th class="px-6 py-4 text-left">Status</th>
+<th class="px-6 py-4 text-right">Total</th>
+<th class="px-6 py-4 text-left">Date</th>
+<th class="px-6 py-4"></th>
+
+      </tr>
+
+    </thead>
+
+    <tbody class="divide-y divide-slate-200">
+
+      {
+        orders.map((order) => (
+
+          <tr class="hover:bg-slate-50">
+
+  <!-- Order Number -->
+  <td class="px-6 py-5">
+
+    <div class="text-lg font-bold text-slate-900">
+      #{order.order_number}
+    </div>
+
+    <div class="text-sm text-slate-500">
+      {order.delivery_method === "pickup"
+        ? "Pickup"
+        : "Shipping"}
+    </div>
+
+  </td>
+
+  <!-- Customer -->
+  <td class="px-6 py-5">
+
+    <div class="font-semibold">
+      {order.customer_name}
+    </div>
+
+    <div class="text-sm text-slate-500">
+      {order.email}
+    </div>
+
+  </td>
+
+  <!-- Payment -->
+  <td class="px-6 py-5">
+
+    <span
+      class={`rounded-full px-3 py-1 text-sm font-semibold ${
+        order.payment_status === "Paid"
+          ? "bg-green-100 text-green-700"
+          : "bg-yellow-100 text-yellow-700"
+      }`}
+    >
+      {order.payment_status}
+    </span>
+
+  </td>
+
+  <!-- Status -->
+  <td class="px-6 py-5">
+
+    <span
+      class={`rounded-full px-3 py-1 text-sm font-semibold ${
+        order.order_status === "Preparing"
+          ? "bg-yellow-100 text-yellow-700"
+          : order.order_status === "3D Printing"
+          ? "bg-blue-100 text-blue-700"
+          : order.order_status === "Laser Engraving"
+          ? "bg-orange-100 text-orange-700"
+          : order.order_status === "UV Printing"
+          ? "bg-purple-100 text-purple-700"
+          : order.order_status === "Ready"
+          ? "bg-green-100 text-green-700"
+          : order.order_status === "Shipped"
+          ? "bg-indigo-100 text-indigo-700"
+          : order.order_status === "Completed"
+          ? "bg-emerald-100 text-emerald-700"
+          : order.order_status === "Cancelled"
+          ? "bg-red-100 text-red-700"
+          : "bg-slate-100 text-slate-700"
+      }`}
+    >
+      {order.order_status}
+    </span>
+
+  </td>
+
+  <!-- Total -->
+  <td class="px-6 py-5 text-right font-semibold">
+    CAD ${Number(order.total).toFixed(2)}
+  </td>
+
+  <!-- Date -->
+  <td class="px-6 py-5">
+    {new Date(order.created_at).toLocaleDateString("en-CA")}
+  </td>
+
+  <!-- View -->
+  <td class="px-6 py-5 text-right">
+
+    <a
+      href={`/admin/orders/${order.id}`}
+      class="rounded-lg bg-yellow-400 px-4 py-2 font-semibold transition hover:bg-yellow-300"
+    >
+      View
+    </a>
+
+  </td>
+
+</tr>
+
+        ))
+      }
+
+    </tbody>
+
+  </table>
+
+</div>
+
+</AdminLayout>

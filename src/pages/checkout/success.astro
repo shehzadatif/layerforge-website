@@ -2,25 +2,66 @@
 import MainLayout from "../../layouts/MainLayout.astro";
 ---
 
-<MainLayout title="Payment Successful">
+<MainLayout title="Order Successful | Layer Forge">
+  <section class="mx-auto max-w-3xl px-6 py-20">
 
-<section class="mx-auto max-w-3xl px-6 py-24 text-center">
+    <div class="rounded-2xl bg-white p-10 shadow-lg text-center">
 
-  <h1 class="text-5xl font-bold">
-    Thank You!
-  </h1>
+      <div class="mb-6 text-6xl">
+        ✅
+      </div>
 
-  <p class="mt-6 text-xl text-slate-600">
-    Your payment was successful.
-  </p>
+      <h1 class="mb-4 text-4xl font-bold">
+        Thank You for Your Order!
+      </h1>
 
-  <a
-    href="/shop"
-    class="mt-10 inline-block rounded-xl bg-yellow-400 px-8 py-4 font-semibold"
-  >
-    Continue Shopping
-  </a>
+      <p class="mb-8 text-lg text-slate-600">
+        Your payment has been received successfully.
+      </p>
 
-</section>
+      <div class="rounded-xl bg-slate-50 p-6 text-left">
 
+        <h2 class="mb-4 text-xl font-semibold">
+          What happens next?
+        </h2>
+
+        <ul class="space-y-3 text-slate-600">
+          <li>• We'll begin processing your order shortly.</li>
+
+          <li>
+            • You'll receive an email confirmation with your order details.
+          </li>
+
+          <li>
+            • If you selected shipping, we'll notify you once your order has shipped.
+          </li>
+
+          <li>
+            • If you selected local pickup, we'll email you when your order is ready.
+          </li>
+        </ul>
+
+      </div>
+
+      <div class="mt-10 flex flex-col gap-4 sm:flex-row sm:justify-center">
+
+        <a
+          href="/shop"
+          class="rounded-xl bg-yellow-500 px-8 py-4 font-semibold text-white hover:bg-yellow-600"
+        >
+          Continue Shopping
+        </a>
+
+        <a
+          href="/"
+          class="rounded-xl border px-8 py-4 font-semibold hover:bg-slate-100"
+        >
+          Return Home
+        </a>
+
+      </div>
+
+    </div>
+
+  </section>
 </MainLayout>
