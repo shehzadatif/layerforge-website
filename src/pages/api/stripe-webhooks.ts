@@ -2,7 +2,12 @@ import type { APIRoute } from "astro";
 import Stripe from "stripe";
 
 import { stripe } from "../../lib/stripe";
-import { markOrderPaid } from "../../lib/orders";
+import {
+  markOrderPaid,
+  getOrderForNotification,
+} from "../../lib/orders";
+
+import { sendOrderConfirmation } from "../../services/notifications";
 
 export const prerender = false;
 
@@ -48,14 +53,19 @@ export const POST: APIRoute = async ({ request }) => {
         break;
       }
 
-      await markOrderPaid(
-        orderId,
-        String(session.payment_intent)
-      );
+     await markOrderPaid(
+  orderId,
+  String(session.payment_intent)
+);
 
-      console.log(
-        `Order ${orderId} marked paid`
-      );
+const order =
+  await getOrderForNotification(orderId);
+
+await sendOrderConfirmation(order);
+
+console.log(
+  `Order ${orderId} marked paid`
+);
 
       break;
     }

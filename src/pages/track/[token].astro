@@ -1,0 +1,212 @@
+---
+import MainLayout from "../../layouts/MainLayout.astro";
+import { getOrderByTrackingToken } from "../../lib/tracking";
+import { formatOrderNumber } from "../../lib/formatters";
+
+const { token } = Astro.params;
+
+if (!token) {
+  return Astro.redirect("/");
+}
+
+let order = null;
+
+try {
+  order = await getOrderByTrackingToken(token);
+} catch {
+  return Astro.redirect("/");
+}
+---
+
+<MainLayout title={`Track ${formatOrderNumber(order.order_number)}`}>
+
+<div class="mx-auto max-w-5xl px-6 py-12">
+
+  <div class="rounded-2xl bg-white p-8 shadow">
+
+    <h1 class="text-4xl font-bold">
+      Track Your Order
+    </h1>
+
+    <p class="mt-2 text-slate-500">
+      Order
+      <span class="font-semibold">
+        {formatOrderNumber(order.order_number)}
+      </span>
+    </p>
+
+    <hr class="my-8" />
+
+    <div class="grid gap-8 md:grid-cols-2">
+
+      <div>
+
+        <h2 class="mb-4 text-2xl font-bold">
+          Order Status
+        </h2>
+
+        <div class="rounded-xl bg-yellow-100 px-5 py-4 font-semibold text-yellow-800">
+          {order.order_status}
+        </div>
+
+        <div class="mt-6">
+
+          <h3 class="mb-2 font-semibold">
+            Payment
+          </h3>
+
+          <div class={`inline-block rounded-full px-4 py-2 text-sm font-semibold ${
+            order.payment_status === "Paid"
+              ? "bg-green-100 text-green-700"
+              : "bg-yellow-100 text-yellow-700"
+          }`}>
+            {order.payment_status}
+          </div>
+
+        </div>
+
+      </div>
+
+      <div>
+
+        <h2 class="mb-4 text-2xl font-bold">
+          Customer
+        </h2>
+
+        <p>{order.customer_name}</p>
+
+        <p class="text-slate-500">
+          {order.email}
+        </p>
+
+        <div class="mt-6">
+
+          <h3 class="mb-2 font-semibold">
+            Delivery
+          </h3>
+
+          <p>
+            {order.delivery_method === "pickup"
+              ? "Local Pickup"
+              : "Shipping"}
+          </p>
+
+        </div>
+
+      </div>
+
+    </div>
+
+  </div>
+
+  <div class="mt-8 rounded-2xl bg-white p-8 shadow">
+
+    <h2 class="mb-6 text-2xl font-bold">
+      Order Items
+    </h2>
+
+    <table class="min-w-full">
+
+      <thead>
+
+        <tr class="border-b">
+
+          <th class="pb-4 text-left">
+            Product
+          </th>
+
+          <th class="pb-4 text-left">
+            Material
+          </th>
+
+          <th class="pb-4 text-center">
+            Qty
+          </th>
+
+        </tr>
+
+      </thead>
+
+      <tbody>
+
+        {
+          order.order_items.map((item: any) => (
+
+            <tr class="border-b">
+
+              <td class="py-4">
+                {item.product_name}
+              </td>
+
+              <td class="py-4">
+                {item.material}
+              </td>
+
+              <td class="py-4 text-center">
+                {item.quantity}
+              </td>
+
+            </tr>
+
+          ))
+        }
+
+      </tbody>
+
+    </table>
+
+  </div>
+
+</div>
+
+<div class="mt-8 rounded-2xl bg-white p-8 shadow">
+
+  <h2 class="mb-6 text-2xl font-bold">
+    Order Timeline
+  </h2>
+
+  <div class="space-y-5">
+
+    {
+      order.order_events
+        ?.sort(
+          (a: any, b: any) =>
+            new Date(a.created_at).getTime() -
+            new Date(b.created_at).getTime()
+        )
+        .map((event: any) => (
+
+          <div class="flex gap-4">
+
+            <div class="mt-1 h-3 w-3 rounded-full bg-yellow-500"></div>
+
+            <div>
+
+              <div class="font-semibold">
+                {event.title}
+              </div>
+
+              {
+                event.description && (
+                  <div class="text-sm text-slate-500">
+                    {event.description}
+                  </div>
+                )
+              }
+
+              <div class="mt-1 text-xs text-slate-400">
+                {new Date(event.created_at).toLocaleString()}
+              </div>
+
+            </div>
+
+          </div>
+
+        ))
+    }
+
+  </div>
+
+</div>
+
+</MainLayout>

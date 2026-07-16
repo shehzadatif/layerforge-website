@@ -1,4 +1,5 @@
 import { supabaseAdmin } from "./supabaseAdmin";
+import { generateTrackingToken } from "./tokens";
 
 export interface CustomerInfo {
   firstName: string;
@@ -36,6 +37,8 @@ export async function createOrder(
     .from("orders")
   .insert({
   customer_name: `${customer.firstName} ${customer.lastName}`,
+
+  tracking_token: generateTrackingToken(),
 
   email: customer.email,
   phone: customer.phone,
@@ -163,3 +166,20 @@ export async function getOrder(id: string) {
   return data;
 }
 
+export async function getOrderForNotification(orderId: string) {
+  const { data, error } = await supabaseAdmin
+    .from("orders")
+    .select(`
+      id,
+      customer_name,
+      email,
+      order_number,
+      tracking_token
+    `)
+    .eq("id", orderId)
+    .single();
+
+  if (error) throw error;
+
+  return data;
+}
