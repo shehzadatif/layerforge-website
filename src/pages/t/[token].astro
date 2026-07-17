@@ -1,0 +1,206 @@
+---
+import MainLayout from "../../layouts/MainLayout.astro";
+import { supabaseAdmin } from "../../lib/supabaseAdmin";
+
+const { token } = Astro.params;
+
+const { data: order, error } = await supabaseAdmin
+  .from("orders")
+  .select(`
+    *,
+    order_items(*)
+  `)
+  .eq("tracking_token", token)
+  .maybeSingle();
+
+const orderNumber = order
+  ? "LF" + String(order.order_number).padStart(6, "0")
+  : "";
+---
+
+<MainLayout title="Track Order | Layer Forge">
+
+<section class="mx-auto max-w-5xl px-6 py-16">
+
+{
+  order ? (
+
+    <div class="rounded-2xl bg-white p-10 shadow">
+
+      <div class="mb-8 border-b pb-6">
+
+        <h1 class="text-4xl font-bold">
+          {orderNumber}
+        </h1>
+
+        <p class="mt-2 text-slate-500">
+          Placed on {new Date(order.created_at).toLocaleString()}
+        </p>
+
+      </div>
+
+      <div class="grid gap-8 lg:grid-cols-2">
+
+        <!-- Status -->
+
+        <div>
+
+         <h2 class="mb-6 text-2xl font-bold">
+  Order Progress
+</h2>
+
+<div class="space-y-6">
+
+  <div class="flex items-center gap-4">
+    <div class="h-4 w-4 rounded-full bg-green-500"></div>
+    <span>Order Received</span>
+  </div>
+
+  <div class="flex items-center gap-4">
+    <div
+      class={`h-4 w-4 rounded-full ${
+        order.payment_status === "Paid"
+          ? "bg-green-500"
+          : "bg-slate-300"
+      }`}
+    ></div>
+    <span>Payment Received</span>
+  </div>
+
+  <div class="flex items-center gap-4">
+    <div
+      class={`h-4 w-4 rounded-full ${
+        ["In Progress", "Ready", "Shipped", "Completed"].includes(order.order_status)
+          ? "bg-green-500"
+          : "bg-slate-300"
+      }`}
+    ></div>
+    <span>Production Started</span>
+  </div>
+
+  <div class="flex items-center gap-4">
+    <div
+      class={`h-4 w-4 rounded-full ${
+        ["Ready", "Shipped", "Completed"].includes(order.order_status)
+          ? "bg-green-500"
+          : "bg-slate-300"
+      }`}
+    ></div>
+    <span>Ready for Pickup / Shipping</span>
+  </div>
+
+  <div class="flex items-center gap-4">
+    <div
+      class={`h-4 w-4 rounded-full ${
+        ["Shipped", "Completed"].includes(order.order_status)
+          ? "bg-green-500"
+          : "bg-slate-300"
+      }`}
+    ></div>
+    <span>Shipped</span>
+  </div>
+
+  <div class="flex items-center gap-4">
+    <div
+      class={`h-4 w-4 rounded-full ${
+        order.order_status === "Completed"
+          ? "bg-green-500"
+          : "bg-slate-300"
+      }`}
+    ></div>
+    <span>Completed</span>
+  </div>
+
+</div>
+
+          <h2 class="mt-10 mb-4 text-2xl font-bold">
+            Payment
+          </h2>
+
+          <span
+            class={`rounded-full px-4 py-2 font-semibold ${
+              order.payment_status === "Paid"
+                ? "bg-green-100 text-green-700"
+                : "bg-yellow-100 text-yellow-700"
+            }`}
+          >
+            {order.payment_status}
+          </span>
+
+        </div>
+
+        <!-- Products -->
+
+        <div>
+
+          <h2 class="mb-4 text-2xl font-bold">
+            Products
+          </h2>
+
+          <div class="space-y-4">
+
+            {
+              order.order_items.map((item: any) => (
+
+                <div class="rounded-xl border p-4">
+
+                  <div class="font-semibold text-lg">
+                    {item.product_name}
+                  </div>
+
+                  <div class="mt-1 text-slate-500">
+                    Material: {item.material}
+                  </div>
+
+                  <div class="text-slate-500">
+                    Quantity: {item.quantity}
+                  </div>
+
+                  <div class="mt-2 font-semibold">
+                    CAD ${Number(item.total_price).toFixed(2)}
+                  </div>
+
+                </div>
+
+              ))
+            }
+
+          </div>
+
+        </div>
+
+      </div>
+
+    </div>
+
+  ) : (
+
+    <div class="rounded-2xl bg-white p-12 text-center shadow">
+
+      <div class="mb-4 text-6xl">
+        🔍
+      </div>
+
+      <h1 class="text-3xl font-bold">
+        Tracking Link Not Found
+      </h1>
+
+      <p class="mt-4 text-slate-500">
+        The tracking link you used is invalid or has expired.
+      </p>
+
+      <a
+        href="/"
+        class="mt-8 inline-block rounded-xl bg-yellow-500 px-8 py-4 font-semibold text-white hover:bg-yellow-600"
+      >
+        Return Home
+      </a>
+
+    </div>
+
+  )
+}
+
+</section>
+
+</MainLayout>

@@ -1,6 +1,7 @@
 ---
 import AdminLayout from "../../../layouts/AdminLayout.astro";
 import { getOrders } from "../../../lib/orders";
+import { formatOrderDate } from "../../../lib/dateUtils";
 
 const orders = await getOrders();
 ---
@@ -47,19 +48,31 @@ const orders = await getOrders();
           <tr class="hover:bg-slate-50">
 
   <!-- Order Number -->
-  <td class="px-6 py-5">
+<td class="px-6 py-5">
 
-    <div class="text-lg font-bold text-slate-900">
-      #{order.order_number}
-    </div>
+  {
+    (() => {
+      const date = formatOrderDate(order.created_at);
 
-    <div class="text-sm text-slate-500">
-      {order.delivery_method === "pickup"
-        ? "Pickup"
-        : "Shipping"}
-    </div>
+      return (
+        <>
+          <div class="text-lg font-bold text-slate-900">
+            {"LF" + String(order.order_number).padStart(6, "0")}
+          </div>
 
-  </td>
+          <div class={`mt-1 text-sm font-medium ${date.color}`}>
+            {date.label}
+          </div>
+
+          <div class="text-xs text-slate-500">
+            {date.time}
+          </div>
+        </>
+      );
+    })()
+  }
+
+</td>
 
   <!-- Customer -->
   <td class="px-6 py-5">

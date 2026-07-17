@@ -1,0 +1,70 @@
+---
+import { formatOrderDate } from "../../lib/dateUtils";
+import {
+  getNextButtonLabel,
+  getNextOrderStatus,
+} from "../../lib/orderStatus";
+
+const { order } = Astro.props;
+
+const date = formatOrderDate(order.created_at);
+
+const orderNumber =
+  "LF" + String(order.order_number).padStart(6, "0");
+
+const nextStatus = getNextOrderStatus(order.order_status);
+const buttonLabel = getNextButtonLabel(order.order_status);
+---
+
+<div class="rounded-xl border bg-white p-4 shadow-sm transition hover:border-yellow-400 hover:shadow-md">
+
+  <div class="text-lg font-bold">
+    {orderNumber}
+  </div>
+
+  <div class="mt-1 font-medium">
+    {order.customer_name}
+  </div>
+
+  <div class={`mt-2 text-sm ${date.color}`}>
+    {date.label}
+  </div>
+
+  <div class="text-xs text-slate-500">
+    {date.time}
+  </div>
+
+  <div class="mt-3">
+
+    <span class={`rounded-full px-3 py-1 text-xs font-semibold ${
+      order.payment_status === "Paid"
+        ? "bg-green-100 text-green-700"
+        : "bg-yellow-100 text-yellow-700"
+    }`}>
+
+      {order.payment_status}
+
+    </span>
+
+  </div>
+
+ {
+  nextStatus && (
+    <button
+      type="button"
+      class="mt-4 w-full rounded-lg bg-yellow-400 py-2 font-semibold transition hover:bg-yellow-300"
+      onclick={`moveOrder('${order.id}', '${nextStatus}')`}
+    >
+      {buttonLabel}
+    </button>
+  )
+}
+
+  <a
+    href={`/admin/orders/${order.id}`}
+    class="mt-3 block text-center text-sm font-semibold text-slate-600 hover:text-yellow-600"
+  >
+    View Details
+  </a>
+
+</div>

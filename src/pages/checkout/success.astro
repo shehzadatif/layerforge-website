@@ -1,11 +1,14 @@
 ---
 import MainLayout from "../../layouts/MainLayout.astro";
+
+const sessionId = Astro.url.searchParams.get("session_id");
 ---
 
 <MainLayout title="Order Successful | Layer Forge">
+
   <section class="mx-auto max-w-3xl px-6 py-20">
 
-    <div class="rounded-2xl bg-white p-10 shadow-lg text-center">
+    <div class="rounded-2xl bg-white p-10 text-center shadow-lg">
 
       <div class="mb-6 text-6xl">
         ✅
@@ -15,9 +18,17 @@ import MainLayout from "../../layouts/MainLayout.astro";
         Thank You for Your Order!
       </h1>
 
-      <p class="mb-8 text-lg text-slate-600">
+      <p class="mb-2 text-lg text-slate-600">
         Your payment has been received successfully.
       </p>
+
+      {
+        sessionId && (
+          <p class="mb-8 text-sm text-slate-500">
+            Stripe Session: {sessionId}
+          </p>
+        )
+      }
 
       <div class="rounded-xl bg-slate-50 p-6 text-left">
 
@@ -26,19 +37,10 @@ import MainLayout from "../../layouts/MainLayout.astro";
         </h2>
 
         <ul class="space-y-3 text-slate-600">
-          <li>• We'll begin processing your order shortly.</li>
-
-          <li>
-            • You'll receive an email confirmation with your order details.
-          </li>
-
-          <li>
-            • If you selected shipping, we'll notify you once your order has shipped.
-          </li>
-
-          <li>
-            • If you selected local pickup, we'll email you when your order is ready.
-          </li>
+          <li>• Your order has been received.</li>
+          <li>• We'll begin production shortly.</li>
+          <li>• You'll receive an email confirmation.</li>
+          <li>• We'll notify you when your order is ready or shipped.</li>
         </ul>
 
       </div>
@@ -64,4 +66,11 @@ import MainLayout from "../../layouts/MainLayout.astro";
     </div>
 
   </section>
+
+  <script type="module">
+    import { clearCart } from "../../features/cart/cartStorage";
+
+    clearCart();
+  </script>
+
 </MainLayout>

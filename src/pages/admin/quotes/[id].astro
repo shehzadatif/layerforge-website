@@ -1,0 +1,356 @@
+---
+import AdminLayout from "../../../layouts/AdminLayout.astro";
+import { supabaseAdmin } from "../../../lib/supabaseAdmin";
+
+const { id } = Astro.params;
+
+// Prevent reserved route names from reaching the UUID query.
+if (!id) {
+  return Astro.redirect("/admin/quotes");
+}
+
+const { data: quote, error } = await supabaseAdmin
+  .from("quotes")
+  .select("*")
+  .eq("id", id)
+  .single();
+
+if (error || !quote) {
+  console.error("Unable to load quote:", error);
+  return Astro.redirect("/admin/quotes");
+}
+
+const quoteNumber = quote.quote_number
+  ? "LF-" + String(quote.quote_number).padStart(4, "0")
+  : "Quote";
+
+const quantity = Number(quote.quantity ?? 1);
+
+const quotedPrice = Number(
+  quote.quoted_price ?? quote.estimated_price ?? 0
+);
+
+const projectDetails =
+  quote.project_details &&
+  typeof quote.project_details === "object"
+    ? quote.project_details
+    : {};
+
+const unitPrice = Number(
+  projectDetails.unit_price ??
+    (quantity > 0 ? quotedPrice / quantity : quotedPrice)
+);
+
+const approvalUrl = quote.approval_token
+  ? `http://localhost:4321/q/${quote.approval_token}`
+  : "";
+---
+
+<AdminLayout
+  title={quoteNumber}
+  active="quotes"
+>
+
+  <div class="mb-8 flex items-center justify-between">
+
+    <div>
+      <h1 class="text-4xl font-bold">
+        {quoteNumber}
+      </h1>
+
+      <p class="mt-2 text-slate-500">
+        Created on {new Date(quote.created_at).toLocaleString()}
+      </p>
+    </div>
+
+    <a
+      href="/admin/quotes"
+      class="rounded-xl bg-slate-900 px-5 py-3 font-semibold text-white hover:bg-slate-700"
+    >
+      ← Back to Quotes
+    </a>
+
+  </div>
+
+  {
+    approvalUrl && (
+      <div class="mb-8 rounded-2xl border border-blue-200 bg-blue-50 p-6">
+
+        <h2 class="mb-3 text-xl font-bold text-blue-800">
+          Customer Quote Link
+        </h2>
+
+        <div class="break-all rounded-lg bg-white p-3 font-mono text-sm">
+          {approvalUrl}
+        </div>
+
+      </div>
+    )
+  }
+
+  <div class="grid gap-8 lg:grid-cols-3">
+
+    <div class="rounded-2xl bg-white p-8 shadow">
+
+      <h2 class="mb-6 text-2xl font-bold">
+        Customer
+      </h2>
+
+      <div class="space-y-4">
+
+        <p>
+          <span class="font-semibold">Name</span><br />
+          {quote.name}
+        </p>
+
+        <p>
+          <span class="font-semibold">Email</span><br />
+          {quote.email}
+        </p>
+
+        <p>
+          <span class="font-semibold">Phone</span><br />
+          {quote.phone || "-"}
+        </p>
+
+      </div>
+
+    </div>
+
+    <div class="rounded-2xl bg-white p-8 shadow">
+
+      <h2 class="mb-6 text-2xl font-bold">
+        Status
+      </h2>
+
+      <span
+        class={`rounded-full px-4 py-2 font-semibold ${
+          quote.status === "Approved"
+            ? "bg-green-100 text-green-700"
+            : quote.status === "Rejected"
+            ? "bg-red-100 text-red-700"
+            : quote.status === "Sent"
+            ? "bg-blue-100 text-blue-700"
+            : quote.status === "Converted"
+            ? "bg-emerald-100 text-emerald-700"
+            : "bg-yellow-100 text-yellow-700"
+        }`}
+      >
+        {quote.status}
+      </span>
+
+    </div>
+
+    <div class="rounded-2xl bg-white p-8 shadow">
+
+      <h2 class="mb-6 text-2xl font-bold">
+        Quote Total
+      </h2>
+
+      <div class="text-3xl font-bold">
+        CAD ${quotedPrice.toFixed(2)}
+      </div>
+
+      <p class="mt-2 text-sm text-slate-500">
+        Final tax is calculated during Stripe Checkout.
+      </p>
+
+    </div>
+
+  </div>
+
+  <div class="mt-8 rounded-2xl bg-white p-8 shadow">
+
+    <h2 class="mb-6 text-2xl font-bold">
+      Project Details
+    </h2>
+
+    <div class="overflow-x-auto">
+
+      <table class="min-w-full">
+
+        <thead>
+          <tr class="border-b">
+
+            <th class="pb-4 text-left">
+              Project
+            </th>
+
+            <th class="pb-4 text-left">
+              Service
+            </th>
+
+            <th class="pb-4 text-left">
+              Material
+            </th>
+
+            <th class="pb-4 text-center">
+              Qty
+            </th>
+
+            <th class="pb-4 text-right">
+              Unit Price
+            </th>
+
+            <th class="pb-4 text-right">
+              Total
+            </th>
+
+          </tr>
+        </thead>
+
+        <tbody>
+
+          <tr class="border-b">
+
+            <td class="py-4 font-semibold">
+              {quote.project_name}
+            </td>
+
+            <td class="py-4">
+              {quote.service || "Custom Quote"}
+            </td>
+
+            <td class="py-4">
+              {quote.material || "-"}
+            </td>
+
+            <td class="py-4 text-center">
+              {quantity}
+            </td>
+
+            <td class="py-4 text-right">
+              CAD ${unitPrice.toFixed(2)}
+            </td>
+
+            <td class="py-4 text-right font-semibold">
+              CAD ${quotedPrice.toFixed(2)}
+            </td>
+
+          </tr>
+
+        </tbody>
+
+      </table>
+
+    </div>
+
+  </div>
+
+  {
+    (quote.description || quote.internal_notes) && (
+      <div class="mt-8 rounded-2xl bg-white p-8 shadow">
+
+        <h2 class="mb-4 text-2xl font-bold">
+          Notes
+        </h2>
+
+        <p class="whitespace-pre-wrap text-slate-600">
+          {quote.description || quote.internal_notes}
+        </p>
+
+      </div>
+    )
+  }
+
+  <div class="mt-8 rounded-2xl bg-white p-8 shadow">
+
+    <div class="flex flex-wrap gap-4">
+
+      <button
+        type="button"
+        onclick="updateQuoteStatus('Draft')"
+        class="rounded-lg bg-slate-700 px-5 py-3 font-semibold text-white hover:bg-slate-800"
+      >
+        Draft
+      </button>
+
+      <button
+        type="button"
+        onclick="sendQuoteEmail()"
+        class="rounded-lg bg-blue-600 px-5 py-3 font-semibold text-white hover:bg-blue-700"
+      >
+        📧 Send Quote
+      </button>
+
+      {
+        approvalUrl && (
+          <a
+            href={`/q/${quote.approval_token}`}
+            target="_blank"
+            class="rounded-lg bg-green-600 px-5 py-3 font-semibold text-white hover:bg-green-700"
+          >
+            Open Customer Quote
+          </a>
+        )
+      }
+
+    </div>
+
+  </div>
+
+  <script define:vars={{ quoteId: quote.id }}>
+
+    window.updateQuoteStatus = async function (status) {
+      try {
+        const response = await fetch(
+          "/api/admin/update-quote-status",
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              quoteId,
+              status,
+            }),
+          }
+        );
+
+        const result = await response.json();
+
+        if (!response.ok || !result.success) {
+          alert(result.error || "Unable to update quote.");
+          return;
+        }
+
+        location.reload();
+      } catch (error) {
+        console.error(error);
+        alert("Unable to update quote.");
+      }
+    };
+
+    window.sendQuoteEmail = async function () {
+      try {
+        const response = await fetch(
+          "/api/admin/send-quote-email",
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              quoteId,
+            }),
+          }
+        );
+
+        const result = await response.json();
+
+        if (!response.ok || !result.success) {
+          alert(result.error || "Unable to send quote.");
+          return;
+        }
+
+        alert("Quote email sent.");
+        location.reload();
+      } catch (error) {
+        console.error(error);
+        alert("Unable to send quote.");
+      }
+    };
+
+  </script>
+
+</AdminLayout>

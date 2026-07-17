@@ -1,0 +1,45 @@
+---
+import MainLayout from "../../layouts/MainLayout.astro";
+---
+
+<MainLayout title="Track Your Order | Layer Forge">
+
+<section class="mx-auto max-w-2xl px-6 py-20">
+
+  <h1 class="mb-4 text-center text-4xl font-bold">
+    Track Your Order
+  </h1>
+
+  <p class="mb-10 text-center text-slate-600">
+    Enter your Layer Forge order number.
+  </p>
+
+  <form
+    action="/track/result"
+    method="GET"
+    class="rounded-2xl bg-white p-8 shadow"
+  >
+
+    <label class="mb-2 block font-semibold">
+      Order Number
+    </label>
+
+    <input
+      type="text"
+      name="order"
+      placeholder="LF000014"
+      class="w-full rounded-xl border p-4"
+      required
+    />
+
+    <button
+      class="mt-6 w-full rounded-xl bg-yellow-500 py-4 font-semibold text-white hover:bg-yellow-600"
+    >
+      Track Order
+    </button>
+
+  </form>
+
+</section>
+
+</MainLayout>

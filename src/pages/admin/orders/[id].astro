@@ -19,13 +19,15 @@ const order = await getOrder(id);
 <div class="mb-8 flex items-center justify-between">
 
   <div>
+
     <h1 class="text-4xl font-bold">
-      Order #{order.order_number ?? order.id.slice(0, 8)}
+      {"LF" + String(order.order_number).padStart(6, "0")}
     </h1>
 
     <p class="mt-2 text-slate-500">
       Placed on {new Date(order.created_at).toLocaleString()}
     </p>
+
   </div>
 
   <a
@@ -34,6 +36,32 @@ const order = await getOrder(id);
   >
     ← Back to Orders
   </a>
+
+</div>
+
+<div class="mb-8 rounded-2xl border border-blue-200 bg-blue-50 p-6">
+
+  <h2 class="mb-4 text-xl font-bold text-blue-700">
+    Customer Tracking
+  </h2>
+
+  <div
+    class="mb-4 rounded-lg bg-white p-3 font-mono text-sm break-all"
+  >
+    http://localhost:4321/t/{order.tracking_token}
+  </div>
+
+  <div class="flex gap-3">
+
+    <a
+      href={`/t/${order.tracking_token}`}
+      target="_blank"
+      class="rounded-lg bg-green-600 px-5 py-2 font-semibold text-white hover:bg-green-700"
+    >
+      🌐 Open Tracking Page
+    </a>
+
+  </div>
 
 </div>
 
@@ -125,16 +153,56 @@ const order = await getOrder(id);
           Payment
         </div>
 
-       <span
+   <span
   class={`rounded-full px-4 py-2 font-semibold ${
-    order.order_status === "Preparing"
+    order.payment_status === "Paid"
+      ? "bg-green-100 text-green-700"
+      : "bg-yellow-100 text-yellow-700"
+  }`}
+>
+  {order.payment_status}
+</span>
+
+      </div>
+
+      <div>
+
+        <div class="mt-8 rounded-2xl bg-white p-8 shadow">
+
+  <div class="mb-6 flex items-center justify-between">
+
+    <h2 class="text-2xl font-bold">
+      Internal Notes
+    </h2>
+
+    <button
+      type="button"
+      onclick="saveNotes()"
+      class="rounded-lg bg-yellow-500 px-5 py-2 font-semibold text-white hover:bg-yellow-600"
+    >
+      💾 Save Notes
+    </button>
+
+  </div>
+
+  <textarea
+    id="orderNotes"
+    rows="6"
+    class="w-full rounded-xl border p-4"
+  >{order.notes ?? ""}</textarea>
+
+</div>
+
+        <div class="mb-2 text-sm text-slate-500">
+          Production
+        </div>
+
+   <span
+  class={`rounded-full px-4 py-2 font-semibold ${
+    order.order_status === "New"
       ? "bg-yellow-100 text-yellow-700"
-      : order.order_status === "3D Printing"
+      : order.order_status === "In Progress"
       ? "bg-blue-100 text-blue-700"
-      : order.order_status === "Laser Engraving"
-      ? "bg-orange-100 text-orange-700"
-      : order.order_status === "UV Printing"
-      ? "bg-purple-100 text-purple-700"
       : order.order_status === "Ready"
       ? "bg-green-100 text-green-700"
       : order.order_status === "Shipped"
@@ -146,29 +214,12 @@ const order = await getOrder(id);
       : "bg-slate-100 text-slate-700"
   }`}
 >
-          {order.payment_status}
-        </span>
-
-      </div>
-
-      <div>
-
-        <div class="mb-2 text-sm text-slate-500">
-          Production
-        </div>
-
-        <span class={`rounded-full px-4 py-2 font-semibold ${
-          order.order_status === "Completed"
-            ? "bg-green-100 text-green-700"
-            : order.order_status === "Processing"
-            ? "bg-blue-100 text-blue-700"
-            : "bg-slate-100 text-slate-700"
-        }`}>
-          {order.order_status}
-        </span>
+  {order.order_status}
+</span>
 
       </div>
 <hr class="my-6" />
+
 
 <h3 class="mb-4 font-semibold">
   Update Status
@@ -178,40 +229,24 @@ const order = await getOrder(id);
 
   <button
     type="button"
-    onclick="updateStatus('Preparing')"
-    class="rounded-lg bg-slate-200 px-4 py-3 hover:bg-slate-300"
+    onclick="updateStatus('New')"
+    class="rounded-lg bg-yellow-500 px-4 py-3 font-semibold text-white hover:bg-yellow-600"
   >
-    🟡 Preparing
+    🆕 New
   </button>
 
   <button
     type="button"
-    onclick="updateStatus('3D Printing')"
-    class="rounded-lg bg-blue-500 px-4 py-3 text-white hover:bg-blue-600"
+    onclick="updateStatus('In Progress')"
+    class="rounded-lg bg-blue-600 px-4 py-3 font-semibold text-white hover:bg-blue-700"
   >
-    🖨️ 3D Printing
-  </button>
-
-  <button
-    type="button"
-    onclick="updateStatus('Laser Engraving')"
-    class="rounded-lg bg-orange-500 px-4 py-3 text-white hover:bg-orange-600"
-  >
-    🔥 Laser Engraving
-  </button>
-
-  <button
-    type="button"
-    onclick="updateStatus('UV Printing')"
-    class="rounded-lg bg-purple-600 px-4 py-3 text-white hover:bg-purple-700"
-  >
-    🎨 UV Printing
+    🔨 In Progress
   </button>
 
   <button
     type="button"
     onclick="updateStatus('Ready')"
-    class="rounded-lg bg-green-500 px-4 py-3 text-white hover:bg-green-600"
+    class="rounded-lg bg-green-600 px-4 py-3 font-semibold text-white hover:bg-green-700"
   >
     📦 Ready
   </button>
@@ -219,7 +254,7 @@ const order = await getOrder(id);
   <button
     type="button"
     onclick="updateStatus('Shipped')"
-    class="rounded-lg bg-indigo-600 px-4 py-3 text-white hover:bg-indigo-700"
+    class="rounded-lg bg-indigo-600 px-4 py-3 font-semibold text-white hover:bg-indigo-700"
   >
     🚚 Shipped
   </button>
@@ -227,7 +262,7 @@ const order = await getOrder(id);
   <button
     type="button"
     onclick="updateStatus('Completed')"
-    class="rounded-lg bg-emerald-700 px-4 py-3 text-white hover:bg-emerald-800"
+    class="rounded-lg bg-emerald-700 px-4 py-3 font-semibold text-white hover:bg-emerald-800"
   >
     ✅ Completed
   </button>
@@ -235,13 +270,12 @@ const order = await getOrder(id);
   <button
     type="button"
     onclick="updateStatus('Cancelled')"
-    class="rounded-lg bg-red-600 px-4 py-3 text-white hover:bg-red-700"
+    class="rounded-lg bg-red-600 px-4 py-3 font-semibold text-white hover:bg-red-700"
   >
     ❌ Cancelled
   </button>
 
 </div>
-
 
     </div>
 
@@ -339,7 +373,9 @@ const order = await getOrder(id);
 
 </div>
 
-<script define:vars={{ orderId: order.id }}>
+<script define:vars={{
+  orderId: order.id
+}}>
   window.updateStatus = async function (status) {
     try {
       const response = await fetch("/api/admin/update-order-status", {
@@ -366,6 +402,40 @@ const order = await getOrder(id);
       alert("Unable to update status.");
     }
   };
+
+  window.saveNotes = async function () {
+
+  const notes =
+    document.getElementById("orderNotes").value;
+
+  const response = await fetch(
+    "/api/admin/update-order-notes",
+    {
+      method: "POST",
+
+      headers: {
+        "Content-Type": "application/json",
+      },
+
+      body: JSON.stringify({
+        orderId,
+        notes,
+      }),
+    }
+  );
+
+  const result = await response.json();
+
+  if (result.success) {
+    alert("Notes saved.");
+  } else {
+    alert("Unable to save notes.");
+  }
+
+};
 </script>
+
+
+
 
 </AdminLayout>

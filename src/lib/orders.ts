@@ -1,4 +1,6 @@
 import { supabaseAdmin } from "./supabaseAdmin";
+import { generateTrackingToken } from "./tracking";
+import { ORDER_STATUS } from "./orderStatus";
 
 export interface CustomerInfo {
   firstName: string;
@@ -32,34 +34,38 @@ export async function createOrder(
   customer: CustomerInfo,
   subtotal: number
 ) {
+  const trackingToken = generateTrackingToken();
+
   const { data, error } = await supabaseAdmin
     .from("orders")
-  .insert({
-  customer_name: `${customer.firstName} ${customer.lastName}`,
+    .insert({
+      tracking_token: trackingToken,
 
-  email: customer.email,
-  phone: customer.phone,
+      customer_name: `${customer.firstName} ${customer.lastName}`,
 
-  shipping_address: customer.address,
-  city: customer.city,
-  province: customer.province,
-  postal_code: customer.postalCode,
-  country: "Canada",
+      email: customer.email,
+      phone: customer.phone,
 
-  unit: customer.unit ?? "",
+      shipping_address: customer.address,
+      city: customer.city,
+      province: customer.province,
+      postal_code: customer.postalCode,
+      country: "Canada",
 
-  delivery_method: customer.deliveryMethod,
+      unit: customer.unit ?? "",
 
- material_summary: customer.materialSummary ?? "",
+      delivery_method: customer.deliveryMethod,
 
-  subtotal,
-  shipping: 0,
-  tax: 0,
-  total: subtotal,
+      material_summary: customer.materialSummary ?? "",
 
-  payment_status: "Pending",
-  order_status: "Pending",
-})
+      subtotal,
+      shipping: 0,
+      tax: 0,
+      total: subtotal,
+
+      payment_status: "Pending",
+      order_status: ORDER_STATUS.NEW,
+    })
     .select()
     .single();
 
@@ -121,7 +127,7 @@ export async function markOrderPaid(
     .from("orders")
     .update({
       payment_status: "Paid",
-      order_status: "Processing",
+      order_status: ORDER_STATUS.IN_PROGRESS,
       stripe_payment_intent: paymentIntent,
     })
     .eq("id", orderId);
@@ -162,4 +168,3 @@ export async function getOrder(id: string) {
 
   return data;
 }
-

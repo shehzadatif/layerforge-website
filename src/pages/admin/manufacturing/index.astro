@@ -1,0 +1,146 @@
+---
+import AdminLayout from "../../../layouts/AdminLayout.astro";
+import { getOrders } from "../../../lib/orders";
+import ProductionCard from "../../../components/admin/ProductionCard.astro";
+
+const orders = await getOrders();
+
+const activeOrders = orders.filter(
+  (order) =>
+    order.order_status !== "Completed" &&
+    order.order_status !== "Cancelled"
+);
+
+const stages = [
+  "New",
+  "In Progress",
+  "Ready",
+  "Shipped",
+];
+
+const grouped = stages.map((stage) => ({
+  stage,
+  orders: activeOrders.filter(
+    (order) => order.order_status === stage
+  ),
+}));
+---
+
+<AdminLayout
+  title="Manufacturing"
+  active="manufacturing"
+>
+
+<h1 class="mb-2 text-4xl font-bold">
+  Manufacturing
+</h1>
+
+<p class="mb-8 text-slate-500">
+  Track every active production job.
+</p>
+
+<div class="mb-8 grid gap-6 md:grid-cols-2 xl:grid-cols-5">
+
+  <div class="rounded-2xl bg-white p-6 shadow">
+    <div class="text-sm text-slate-500">
+      New Orders
+    </div>
+
+    <div class="mt-2 text-3xl font-bold">
+      {activeOrders.filter(o => o.order_status === "New").length}
+    </div>
+  </div>
+
+  <div class="rounded-2xl bg-white p-6 shadow">
+    <div class="text-sm text-slate-500">
+      In Progress
+    </div>
+
+    <div class="mt-2 text-3xl font-bold">
+      {activeOrders.filter(o => o.order_status === "In Progress").length}
+    </div>
+  </div>
+
+  <div class="rounded-2xl bg-white p-6 shadow">
+    <div class="text-sm text-slate-500">
+      Ready
+    </div>
+
+    <div class="mt-2 text-3xl font-bold">
+      {activeOrders.filter(o => o.order_status === "Ready").length}
+    </div>
+  </div>
+
+  <div class="rounded-2xl bg-white p-6 shadow">
+    <div class="text-sm text-slate-500">
+      Shipped
+    </div>
+
+    <div class="mt-2 text-3xl font-bold">
+      {activeOrders.filter(o => o.order_status === "Shipped").length}
+    </div>
+  </div>
+
+  <div class="rounded-2xl bg-yellow-400 p-6 shadow">
+
+    <div class="text-sm font-semibold text-slate-900">
+      Active Orders
+    </div>
+
+    <div class="mt-2 text-3xl font-bold text-slate-900">
+      {activeOrders.length}
+    </div>
+
+  </div>
+
+</div>
+
+<div class="grid gap-6 lg:grid-cols-3">
+
+  {
+    grouped.map((group) => (
+
+      <div class="rounded-2xl bg-white shadow">
+
+        <div class="rounded-t-2xl bg-slate-900 px-6 py-4 text-white">
+
+          <div class="flex items-center justify-between">
+
+            <h2 class="text-xl font-bold">
+              {group.stage}
+            </h2>
+
+            <span class="rounded-full bg-yellow-400 px-3 py-1 font-semibold text-slate-900">
+              {group.orders.length}
+            </span>
+
+          </div>
+
+        </div>
+
+        <div class="space-y-4 p-5">
+
+          {
+            group.orders.length === 0
+              ? (
+                <p class="text-sm text-slate-400">
+                  No orders.
+                </p>
+              )
+              : group.orders.map((order) => (
+
+                <ProductionCard order={order} />
+
+              ))
+          }
+
+        </div>
+
+      </div>
+
+    ))
+  }
+
+</div>
+
+</AdminLayout>

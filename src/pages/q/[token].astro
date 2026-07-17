@@ -1,0 +1,361 @@
+---
+import MainLayout from "../../layouts/MainLayout.astro";
+import { supabaseAdmin } from "../../lib/supabaseAdmin";
+
+const { token } = Astro.params;
+
+if (!token) {
+  return Astro.redirect("/");
+}
+
+const { data: quote, error } = await supabaseAdmin
+  .from("quotes")
+  .select("*")
+  .eq("approval_token", token)
+  .maybeSingle();
+
+if (error) {
+  console.error("Unable to load public quote:", error);
+}
+
+if (!quote) {
+  return Astro.redirect("/");
+}
+
+const quoteNumber = quote.quote_number
+  ? `LF-${String(quote.quote_number).padStart(4, "0")}`
+  : "Layer Forge Quote";
+
+const quantity = Number(quote.quantity ?? 1);
+
+const quotedPrice = Number(
+  quote.quoted_price ??
+  quote.estimated_price ??
+  0
+);
+
+const projectDetails =
+  quote.project_details &&
+  typeof quote.project_details === "object"
+    ? quote.project_details
+    : {};
+
+const unitPrice = Number(
+  projectDetails.unit_price ??
+  (quantity > 0 ? quotedPrice / quantity : quotedPrice)
+);
+---
+
+<MainLayout title={`${quoteNumber} | Layer Forge`}>
+
+  <section class="mx-auto max-w-5xl px-6 py-16">
+
+    <div class="rounded-2xl bg-white p-8 shadow-lg sm:p-10">
+
+      <div class="mb-10 flex flex-col gap-6 border-b pb-8 sm:flex-row sm:justify-between">
+
+        <div>
+          <div class="text-3xl font-bold">
+            Layer Forge
+          </div>
+
+          <div class="mt-1 text-sm text-slate-500">
+            layerforgecanada.com
+          </div>
+        </div>
+
+        <div class="sm:text-right">
+          <div class="text-sm font-semibold uppercase tracking-wide text-slate-500">
+            Quote
+          </div>
+
+          <h1 class="mt-1 text-4xl font-bold">
+            {quoteNumber}
+          </h1>
+
+          <div class="mt-2 text-sm text-slate-500">
+            {new Date(quote.created_at).toLocaleDateString("en-CA", {
+              year: "numeric",
+              month: "long",
+              day: "numeric",
+            })}
+          </div>
+        </div>
+
+      </div>
+
+      <div class="mb-10 rounded-2xl bg-slate-50 p-6">
+
+        <div class="text-sm font-semibold uppercase tracking-wide text-slate-500">
+          Prepared For
+        </div>
+
+        <div class="mt-2 text-xl font-bold">
+          {quote.name}
+        </div>
+
+        <div class="mt-1 text-slate-600">
+          {quote.email}
+        </div>
+
+        {
+          quote.phone && (
+            <div class="mt-1 text-slate-600">
+              {quote.phone}
+            </div>
+          )
+        }
+
+      </div>
+
+      <div class="overflow-x-auto">
+
+        <h2 class="mb-6 text-2xl font-bold">
+          Quote Details
+        </h2>
+
+        <table class="min-w-full">
+
+          <thead>
+            <tr class="border-b bg-slate-50">
+              <th class="px-4 py-4 text-left">Project</th>
+              <th class="px-4 py-4 text-left">Material</th>
+              <th class="px-4 py-4 text-center">Qty</th>
+              <th class="px-4 py-4 text-right">Unit Price</th>
+              <th class="px-4 py-4 text-right">Total</th>
+            </tr>
+          </thead>
+
+          <tbody>
+            <tr class="border-b">
+              <td class="px-4 py-4 font-semibold">
+                {quote.project_name}
+              </td>
+
+              <td class="px-4 py-4 text-slate-600">
+                {quote.material || "-"}
+              </td>
+
+              <td class="px-4 py-4 text-center">
+                {quantity}
+              </td>
+
+              <td class="px-4 py-4 text-right">
+                CAD ${unitPrice.toFixed(2)}
+              </td>
+
+              <td class="px-4 py-4 text-right font-semibold">
+                CAD ${quotedPrice.toFixed(2)}
+              </td>
+            </tr>
+          </tbody>
+
+        </table>
+
+      </div>
+
+      {
+        (quote.description || quote.internal_notes) && (
+          <div class="mt-8 rounded-2xl border border-slate-200 p-6">
+
+            <h2 class="mb-3 text-xl font-bold">
+              Project Notes
+            </h2>
+
+            <p class="whitespace-pre-wrap text-slate-600">
+              {quote.description || quote.internal_notes}
+            </p>
+
+          </div>
+        )
+      }
+
+      <div class="mt-10 ml-auto max-w-md rounded-2xl bg-slate-50 p-6">
+
+        <div class="flex justify-between text-2xl font-bold">
+          <span>Total</span>
+          <span>CAD ${quotedPrice.toFixed(2)}</span>
+        </div>
+
+        <p class="mt-2 text-sm text-slate-500">
+          Applicable taxes are calculated during secure checkout.
+        </p>
+
+      </div>
+
+      <div class="mt-10 rounded-2xl border border-slate-200 bg-slate-50 p-8">
+
+        <h2 class="mb-4 text-2xl font-bold">
+          Terms & Conditions
+        </h2>
+
+        <ul class="list-disc space-y-2 pl-6 text-slate-600">
+          <li>This quote is valid for 30 days.</li>
+          <li>Production begins after full payment is received.</li>
+          <li>Custom products are non-refundable once production begins.</li>
+          <li>Production time may vary based on project complexity.</li>
+        </ul>
+
+      </div>
+
+      <div class="mt-10">
+
+        {
+          quote.status === "Approved" ? (
+
+            <div class="rounded-2xl border border-green-200 bg-green-50 p-8">
+
+              <h2 class="text-2xl font-bold text-green-800">
+                Quote Accepted
+              </h2>
+
+              <p class="mt-2 text-green-700">
+                Continue to secure payment to place your order.
+              </p>
+
+              <button
+                type="button"
+                onclick="proceedToPayment()"
+                class="mt-6 rounded-xl bg-yellow-500 px-8 py-4 font-semibold text-slate-900 hover:bg-yellow-400"
+              >
+                Proceed to Secure Payment
+              </button>
+
+            </div>
+
+          ) : quote.status === "Rejected" ? (
+
+            <div class="rounded-2xl border border-red-200 bg-red-50 p-8">
+
+              <h2 class="text-2xl font-bold text-red-800">
+                Quote Declined
+              </h2>
+
+              <p class="mt-2 text-red-700">
+                This quote has been declined.
+              </p>
+
+            </div>
+
+          ) : quote.status === "Converted" ? (
+
+            <div class="rounded-2xl border border-green-200 bg-green-50 p-8">
+
+              <h2 class="text-2xl font-bold text-green-800">
+                Payment Completed
+              </h2>
+
+              <p class="mt-2 text-green-700">
+                Your quote has been converted into an order.
+              </p>
+
+            </div>
+
+          ) : (
+
+            <div class="rounded-2xl border border-slate-200 p-8">
+
+              <h2 class="text-2xl font-bold">
+                Review This Quote
+              </h2>
+
+              <div class="mt-6 flex flex-wrap gap-4">
+
+                <button
+                  type="button"
+                  onclick="approveQuote()"
+                  class="rounded-xl bg-green-600 px-8 py-4 font-semibold text-white hover:bg-green-700"
+                >
+                  ✅ Accept Quote
+                </button>
+
+                <button
+                  type="button"
+                  onclick="rejectQuote()"
+                  class="rounded-xl bg-red-600 px-8 py-4 font-semibold text-white hover:bg-red-700"
+                >
+                  ❌ Decline Quote
+                </button>
+
+              </div>
+
+            </div>
+
+          )
+        }
+
+      </div>
+
+    </div>
+
+  </section>
+
+  <script define:vars={{ quoteId: quote.id }}>
+
+    async function updateQuote(status) {
+      try {
+        const response = await fetch("/api/quotes/respond", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            quoteId,
+            status,
+          }),
+        });
+
+        const result = await response.json();
+
+        if (!response.ok || !result.success) {
+          alert(result.error || "Unable to update quote.");
+          return;
+        }
+
+        location.reload();
+      } catch (error) {
+        console.error(error);
+        alert("Unable to update quote.");
+      }
+    }
+
+    window.approveQuote = function () {
+      updateQuote("Approved");
+    };
+
+    window.rejectQuote = function () {
+      updateQuote("Rejected");
+    };
+
+    window.proceedToPayment = async function () {
+      try {
+        const response = await fetch(
+          "/api/create-quote-checkout-session",
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              quoteId,
+            }),
+          }
+        );
+
+        const result = await response.json();
+
+        if (!response.ok || !result.url) {
+          alert(result.error || "Unable to start payment.");
+          return;
+        }
+
+        window.location.href = result.url;
+      } catch (error) {
+        console.error(error);
+        alert("Unable to start payment.");
+      }
+    };
+
+  </script>
+
+</MainLayout>
