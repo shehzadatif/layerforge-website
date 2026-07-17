@@ -1,0 +1,428 @@
+---
+import AdminLayout from "../../layouts/AdminLayout.astro";
+import { supabaseAdmin } from "../../lib/supabaseAdmin";
+
+const { data: orders, error: ordersError } =
+  await supabaseAdmin
+    .from("orders")
+    .select(`
+      id,
+      customer_name,
+      email,
+      phone,
+      total,
+      payment_status,
+      created_at
+    `)
+    .order("created_at", {
+      ascending: false,
+    });
+
+const { data: quotes, error: quotesError } =
+  await supabaseAdmin
+    .from("quotes")
+    .select(`
+      id,
+      name,
+      email,
+      phone,
+      quoted_price,
+      estimated_price,
+      created_at
+    `)
+    .order("created_at", {
+      ascending: false,
+    });
+
+if (ordersError) {
+  console.error(
+    "Unable to load customer orders:",
+    ordersError
+  );
+}
+
+if (quotesError) {
+  console.error(
+    "Unable to load customer quotes:",
+    quotesError
+  );
+}
+
+type CustomerRecord = {
+  name: string;
+  email: string;
+  phone: string;
+  orderCount: number;
+  quoteCount: number;
+  revenue: number;
+  lastActivity: string | null;
+};
+
+const customerMap =
+  new Map<string, CustomerRecord>();
+
+for (const order of orders ?? []) {
+  const email = String(order.email ?? "")
+    .trim()
+    .toLowerCase();
+
+  if (!email) continue;
+
+  const customer =
+    customerMap.get(email) ?? {
+      name:
+        order.customer_name ||
+        "Unknown Customer",
+      email,
+      phone: order.phone || "",
+      orderCount: 0,
+      quoteCount: 0,
+      revenue: 0,
+      lastActivity: null,
+    };
+
+  customer.name =
+    order.customer_name ||
+    customer.name;
+
+  customer.phone =
+    order.phone ||
+    customer.phone;
+
+  customer.orderCount += 1;
+
+  if (
+    order.payment_status === "Paid" &&
+    order.total !== null
+  ) {
+    customer.revenue +=
+      Number(order.total);
+  }
+
+  if (
+    !customer.lastActivity ||
+    new Date(order.created_at).getTime() >
+      new Date(
+        customer.lastActivity
+      ).getTime()
+  ) {
+    customer.lastActivity =
+      order.created_at;
+  }
+
+  customerMap.set(email, customer);
+}
+
+for (const quote of quotes ?? []) {
+  const email = String(quote.email ?? "")
+    .trim()
+    .toLowerCase();
+
+  if (!email) continue;
+
+  const customer =
+    customerMap.get(email) ?? {
+      name:
+        quote.name ||
+        "Unknown Customer",
+      email,
+      phone: quote.phone || "",
+      orderCount: 0,
+      quoteCount: 0,
+      revenue: 0,
+      lastActivity: null,
+    };
+
+  customer.name =
+    quote.name ||
+    customer.name;
+
+  customer.phone =
+    quote.phone ||
+    customer.phone;
+
+  customer.quoteCount += 1;
+
+  if (
+    !customer.lastActivity ||
+    new Date(quote.created_at).getTime() >
+      new Date(
+        customer.lastActivity
+      ).getTime()
+  ) {
+    customer.lastActivity =
+      quote.created_at;
+  }
+
+  customerMap.set(email, customer);
+}
+
+const customerList =
+  Array.from(customerMap.values())
+    .sort((a, b) => {
+      if (!a.lastActivity) return 1;
+      if (!b.lastActivity) return -1;
+
+      return (
+        new Date(
+          b.lastActivity
+        ).getTime() -
+        new Date(
+          a.lastActivity
+        ).getTime()
+      );
+    });
+
+const totalOrders =
+  customerList.reduce(
+    (sum, customer) =>
+      sum + customer.orderCount,
+    0
+  );
+
+const totalQuotes =
+  customerList.reduce(
+    (sum, customer) =>
+      sum + customer.quoteCount,
+    0
+  );
+
+const totalRevenue =
+  customerList.reduce(
+    (sum, customer) =>
+      sum + customer.revenue,
+    0
+  );
+---
+
+<AdminLayout
+  title="Customers"
+  active="customers"
+>
+
+  <div class="mb-8">
+
+    <h1 class="text-4xl font-bold">
+      Customers
+    </h1>
+
+    <p class="mt-2 text-slate-500">
+      View customer activity, orders and revenue.
+    </p>
+
+  </div>
+
+  <div class="mb-8 grid gap-6 md:grid-cols-4">
+
+    <div class="rounded-2xl bg-white p-6 shadow">
+
+      <div class="text-sm text-slate-500">
+        Total Customers
+      </div>
+
+      <div class="mt-2 text-3xl font-bold">
+        {customerList.length}
+      </div>
+
+    </div>
+
+    <div class="rounded-2xl bg-white p-6 shadow">
+
+      <div class="text-sm text-slate-500">
+        Total Orders
+      </div>
+
+      <div class="mt-2 text-3xl font-bold">
+        {totalOrders}
+      </div>
+
+    </div>
+
+    <div class="rounded-2xl bg-white p-6 shadow">
+
+      <div class="text-sm text-slate-500">
+        Total Quotes
+      </div>
+
+      <div class="mt-2 text-3xl font-bold">
+        {totalQuotes}
+      </div>
+
+    </div>
+
+    <div class="rounded-2xl bg-yellow-400 p-6 shadow">
+
+      <div class="text-sm font-semibold text-slate-800">
+        Paid Revenue
+      </div>
+
+      <div class="mt-2 text-3xl font-bold">
+        CAD ${totalRevenue.toFixed(2)}
+      </div>
+
+    </div>
+
+  </div>
+
+  <div class="mb-6 rounded-2xl bg-white p-6 shadow">
+
+    <input
+      id="customerSearch"
+      type="search"
+      placeholder="Search customer, email or phone..."
+      class="w-full rounded-xl border px-4 py-3"
+    />
+
+  </div>
+
+  <div class="overflow-x-auto rounded-2xl bg-white shadow">
+
+    <table class="min-w-full">
+
+      <thead class="bg-slate-900 text-white">
+
+        <tr>
+
+          <th class="px-6 py-4 text-left">
+            Customer
+          </th>
+
+          <th class="px-6 py-4 text-left">
+            Phone
+          </th>
+
+          <th class="px-6 py-4 text-center">
+            Orders
+          </th>
+
+          <th class="px-6 py-4 text-center">
+            Quotes
+          </th>
+
+          <th class="px-6 py-4 text-right">
+            Paid Revenue
+          </th>
+
+          <th class="px-6 py-4 text-left">
+            Last Activity
+          </th>
+
+        </tr>
+
+      </thead>
+
+      <tbody id="customerTableBody">
+
+        {
+          customerList.length > 0 ? (
+            customerList.map(
+              (customer) => (
+
+                <tr
+                  class="customer-row border-b hover:bg-slate-50"
+                  data-search={`${customer.name} ${customer.email} ${customer.phone}`.toLowerCase()}
+                >
+
+                  <td class="px-6 py-5">
+
+                    <div class="font-semibold">
+                      {customer.name}
+                    </div>
+
+                    <div class="text-sm text-slate-500">
+                      {customer.email}
+                    </div>
+
+                  </td>
+
+                  <td class="px-6 py-5">
+                    {customer.phone || "-"}
+                  </td>
+
+                  <td class="px-6 py-5 text-center font-semibold">
+                    {customer.orderCount}
+                  </td>
+
+                  <td class="px-6 py-5 text-center font-semibold">
+                    {customer.quoteCount}
+                  </td>
+
+                  <td class="px-6 py-5 text-right font-semibold">
+                    CAD ${customer.revenue.toFixed(2)}
+                  </td>
+
+                  <td class="px-6 py-5">
+
+                    {
+                      customer.lastActivity
+                        ? new Date(
+                            customer.lastActivity
+                          ).toLocaleDateString(
+                            "en-CA"
+                          )
+                        : "-"
+                    }
+
+                  </td>
+
+                </tr>
+
+              )
+            )
+          ) : (
+            <tr>
+              <td
+                colspan="6"
+                class="px-6 py-12 text-center text-slate-500"
+              >
+                No customers found.
+              </td>
+            </tr>
+          )
+        }
+
+      </tbody>
+
+    </table>
+
+  </div>
+
+  <script>
+    const customerSearch =
+      document.getElementById(
+        "customerSearch"
+      );
+
+    const customerRows =
+      document.querySelectorAll(
+        ".customer-row"
+      );
+
+    customerSearch?.addEventListener(
+      "input",
+      () => {
+        const searchValue =
+          customerSearch.value
+            .trim()
+            .toLowerCase();
+
+        customerRows.forEach(
+          (row) => {
+            const searchableText =
+              row.getAttribute(
+                "data-search"
+              ) ?? "";
+
+            row.classList.toggle(
+              "hidden",
+              !searchableText.includes(
+                searchValue
+              )
+            );
+          }
+        );
+      }
+    );
+  </script>
+
+</AdminLayout>

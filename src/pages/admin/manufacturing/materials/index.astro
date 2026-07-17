@@ -1,6 +1,6 @@
 ---
-import AdminLayout from "../../../layouts/AdminLayout.astro";
-import { supabaseAdmin } from "../../../lib/supabaseAdmin";
+import AdminLayout from "../../../../layouts/AdminLayout.astro";
+import { supabaseAdmin } from "../../../../lib/supabaseAdmin";
 
 const { data: materials } = await supabaseAdmin
   .from("materials")

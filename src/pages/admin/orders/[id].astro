@@ -9,6 +9,13 @@ if (!id) {
 }
 
 const order = await getOrder(id);
+
+const baseUrl =
+  import.meta.env.SITE ??
+  "http://localhost:4321";
+
+const trackingUrl =
+  `${baseUrl}/t/${order.tracking_token}`;
 ---
 
 <AdminLayout
@@ -48,7 +55,7 @@ const order = await getOrder(id);
   <div
     class="mb-4 rounded-lg bg-white p-3 font-mono text-sm break-all"
   >
-    http://localhost:4321/t/{order.tracking_token}
+    {trackingUrl}
   </div>
 
   <div class="flex gap-3">
