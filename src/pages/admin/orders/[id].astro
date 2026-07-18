@@ -23,426 +23,689 @@ const trackingUrl =
   active="orders"
 >
 
-<div class="mb-8 flex items-center justify-between">
+  <!-- Page Header -->
 
-  <div>
+  <div class="mb-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
 
-    <h1 class="text-4xl font-bold">
-      {"LF" + String(order.order_number).padStart(6, "0")}
-    </h1>
+    <div>
 
-    <p class="mt-2 text-slate-500">
-      Placed on {new Date(order.created_at).toLocaleString()}
-    </p>
+      <h1 class="text-4xl font-bold">
+        {"LF" + String(order.order_number).padStart(6, "0")}
+      </h1>
 
-  </div>
+      <p class="mt-2 text-slate-500">
+        Placed on {new Date(order.created_at).toLocaleString()}
+      </p>
 
-  <a
-    href="/admin/orders"
-    class="rounded-xl bg-slate-900 px-5 py-3 font-semibold text-white hover:bg-slate-700"
-  >
-    ← Back to Orders
-  </a>
-
-</div>
-
-<div class="mb-8 rounded-2xl border border-blue-200 bg-blue-50 p-6">
-
-  <h2 class="mb-4 text-xl font-bold text-blue-700">
-    Customer Tracking
-  </h2>
-
-  <div
-    class="mb-4 rounded-lg bg-white p-3 font-mono text-sm break-all"
-  >
-    {trackingUrl}
-  </div>
-
-  <div class="flex gap-3">
+    </div>
 
     <a
-      href={`/t/${order.tracking_token}`}
+      href="/admin/orders"
+      class="rounded-xl bg-slate-900 px-5 py-3 text-center font-semibold text-white hover:bg-slate-700"
+    >
+      ← Back to Orders
+    </a>
+
+  </div>
+
+  <!-- Customer Tracking -->
+
+  <div class="mb-8 rounded-2xl border border-blue-200 bg-blue-50 p-6">
+
+    <h2 class="mb-4 text-xl font-bold text-blue-700">
+      Customer Tracking
+    </h2>
+
+    <div class="mb-4 break-all rounded-lg bg-white p-3 font-mono text-sm">
+      {trackingUrl}
+    </div>
+
+    <a
+      href={trackingUrl}
       target="_blank"
-      class="rounded-lg bg-green-600 px-5 py-2 font-semibold text-white hover:bg-green-700"
+      rel="noopener noreferrer"
+      class="inline-block rounded-lg bg-green-600 px-5 py-2 font-semibold text-white hover:bg-green-700"
     >
       🌐 Open Tracking Page
     </a>
 
   </div>
 
-</div>
+  <!-- Customer, Delivery and Status -->
 
-<div class="grid gap-8 lg:grid-cols-3">
+  <div class="grid gap-8 lg:grid-cols-3">
 
-  <!-- Customer -->
+    <!-- Customer -->
 
-  <div class="rounded-2xl bg-white p-8 shadow">
+    <div class="rounded-2xl bg-white p-8 shadow">
 
-    <h2 class="mb-6 text-2xl font-bold">
-      Customer
-    </h2>
+      <h2 class="mb-6 text-2xl font-bold">
+        Customer
+      </h2>
 
-    <div class="space-y-3">
+      <div class="space-y-3">
 
-      <p>
-        <span class="font-semibold">Name:</span><br />
-        {order.customer_name}
-      </p>
+        <p>
+          <span class="font-semibold">Name:</span><br />
+          {order.customer_name || "-"}
+        </p>
 
-      <p>
-        <span class="font-semibold">Email:</span><br />
-        {order.email}
-      </p>
+        <p>
+          <span class="font-semibold">Email:</span><br />
+          {order.email || "-"}
+        </p>
 
-      <p>
-        <span class="font-semibold">Phone:</span><br />
-        {order.phone}
-      </p>
+        <p>
+          <span class="font-semibold">Phone:</span><br />
+          {order.phone || "-"}
+        </p>
+
+      </div>
+
+    </div>
+
+    <!-- Delivery -->
+
+    <div class="rounded-2xl bg-white p-8 shadow">
+
+      <h2 class="mb-6 text-2xl font-bold">
+        Delivery
+      </h2>
+
+      <div class="space-y-3">
+
+        <p>
+          <span class="font-semibold">Method:</span><br />
+          {order.delivery_method || "-"}
+        </p>
+
+        <p>
+          <span class="font-semibold">Address:</span><br />
+          {order.shipping_address || "-"}
+        </p>
+
+        {
+          order.unit && (
+            <p>
+              <span class="font-semibold">Unit:</span><br />
+              {order.unit}
+            </p>
+          )
+        }
+
+        <p>
+          {[order.city, order.province]
+            .filter(Boolean)
+            .join(", ") || "-"}
+        </p>
+
+        <p>
+          {order.postal_code || "-"}
+        </p>
+
+      </div>
+
+    </div>
+
+    <!-- Status -->
+
+    <div class="rounded-2xl bg-white p-8 shadow">
+
+      <h2 class="mb-6 text-2xl font-bold">
+        Status
+      </h2>
+
+      <div class="space-y-6">
+
+        <div>
+
+          <div class="mb-2 text-sm text-slate-500">
+            Payment
+          </div>
+
+          <span
+            class={`rounded-full px-4 py-2 font-semibold ${
+              order.payment_status === "Paid"
+                ? "bg-green-100 text-green-700"
+                : "bg-yellow-100 text-yellow-700"
+            }`}
+          >
+            {order.payment_status}
+          </span>
+
+        </div>
+
+        <div>
+
+          <div class="mb-2 text-sm text-slate-500">
+            Production
+          </div>
+
+          <span
+            class={`rounded-full px-4 py-2 font-semibold ${
+              order.order_status === "New"
+                ? "bg-yellow-100 text-yellow-700"
+                : order.order_status === "In Progress"
+                ? "bg-blue-100 text-blue-700"
+                : order.order_status === "Ready"
+                ? "bg-green-100 text-green-700"
+                : order.order_status === "Shipped"
+                ? "bg-indigo-100 text-indigo-700"
+                : order.order_status === "Completed"
+                ? "bg-emerald-100 text-emerald-700"
+                : order.order_status === "Cancelled"
+                ? "bg-red-100 text-red-700"
+                : "bg-slate-100 text-slate-700"
+            }`}
+          >
+            {order.order_status}
+          </span>
+
+        </div>
+
+        <hr />
+
+        <div>
+
+          <h3 class="mb-4 font-semibold">
+            Update Status
+          </h3>
+
+          <div class="grid grid-cols-2 gap-3">
+
+            <button
+              type="button"
+              onclick="updateStatus('New')"
+              class="rounded-lg bg-yellow-500 px-4 py-3 font-semibold text-white hover:bg-yellow-600"
+            >
+              🆕 New
+            </button>
+
+            <button
+              type="button"
+              onclick="updateStatus('In Progress')"
+              class="rounded-lg bg-blue-600 px-4 py-3 font-semibold text-white hover:bg-blue-700"
+            >
+              🔨 In Progress
+            </button>
+
+            <button
+              type="button"
+              onclick="updateStatus('Ready')"
+              class="rounded-lg bg-green-600 px-4 py-3 font-semibold text-white hover:bg-green-700"
+            >
+              📦 Ready
+            </button>
+
+            <button
+              type="button"
+              onclick="updateStatus('Shipped')"
+              class="rounded-lg bg-indigo-600 px-4 py-3 font-semibold text-white hover:bg-indigo-700"
+            >
+              🚚 Shipped
+            </button>
+
+            <button
+              type="button"
+              onclick="updateStatus('Completed')"
+              class="rounded-lg bg-emerald-700 px-4 py-3 font-semibold text-white hover:bg-emerald-800"
+            >
+              ✅ Completed
+            </button>
+
+            <button
+              type="button"
+              onclick="updateStatus('Cancelled')"
+              class="rounded-lg bg-red-600 px-4 py-3 font-semibold text-white hover:bg-red-700"
+            >
+              ❌ Cancelled
+            </button>
+
+          </div>
+
+        </div>
+
+      </div>
 
     </div>
 
   </div>
 
-  <!-- Shipping -->
+  <!-- Internal Notes -->
 
-  <div class="rounded-2xl bg-white p-8 shadow">
+  <div class="mt-8 rounded-2xl bg-white p-8 shadow">
+
+    <div class="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+
+      <h2 class="text-2xl font-bold">
+        Internal Notes
+      </h2>
+
+      <button
+        type="button"
+        onclick="saveNotes()"
+        class="rounded-lg bg-yellow-500 px-5 py-2 font-semibold text-slate-900 hover:bg-yellow-400"
+      >
+        💾 Save Notes
+      </button>
+
+    </div>
+
+    <textarea
+      id="orderNotes"
+      rows="6"
+      class="w-full rounded-xl border p-4"
+      placeholder="Internal production notes..."
+    >{order.notes ?? ""}</textarea>
+
+  </div>
+
+  <!-- Products -->
+
+  <div class="mt-8 overflow-x-auto rounded-2xl bg-white p-8 shadow">
 
     <h2 class="mb-6 text-2xl font-bold">
-      Delivery
+      Products
     </h2>
 
-    <div class="space-y-3">
+    <table class="min-w-full">
 
-      <p>
-        <span class="font-semibold">Method:</span><br />
-        {order.delivery_method}
-      </p>
+      <thead>
 
-      <p>
-        <span class="font-semibold">Address:</span><br />
-        {order.shipping_address}
-      </p>
+        <tr class="border-b">
 
-      {
-        order.unit && (
-          <p>
-            <span class="font-semibold">Unit:</span><br />
-            {order.unit}
-          </p>
-        )
-      }
+          <th class="pb-4 text-left">
+            Product
+          </th>
 
-      <p>
-        {order.city}, {order.province}
-      </p>
+          <th class="pb-4 text-left">
+            Material
+          </th>
 
-      <p>
-        {order.postal_code}
-      </p>
+          <th class="pb-4 text-center">
+            Qty
+          </th>
 
+          <th class="pb-4 text-right">
+            Unit Price
+          </th>
+
+          <th class="pb-4 text-right">
+            Total
+          </th>
+
+        </tr>
+
+      </thead>
+
+      <tbody>
+
+        {
+          order.order_items?.length > 0 ? (
+            order.order_items.map((item: any) => (
+
+              <tr class="border-b">
+
+                <td class="py-4">
+                  {item.product_name}
+                </td>
+
+                <td class="py-4">
+                  {item.material || "-"}
+                </td>
+
+                <td class="py-4 text-center">
+                  {item.quantity}
+                </td>
+
+                <td class="py-4 text-right">
+                  CAD ${Number(item.unit_price).toFixed(2)}
+                </td>
+
+                <td class="py-4 text-right font-semibold">
+                  CAD ${Number(item.total_price).toFixed(2)}
+                </td>
+
+              </tr>
+
+            ))
+          ) : (
+            <tr>
+              <td
+                colspan="5"
+                class="py-8 text-center text-slate-500"
+              >
+                No products found.
+              </td>
+            </tr>
+          )
+        }
+
+      </tbody>
+
+    </table>
+
+  </div>
+
+  <!-- Totals -->
+
+  <div class="mt-8 ml-auto w-full max-w-md rounded-2xl bg-white p-8 shadow">
+
+    <div class="mb-4 flex justify-between">
+      <span>Subtotal</span>
+
+      <span>
+        CAD ${Number(order.subtotal ?? 0).toFixed(2)}
+      </span>
+    </div>
+
+    <div class="mb-4 flex justify-between">
+      <span>Shipping</span>
+
+      <span>
+        CAD ${Number(order.shipping ?? 0).toFixed(2)}
+      </span>
+    </div>
+
+    <div class="mb-4 flex justify-between">
+      <span>Tax</span>
+
+      <span>
+        CAD ${Number(order.tax ?? 0).toFixed(2)}
+      </span>
+    </div>
+
+    <hr class="my-6" />
+
+    <div class="flex justify-between text-2xl font-bold">
+      <span>Total</span>
+
+      <span>
+        CAD ${Number(order.total ?? 0).toFixed(2)}
+      </span>
     </div>
 
   </div>
 
-  <!-- Status -->
+  <!-- Shipping Details -->
 
-  <div class="rounded-2xl bg-white p-8 shadow">
+  <div class="mt-8 rounded-2xl bg-white p-8 shadow">
 
-    <h2 class="mb-6 text-2xl font-bold">
-      Status
+    <h2 class="mb-2 text-2xl font-bold">
+      Shipping Details
     </h2>
 
-    <div class="space-y-6">
+    <p class="mb-6 text-slate-500">
+      Enter the carrier information and notify the customer when the order ships.
+    </p>
+
+    <div class="grid gap-6 md:grid-cols-2">
 
       <div>
 
-        <div class="mb-2 text-sm text-slate-500">
-          Payment
-        </div>
+        <label
+          for="shippingCarrier"
+          class="mb-2 block font-semibold"
+        >
+          Carrier
+        </label>
 
-   <span
-  class={`rounded-full px-4 py-2 font-semibold ${
-    order.payment_status === "Paid"
-      ? "bg-green-100 text-green-700"
-      : "bg-yellow-100 text-yellow-700"
-  }`}
->
-  {order.payment_status}
-</span>
+        <select
+          id="shippingCarrier"
+          class="w-full rounded-lg border px-4 py-3"
+        >
+
+          <option value="">
+            Select carrier
+          </option>
+
+          <option
+            value="Canada Post"
+            selected={order.shipping_carrier === "Canada Post"}
+          >
+            Canada Post
+          </option>
+
+          <option
+            value="UPS"
+            selected={order.shipping_carrier === "UPS"}
+          >
+            UPS
+          </option>
+
+          <option
+            value="Purolator"
+            selected={order.shipping_carrier === "Purolator"}
+          >
+            Purolator
+          </option>
+
+          <option
+            value="FedEx"
+            selected={order.shipping_carrier === "FedEx"}
+          >
+            FedEx
+          </option>
+
+          <option
+            value="DHL"
+            selected={order.shipping_carrier === "DHL"}
+          >
+            DHL
+          </option>
+
+        </select>
 
       </div>
 
       <div>
 
-        <div class="mt-8 rounded-2xl bg-white p-8 shadow">
+        <label
+          for="trackingNumber"
+          class="mb-2 block font-semibold"
+        >
+          Tracking Number
+        </label>
 
-  <div class="mb-6 flex items-center justify-between">
+        <input
+          id="trackingNumber"
+          value={order.shipping_tracking_number ?? ""}
+          class="w-full rounded-lg border px-4 py-3"
+          placeholder="Enter tracking number"
+        />
 
-    <h2 class="text-2xl font-bold">
-      Internal Notes
-    </h2>
+      </div>
+
+    </div>
+
+    <div class="mt-6">
+
+      <label
+        for="trackingUrl"
+        class="mb-2 block font-semibold"
+      >
+        Carrier Tracking URL
+      </label>
+
+      <input
+        id="trackingUrl"
+        type="url"
+        value={order.shipping_tracking_url ?? ""}
+        class="w-full rounded-lg border px-4 py-3"
+        placeholder="https://..."
+      />
+
+    </div>
+
+    {
+      order.shipped_at && (
+        <div class="mt-6 rounded-xl bg-green-50 p-4 text-green-700">
+          Shipped on {new Date(order.shipped_at).toLocaleString()}
+        </div>
+      )
+    }
 
     <button
       type="button"
-      onclick="saveNotes()"
-      class="rounded-lg bg-yellow-500 px-5 py-2 font-semibold text-white hover:bg-yellow-600"
+      onclick="markOrderShipped()"
+      class="mt-8 rounded-xl bg-green-600 px-8 py-4 font-semibold text-white hover:bg-green-700"
     >
-      💾 Save Notes
+      🚚 Mark as Shipped and Email Customer
     </button>
 
   </div>
 
-  <textarea
-    id="orderNotes"
-    rows="6"
-    class="w-full rounded-xl border p-4"
-  >{order.notes ?? ""}</textarea>
+  <script define:vars={{ orderId: order.id }}>
 
-</div>
+    window.updateStatus = async function (status) {
+      try {
+        const response = await fetch(
+          "/api/admin/update-order-status",
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              orderId,
+              status,
+            }),
+          }
+        );
 
-        <div class="mb-2 text-sm text-slate-500">
-          Production
-        </div>
+        const result = await response.json();
 
-   <span
-  class={`rounded-full px-4 py-2 font-semibold ${
-    order.order_status === "New"
-      ? "bg-yellow-100 text-yellow-700"
-      : order.order_status === "In Progress"
-      ? "bg-blue-100 text-blue-700"
-      : order.order_status === "Ready"
-      ? "bg-green-100 text-green-700"
-      : order.order_status === "Shipped"
-      ? "bg-indigo-100 text-indigo-700"
-      : order.order_status === "Completed"
-      ? "bg-emerald-100 text-emerald-700"
-      : order.order_status === "Cancelled"
-      ? "bg-red-100 text-red-700"
-      : "bg-slate-100 text-slate-700"
-  }`}
->
-  {order.order_status}
-</span>
+        if (!response.ok || !result.success) {
+          alert(
+            result.error ||
+            "Unable to update status."
+          );
 
-      </div>
-<hr class="my-6" />
+          return;
+        }
 
-
-<h3 class="mb-4 font-semibold">
-  Update Status
-</h3>
-
-<div class="grid grid-cols-2 gap-3">
-
-  <button
-    type="button"
-    onclick="updateStatus('New')"
-    class="rounded-lg bg-yellow-500 px-4 py-3 font-semibold text-white hover:bg-yellow-600"
-  >
-    🆕 New
-  </button>
-
-  <button
-    type="button"
-    onclick="updateStatus('In Progress')"
-    class="rounded-lg bg-blue-600 px-4 py-3 font-semibold text-white hover:bg-blue-700"
-  >
-    🔨 In Progress
-  </button>
-
-  <button
-    type="button"
-    onclick="updateStatus('Ready')"
-    class="rounded-lg bg-green-600 px-4 py-3 font-semibold text-white hover:bg-green-700"
-  >
-    📦 Ready
-  </button>
-
-  <button
-    type="button"
-    onclick="updateStatus('Shipped')"
-    class="rounded-lg bg-indigo-600 px-4 py-3 font-semibold text-white hover:bg-indigo-700"
-  >
-    🚚 Shipped
-  </button>
-
-  <button
-    type="button"
-    onclick="updateStatus('Completed')"
-    class="rounded-lg bg-emerald-700 px-4 py-3 font-semibold text-white hover:bg-emerald-800"
-  >
-    ✅ Completed
-  </button>
-
-  <button
-    type="button"
-    onclick="updateStatus('Cancelled')"
-    class="rounded-lg bg-red-600 px-4 py-3 font-semibold text-white hover:bg-red-700"
-  >
-    ❌ Cancelled
-  </button>
-
-</div>
-
-    </div>
-
-  </div>
-
-</div>
-
-<!-- Products -->
-
-<div class="mt-8 rounded-2xl bg-white p-8 shadow">
-
-  <h2 class="mb-6 text-2xl font-bold">
-    Products
-  </h2>
-
-  <table class="min-w-full">
-
-    <thead>
-
-      <tr class="border-b">
-
-        <th class="pb-4 text-left">Product</th>
-        <th class="pb-4 text-left">Material</th>
-        <th class="pb-4 text-center">Qty</th>
-        <th class="pb-4 text-right">Unit Price</th>
-        <th class="pb-4 text-right">Total</th>
-
-      </tr>
-
-    </thead>
-
-    <tbody>
-
-      {
-        order.order_items.map((item: any) => (
-
-          <tr class="border-b">
-
-            <td class="py-4">
-              {item.product_name}
-            </td>
-
-            <td class="py-4">
-              {item.material}
-            </td>
-
-            <td class="py-4 text-center">
-              {item.quantity}
-            </td>
-
-            <td class="py-4 text-right">
-              CAD ${Number(item.unit_price).toFixed(2)}
-            </td>
-
-            <td class="py-4 text-right font-semibold">
-              CAD ${Number(item.total_price).toFixed(2)}
-            </td>
-
-          </tr>
-
-        ))
-      }
-
-    </tbody>
-
-  </table>
-
-</div>
-
-<!-- Totals -->
-
-<div class="mt-8 ml-auto w-full max-w-md rounded-2xl bg-white p-8 shadow">
-
-  <div class="mb-4 flex justify-between">
-    <span>Subtotal</span>
-    <span>CAD ${Number(order.subtotal).toFixed(2)}</span>
-  </div>
-
-  <div class="mb-4 flex justify-between">
-    <span>Shipping</span>
-    <span>CAD ${Number(order.shipping).toFixed(2)}</span>
-  </div>
-
-  <div class="mb-4 flex justify-between">
-    <span>Tax</span>
-    <span>CAD ${Number(order.tax).toFixed(2)}</span>
-  </div>
-
-  <hr class="my-6" />
-
-  <div class="flex justify-between text-2xl font-bold">
-    <span>Total</span>
-    <span>CAD ${Number(order.total).toFixed(2)}</span>
-  </div>
-
-</div>
-
-<script define:vars={{
-  orderId: order.id
-}}>
-  window.updateStatus = async function (status) {
-    try {
-      const response = await fetch("/api/admin/update-order-status", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          orderId,
-          status,
-        }),
-      });
-
-      const result = await response.json();
-
-      if (!result.success) {
+        location.reload();
+      } catch (error) {
+        console.error(error);
         alert("Unable to update status.");
-        return;
       }
+    };
 
-      location.reload();
-    } catch (err) {
-      console.error(err);
-      alert("Unable to update status.");
-    }
-  };
+    window.saveNotes = async function () {
+      try {
+        const notesElement =
+          document.getElementById("orderNotes");
 
-  window.saveNotes = async function () {
+        const notes =
+          notesElement?.value ?? "";
 
-  const notes =
-    document.getElementById("orderNotes").value;
+        const response = await fetch(
+          "/api/admin/update-order-notes",
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              orderId,
+              notes,
+            }),
+          }
+        );
 
-  const response = await fetch(
-    "/api/admin/update-order-notes",
-    {
-      method: "POST",
+        const result = await response.json();
 
-      headers: {
-        "Content-Type": "application/json",
-      },
+        if (!response.ok || !result.success) {
+          alert(
+            result.error ||
+            "Unable to save notes."
+          );
 
-      body: JSON.stringify({
-        orderId,
-        notes,
-      }),
-    }
-  );
+          return;
+        }
 
-  const result = await response.json();
+        alert("Notes saved.");
+      } catch (error) {
+        console.error(error);
+        alert("Unable to save notes.");
+      }
+    };
 
-  if (result.success) {
-    alert("Notes saved.");
-  } else {
-    alert("Unable to save notes.");
-  }
+    window.markOrderShipped = async function () {
+      try {
+        const carrierElement =
+          document.getElementById(
+            "shippingCarrier"
+          );
 
-};
-</script>
+        const trackingNumberElement =
+          document.getElementById(
+            "trackingNumber"
+          );
 
+        const trackingUrlElement =
+          document.getElementById(
+            "trackingUrl"
+          );
 
+        const carrier =
+          carrierElement?.value.trim() ?? "";
 
+        const trackingNumber =
+          trackingNumberElement?.value.trim() ?? "";
+
+        const trackingUrl =
+          trackingUrlElement?.value.trim() ?? "";
+
+        if (!carrier || !trackingNumber) {
+          alert(
+            "Carrier and tracking number are required."
+          );
+
+          return;
+        }
+
+        const response = await fetch(
+          "/api/admin/mark-order-shipped",
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              orderId,
+              carrier,
+              trackingNumber,
+              trackingUrl,
+            }),
+          }
+        );
+
+        const result = await response.json();
+
+        if (!response.ok || !result.success) {
+          alert(
+            result.error ||
+            "Unable to save shipping details."
+          );
+
+          return;
+        }
+
+        alert(
+          "Order marked as shipped and the customer was notified."
+        );
+
+        location.reload();
+      } catch (error) {
+        console.error(error);
+
+        alert(
+          "Unable to save shipping details."
+        );
+      }
+    };
+
+  </script>
 
 </AdminLayout>
