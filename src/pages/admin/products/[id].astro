@@ -3,298 +3,333 @@ import AdminLayout from "../../../layouts/AdminLayout.astro";
 import { supabaseAdmin } from "../../../lib/supabaseAdmin";
 
 const { id } = Astro.params;
-const saved = Astro.url.searchParams.get("saved");
+const saved = Astro.url.searchParams.get("saved") === "1";
 
-const { data: product } = await supabaseAdmin
-  .from("products")
-  .select(`
-    *,
-    categories(*),
-    product_images(*)
-  `)
-  .eq("id", id)
-  .single();
-
-if (!product) {
+if (!id) {
   return Astro.redirect("/admin/products");
 }
 
-const { data: materials } = await supabaseAdmin
-  .from("materials")
-  .select("*")
-  .eq("active", true)
-  .order("sort_order");
+const { data: product, error: productError } =
+  await supabaseAdmin
+    .from("products")
+    .select(`
+      *,
+      categories(*),
+      product_images(*)
+    `)
+    .eq("id", id)
+    .single();
 
-const { data: productMaterials } = await supabaseAdmin
+if (productError || !product) {
+  console.error("Unable to load product.", {
+    productId: id,
+    error: productError,
+  });
+
+  return Astro.redirect("/admin/products");
+}
+
+const { data: materials, error: materialsError } =
+  await supabaseAdmin
+    .from("materials")
+    .select("*")
+    .eq("active", true)
+    .order("sort_order");
+
+if (materialsError) {
+  console.error("Unable to load product materials.", {
+    productId: product.id,
+    error: materialsError,
+  });
+}
+
+const {
+  data: productMaterials,
+  error: productMaterialsError,
+} = await supabaseAdmin
   .from("product_materials")
   .select("material_id")
   .eq("product_id", product.id);
 
+if (productMaterialsError) {
+  console.error("Unable to load selected materials.", {
+    productId: product.id,
+    error: productMaterialsError,
+  });
+}
+
 const selectedMaterials = new Set(
-  productMaterials?.map(pm => pm.material_id) ?? []
+  productMaterials?.map(
+    (productMaterial) => productMaterial.material_id,
+  ) ?? [],
 );
+
+const supabaseUrl =
+  import.meta.env.PUBLIC_SUPABASE_URL.replace(/\/+$/, "");
+
+function getProductImageUrl(imagePath: string): string {
+  return `${supabaseUrl}/storage/v1/object/public/product-images/${imagePath}`;
+}
 ---
 
 <AdminLayout title="Edit Product" active="products">
+  <div class="mb-8 flex flex-wrap items-start justify-between gap-4">
+    <div>
+      <h1 class="text-4xl font-bold text-slate-900">
+        {product.name}
+      </h1>
 
-<div class="mb-8 flex items-center justify-between">
-
-  <div>
-    <h1 class="text-4xl font-bold text-slate-900">
-      {product.name}
-    </h1>
-
-    <p class="mt-2 text-slate-500">
-      Edit Product
-      {
-  saved && (
-
-    <div class="mb-6 rounded-xl border border-green-300 bg-green-50 px-5 py-4 text-green-800">
-
-      <div class="font-semibold">
-        ✅ Product updated successfully.
-      </div>
-
-      <div class="text-sm">
-        Your changes have been saved.
-      </div>
-
+      <p class="mt-2 text-slate-500">
+        Edit product information, materials, and images.
+      </p>
     </div>
 
-  )
-}
-    </p>
+    <a
+      href="/admin/products"
+      class="rounded-lg bg-slate-900 px-5 py-3 text-white hover:bg-slate-700"
+    >
+      ← Back
+    </a>
   </div>
 
-  <a
-    href="/admin/products"
-    class="rounded-lg bg-slate-900 px-5 py-3 text-white hover:bg-slate-700"
-  >
-    ← Back
-  </a>
+  {
+    saved && (
+      <div
+        class="mb-8 rounded-xl border border-green-300 bg-green-50 px-5 py-4 text-green-800"
+        role="status"
+      >
+        <div class="font-semibold">
+          Product updated successfully.
+        </div>
 
-</div>
-
-<div class="grid gap-8 lg:grid-cols-2">
-
-  <!-- Product Information -->
-
-  <div class="rounded-2xl bg-white p-8 shadow">
-
-    <h2 class="mb-6 text-2xl font-bold">
-      Product Information
-    </h2>
-
-    <form
-      action="/api/admin/update-product"
-      method="POST"
-      class="space-y-6"
-    >
-
-      <input
-        type="hidden"
-        name="id"
-        value={product.id}
-      />
-
-      <div>
-        <label class="mb-2 block font-semibold">
-          Product Name
-        </label>
-
-        <input
-          name="name"
-          value={product.name}
-          class="w-full rounded-lg border p-3"
-        />
+        <div class="mt-1 text-sm">
+          Your changes have been saved.
+        </div>
       </div>
+    )
+  }
 
-      <div>
+  <div class="grid gap-8 lg:grid-cols-2">
+    <section class="rounded-2xl bg-white p-8 shadow">
+      <h2 class="mb-6 text-2xl font-bold">
+        Product Information
+      </h2>
 
-        <label class="mb-2 block font-semibold">
-  PLA Base Price
-</label>
-
-<p class="mb-2 text-sm text-slate-500">
-  Other material prices are calculated automatically.
-</p>
-
+      <form
+        action="/api/admin/update-product"
+        method="POST"
+        class="space-y-6"
+      >
         <input
-          type="number"
-          step="0.01"
-          name="price"
-          value={product.price ?? ""}
-          class="w-full rounded-lg border p-3"
-        />
-      </div>
-
-      <div>
-        <label class="mb-2 block font-semibold">
-          Description
-        </label>
-
-        <textarea
-          name="description"
-          rows="8"
-          class="w-full rounded-lg border p-3"
-        >{product.description}</textarea>
-      </div>
-
-      <div>
-
-  <h3 class="mb-4 text-lg font-semibold">
-    Available Materials
-  </h3>
-
-  <div class="grid gap-3 md:grid-cols-2">
-
-    {materials?.map((material) => (
-
-      <label class="flex items-center gap-3 rounded-lg border p-3 hover:bg-slate-50">
-
-        <input
-          type="checkbox"
-          name="materials"
-          value={material.id}
-          checked={selectedMaterials.has(material.id)}
+          type="hidden"
+          name="id"
+          value={product.id}
         />
 
         <div>
+          <label
+            for="name"
+            class="mb-2 block font-semibold"
+          >
+            Product Name
+          </label>
 
-          <div class="font-semibold">
-            {material.name}
-          </div>
-
-          <div class="text-sm text-slate-500">
-            +{material.markup_percent}% from PLA
-          </div>
-
+          <input
+            id="name"
+            name="name"
+            value={product.name}
+            required
+            class="w-full rounded-lg border p-3"
+          />
         </div>
 
-      </label>
+        <div>
+          <label
+            for="price"
+            class="mb-2 block font-semibold"
+          >
+            Base Price (PLA)
+          </label>
 
-    ))}
+          <p class="mb-2 text-sm text-slate-500">
+            Prices for other materials are calculated automatically.
+          </p>
 
-  </div>
+          <input
+            id="price"
+            type="number"
+            name="price"
+            min="0"
+            step="0.01"
+            value={product.price ?? ""}
+            required
+            class="w-full rounded-lg border p-3"
+          />
+        </div>
 
-</div>
+        <div>
+          <label
+            for="description"
+            class="mb-2 block font-semibold"
+          >
+            Description
+          </label>
 
-      <button
-        class="rounded-lg bg-yellow-400 px-8 py-3 font-semibold hover:bg-yellow-300"
-      >
-        Save Changes
-      </button>
+          <textarea
+            id="description"
+            name="description"
+            rows="8"
+            class="w-full rounded-lg border p-3"
+          >{product.description ?? ""}</textarea>
+        </div>
 
-    </form>
+        <fieldset>
+          <legend class="mb-4 text-lg font-semibold">
+            Available Materials
+          </legend>
 
-  </div>
+          {
+            materials?.length ? (
+              <div class="grid gap-3 md:grid-cols-2">
+                {materials.map((material) => (
+                  <label class="flex items-center gap-3 rounded-lg border p-3 hover:bg-slate-50">
+                    <input
+                      type="checkbox"
+                      name="materials"
+                      value={material.id}
+                      checked={selectedMaterials.has(
+                        material.id,
+                      )}
+                    />
 
-  <!-- Product Images -->
+                    <span>
+                      <span class="block font-semibold">
+                        {material.name}
+                      </span>
 
-  <div class="rounded-2xl bg-white p-8 shadow">
+                      <span class="block text-sm text-slate-500">
+                        +{material.markup_percent}% from PLA
+                      </span>
+                    </span>
+                  </label>
+                ))}
+              </div>
+            ) : (
+              <p class="rounded-lg border border-dashed p-4 text-sm text-slate-500">
+                No active materials are available.
+              </p>
+            )
+          }
+        </fieldset>
 
-    <div class="mb-6 flex items-center justify-between">
+        <button
+          type="submit"
+          class="rounded-lg bg-yellow-400 px-8 py-3 font-semibold hover:bg-yellow-300"
+        >
+          Save Changes
+        </button>
+      </form>
+    </section>
 
-      <h2 class="text-2xl font-bold">
+    <section class="rounded-2xl bg-white p-8 shadow">
+      <h2 class="mb-6 text-2xl font-bold">
         Product Images
       </h2>
 
-    </div>
-
-    <form
-      action="/api/admin/upload-product-image"
-      method="POST"
-      enctype="multipart/form-data"
-      class="space-y-4"
-    >
-
-      <input
-        type="hidden"
-        name="product_id"
-        value={product.id}
-      />
-
-      <input
-        type="file"
-        name="images"
-        multiple
-        accept="image/*"
-        class="w-full rounded-lg border p-3"
-      />
-
-      <button
-        class="w-full rounded-lg bg-yellow-400 px-4 py-3 font-semibold hover:bg-yellow-300"
-      >
-        Upload Images
-      </button>
-
-    </form>
-
-    <hr class="my-8" />
-
-    {product.product_images?.length ? (
-
-      <div class="grid grid-cols-2 gap-4 md:grid-cols-3">
-
-  {product.product_images.map((image) => (
-
-    <div class="rounded-xl border bg-white p-3 shadow-sm">
-
-      <div class="flex aspect-square items-center justify-center rounded-lg bg-slate-100 p-2">
-
-        <img
-          src={`${import.meta.env.PUBLIC_SUPABASE_URL}/storage/v1/object/public/product-images/${image.image_url}`}
-          class="max-h-full max-w-full object-contain"
-        />
-
-      </div>
-
       <form
-        action="/api/admin/delete-product-image"
+        action="/api/admin/upload-product-image"
         method="POST"
-        class="mt-3"
+        enctype="multipart/form-data"
+        class="space-y-4"
       >
-
-        <input
-          type="hidden"
-          name="image_id"
-          value={image.id}
-        />
-
         <input
           type="hidden"
           name="product_id"
           value={product.id}
         />
 
-        <button
-          class="w-full rounded-lg bg-red-600 py-2 text-sm font-semibold text-white hover:bg-red-700"
-        >
-          Delete
-        </button>
+        <div>
+          <label
+            for="images"
+            class="mb-2 block font-semibold"
+          >
+            Upload Images
+          </label>
 
+          <input
+            id="images"
+            type="file"
+            name="images"
+            multiple
+            accept="image/*"
+            required
+            class="w-full rounded-lg border p-3"
+          />
+
+          <p class="mt-2 text-sm text-slate-500">
+            Select one or more product images.
+          </p>
+        </div>
+
+        <button
+          type="submit"
+          class="w-full rounded-lg bg-yellow-400 px-4 py-3 font-semibold hover:bg-yellow-300"
+        >
+          Upload Images
+        </button>
       </form>
 
-    </div>
+      <hr class="my-8" />
 
-  ))}
+      {
+        product.product_images?.length ? (
+          <div class="grid grid-cols-2 gap-4 md:grid-cols-3">
+            {product.product_images.map((image) => (
+              <article class="rounded-xl border bg-white p-3 shadow-sm">
+                <div class="flex aspect-square items-center justify-center overflow-hidden rounded-lg bg-slate-100 p-2">
+                  <img
+                    src={getProductImageUrl(image.image_url)}
+                    alt={`${product.name} product image`}
+                    loading="lazy"
+                    class="max-h-full max-w-full object-contain"
+                  />
+                </div>
 
-</div>
+                <form
+                  action="/api/admin/delete-product-image"
+                  method="POST"
+                  class="mt-3"
+                >
+                  <input
+                    type="hidden"
+                    name="image_id"
+                    value={image.id}
+                  />
 
-    ) : (
+                  <input
+                    type="hidden"
+                    name="product_id"
+                    value={product.id}
+                  />
 
-      <div class="rounded-xl border border-dashed p-12 text-center">
-
-        <p class="text-slate-500">
-          No product images uploaded yet.
-        </p>
-
-      </div>
-
-    )}
-
+                  <button
+                    type="submit"
+                    class="w-full rounded-lg bg-red-600 py-2 text-sm font-semibold text-white hover:bg-red-700"
+                  >
+                    Delete
+                  </button>
+                </form>
+              </article>
+            ))}
+          </div>
+        ) : (
+          <div class="rounded-xl border border-dashed p-12 text-center">
+            <p class="text-slate-500">
+              No product images uploaded yet.
+            </p>
+          </div>
+        )
+      }
+    </section>
   </div>
-
-</div>
-
 </AdminLayout>
