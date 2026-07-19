@@ -41,3 +41,6 @@ backups/
 
 # Supabase CLI local state
 supabase/
+
+# Cloudflare Wrangler local state
+.wrangler/
