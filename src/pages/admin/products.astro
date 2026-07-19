@@ -51,8 +51,6 @@ const { data: products, error } = await supabaseAdmin
 
 <th class="px-6 py-4 text-right">Price</th>
 
-<th class="px-6 py-4 text-center">Stock</th>
-
 <th class="px-6 py-4 text-center">Status</th>
 
 <th class="px-6 py-4 text-center">Featured</th>
@@ -97,11 +95,6 @@ ${Number(product.price ?? 0).toFixed(2)}
 
 </td>
 
-<td class="px-6 py-4 text-center">
-
-{product.stock}
-
-</td>
 
 <td class="px-6 py-4 text-center">
 

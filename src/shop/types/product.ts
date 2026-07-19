@@ -15,8 +15,6 @@ export interface Product {
 
   sale_price?: number;
 
-  stock: number;
-
   featured: boolean;
 
   status: string;
