@@ -1,0 +1,289 @@
+---
+const user = Astro.locals.user;
+const supabase = Astro.locals.supabase;
+
+if (!user) {
+  return Astro.redirect("/admin/login", 303);
+}
+
+const errorCode = Astro.url.searchParams.get("error");
+
+const errorMessages: Record<string, string> = {
+  invalid_code:
+    "The verification code was invalid or expired. Enter the current code from your authenticator app.",
+  missing_code: "Enter the six-digit code from your authenticator app.",
+  verification_failed:
+    "Multi-factor verification could not be completed. Please try again.",
+  factor_unavailable:
+    "No verified authenticator is available for this account.",
+};
+
+let pageError = errorCode ? errorMessages[errorCode] : undefined;
+let factorId = "";
+
+const { data: factorsData, error: factorsError } =
+  await supabase.auth.mfa.listFactors();
+
+if (factorsError) {
+  console.error("Unable to list MFA factors.", {
+    userId: user.id,
+    error: factorsError,
+  });
+
+  pageError =
+    "Multi-factor authentication is temporarily unavailable. Please try again.";
+} else {
+  const verifiedTotpFactor = factorsData.totp.find(
+    (factor) => factor.status === "verified",
+  );
+
+  if (verifiedTotpFactor) {
+    factorId = verifiedTotpFactor.id;
+  } else {
+    return Astro.redirect("/admin/mfa-setup", 303);
+  }
+}
+---
+
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1"
+    />
+
+    <meta name="robots" content="noindex, nofollow" />
+
+    <title>Verify MFA | Layer Forge</title>
+  </head>
+
+  <body>
+    <main class="auth-page">
+      <section class="auth-card" aria-labelledby="mfa-heading">
+        <header>
+          <a class="brand" href="/">Layer Forge</a>
+
+          <p class="eyebrow">Admin security</p>
+
+          <h1 id="mfa-heading">Verify your identity</h1>
+
+          <p class="description">
+            Enter the six-digit code from your authenticator app.
+          </p>
+        </header>
+
+        {
+          pageError && (
+            <div class="alert" role="alert">
+              {pageError}
+            </div>
+          )
+        }
+
+        {
+          factorId && (
+            <form method="POST" action="/api/auth/admin/mfa/verify">
+              <input
+                type="hidden"
+                name="factorId"
+                value={factorId}
+              />
+
+              <div class="field">
+                <label for="code">
+                  Six-digit verification code
+                </label>
+
+                <input
+                  id="code"
+                  name="code"
+                  type="text"
+                  inputmode="numeric"
+                  autocomplete="one-time-code"
+                  pattern="[0-9]{6}"
+                  minlength="6"
+                  maxlength="6"
+                  placeholder="000000"
+                  required
+                  autofocus
+                />
+              </div>
+
+              <button type="submit">
+                Verify and continue
+              </button>
+            </form>
+          )
+        }
+
+        <form
+          class="sign-out-form"
+          method="POST"
+          action="/api/auth/admin/logout"
+        >
+          <button class="secondary-button" type="submit">
+            Sign out
+          </button>
+        </form>
+
+        <p class="security-note">
+          Signed in as
+          <strong>{user.email ?? "authorized administrator"}</strong>
+        </p>
+      </section>
+    </main>
+  </body>
+</html>
+
+<style>
+  :global(*) {
+    box-sizing: border-box;
+  }
+
+  :global(html) {
+    min-width: 320px;
+    background: #09090b;
+    color-scheme: dark;
+    font-family:
+      Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont,
+      "Segoe UI", sans-serif;
+  }
+
+  :global(body) {
+    min-height: 100vh;
+    margin: 0;
+  }
+
+  .auth-page {
+    display: grid;
+    min-height: 100vh;
+    place-items: center;
+    padding: 2rem 1rem;
+  }
+
+  .auth-card {
+    width: min(100%, 28rem);
+    padding: 2rem;
+    border: 1px solid #27272a;
+    border-radius: 1rem;
+    background: #18181b;
+  }
+
+  header {
+    margin-bottom: 1.5rem;
+  }
+
+  .brand {
+    display: inline-block;
+    margin-bottom: 2rem;
+    color: #fafafa;
+    font-size: 1.125rem;
+    font-weight: 750;
+    text-decoration: none;
+  }
+
+  .eyebrow {
+    margin: 0 0 0.5rem;
+    color: #a1a1aa;
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+  }
+
+  h1 {
+    margin: 0;
+    color: #fafafa;
+    font-size: 2rem;
+    letter-spacing: -0.04em;
+  }
+
+  .description {
+    margin: 0.75rem 0 0;
+    color: #a1a1aa;
+    font-size: 0.9375rem;
+    line-height: 1.6;
+  }
+
+  .alert {
+    margin-bottom: 1.25rem;
+    padding: 0.875rem 1rem;
+    border: 1px solid #7f1d1d;
+    border-radius: 0.625rem;
+    background: rgba(127, 29, 29, 0.22);
+    color: #fecaca;
+    font-size: 0.875rem;
+    line-height: 1.5;
+  }
+
+  form {
+    display: grid;
+    gap: 1.25rem;
+  }
+
+  .field {
+    display: grid;
+    gap: 0.5rem;
+  }
+
+  label {
+    color: #e4e4e7;
+    font-size: 0.875rem;
+    font-weight: 650;
+  }
+
+  input {
+    width: 100%;
+    min-height: 3rem;
+    padding: 0.75rem;
+    border: 1px solid #3f3f46;
+    border-radius: 0.625rem;
+    outline: none;
+    background: #09090b;
+    color: #fafafa;
+    font: inherit;
+    font-size: 1.25rem;
+    letter-spacing: 0.3em;
+    text-align: center;
+  }
+
+  input:focus {
+    border-color: #a1a1aa;
+    box-shadow: 0 0 0 3px rgba(161, 161, 170, 0.18);
+  }
+
+  button {
+    min-height: 2.875rem;
+    padding: 0.75rem 1rem;
+    border: 1px solid #fafafa;
+    border-radius: 0.625rem;
+    background: #fafafa;
+    color: #18181b;
+    cursor: pointer;
+    font: inherit;
+    font-weight: 750;
+  }
+
+  .sign-out-form {
+    margin-top: 0.75rem;
+  }
+
+  .secondary-button {
+    border-color: #3f3f46;
+    background: transparent;
+    color: #d4d4d8;
+  }
+
+  .security-note {
+    margin: 1.5rem 0 0;
+    color: #71717a;
+    font-size: 0.75rem;
+    text-align: center;
+  }
+
+  .security-note strong {
+    margin-left: 0.25rem;
+    color: #a1a1aa;
+  }
+</style>

@@ -62,9 +62,35 @@ export const POST: APIRoute = async ({ request, redirect }) => {
     const quotedPrice = quantity * unitPrice;
     const approvalToken = generateApprovalToken();
 
+    const { data: lastQuote, error: lastQuoteError } =
+  await supabaseAdmin
+    .from("quotes")
+    .select("quote_number")
+    .not("quote_number", "is", null)
+    .order("created_at", {
+      ascending: false,
+    })
+    .limit(1)
+    .maybeSingle();
+
+if (lastQuoteError) {
+  throw new Error(lastQuoteError.message);
+}
+
+const lastNumber = lastQuote?.quote_number
+  ? Number(
+      String(lastQuote.quote_number)
+        .replace("LF-", "")
+    )
+  : 1000;
+
+const quoteNumber =
+  `LF-${String(lastNumber + 1).padStart(4, "0")}`;
+
     const { data: quote, error } = await supabaseAdmin
       .from("quotes")
       .insert({
+         quote_number: quoteNumber,
         name,
         email,
         phone,

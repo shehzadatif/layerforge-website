@@ -117,14 +117,24 @@ ${Number(product.price ?? 0).toFixed(2)}
 
 <td class="px-6 py-4 text-right">
 
-<a
-href={`/admin/products/${product.id}`}
-class="rounded-lg bg-slate-900 px-4 py-2 text-white hover:bg-slate-700"
->
+  <div class="flex justify-end gap-2">
 
-Edit
+    <a
+      href={`/admin/products/${product.id}`}
+      class="rounded-lg bg-slate-900 px-4 py-2 text-white hover:bg-slate-700"
+    >
+      Edit
+    </a>
 
-</a>
+    <button
+      type="button"
+      onclick={`deleteProduct('${product.id}', '${product.name.replace(/'/g, "\\'")}')`}
+      class="rounded-lg bg-red-600 px-4 py-2 text-white hover:bg-red-700"
+    >
+      Delete
+    </button>
+
+  </div>
 
 </td>
 
@@ -137,5 +147,51 @@ Edit
 </table>
 
 </div>
+
+<script>
+  window.deleteProduct = async function (
+    productId,
+    productName
+  ) {
+    const confirmed = confirm(
+      `Delete "${productName}"?\n\nThis action cannot be undone.`
+    );
+
+    if (!confirmed) {
+      return;
+    }
+
+    try {
+      const response = await fetch(
+        "/api/admin/delete-product",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            productId,
+          }),
+        }
+      );
+
+      const result = await response.json();
+
+      if (!response.ok || !result.success) {
+        alert(
+          result.error ||
+          "Unable to delete product."
+        );
+
+        return;
+      }
+
+      location.reload();
+    } catch (error) {
+      console.error(error);
+      alert("Unable to delete product.");
+    }
+  };
+</script>
 
 </AdminLayout>

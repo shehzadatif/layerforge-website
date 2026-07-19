@@ -75,8 +75,9 @@ export const POST: APIRoute = async ({ request }) => {
     }
 
     const quoteNumber =
-      "LF-" +
-      String(quote.quote_number).padStart(4, "0");
+  quote.quote_number
+    ? String(quote.quote_number)
+    : "Quote";
 
     const approvalUrl =
       `https://layerforgecanada.com/q/${quote.approval_token}`;

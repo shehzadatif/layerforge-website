@@ -82,8 +82,8 @@ const quoteList = quotes ?? [];
             quoteList.map((quote: any) => {
 
               const quoteNumber = quote.quote_number
-                ? "LF-" + String(quote.quote_number).padStart(4, "0")
-                : "Quote";
+  ? String(quote.quote_number)
+  : "Quote";
 
               const total = Number(
                 quote.quoted_price ??

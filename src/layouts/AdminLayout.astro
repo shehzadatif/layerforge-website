@@ -5,112 +5,160 @@ const {
   title = "Layer Forge Admin",
   active = "dashboard",
 } = Astro.props;
+
+const user = Astro.locals.user;
 ---
 
 <!DOCTYPE html>
 <html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>{title}</title>
-</head>
+  <head>
+    <meta charset="UTF-8" />
 
-<body class="bg-slate-100">
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0"
+    />
 
-<div class="flex min-h-screen">
+    <meta name="robots" content="noindex, nofollow" />
 
-  <aside class="w-64 bg-slate-900 text-white">
+    <title>{title}</title>
+  </head>
 
-    <div class="border-b border-slate-700 p-6">
+  <body class="bg-slate-100">
+    <div class="flex min-h-screen">
+      <aside class="flex w-64 flex-col bg-slate-900 text-white">
+        <div class="border-b border-slate-700 p-6">
+          <h1 class="text-2xl font-bold text-yellow-400">
+            Layer Forge
+          </h1>
 
-      <h1 class="text-2xl font-bold text-yellow-400">
-        Layer Forge
-      </h1>
+          <p class="mt-1 text-sm text-slate-400">
+            Admin Panel
+          </p>
+        </div>
 
-      <p class="mt-1 text-sm text-slate-400">
-        Admin Panel
-      </p>
+        <nav class="flex-1 space-y-2 p-4">
+          <a
+            href="/admin"
+            class={`block rounded-lg px-4 py-3 transition ${
+              active === "dashboard"
+                ? "bg-yellow-400 font-semibold text-slate-900"
+                : "text-white hover:bg-slate-700"
+            }`}
+          >
+            📊 Dashboard
+          </a>
 
+          <a
+            href="/admin/quotes"
+            class={`block rounded-lg px-4 py-3 transition ${
+              active === "quotes"
+                ? "bg-yellow-400 font-semibold text-slate-900"
+                : "text-white hover:bg-slate-700"
+            }`}
+          >
+            📋 Quotes
+          </a>
+
+          <a
+            href="/admin/orders"
+            class={`block rounded-lg px-4 py-3 transition ${
+              active === "orders"
+                ? "bg-yellow-400 font-semibold text-slate-900"
+                : "text-white hover:bg-slate-700"
+            }`}
+          >
+            🛒 Orders
+          </a>
+
+          <a
+            href="/admin/manufacturing"
+            class={`block rounded-lg px-4 py-3 transition ${
+              active === "manufacturing"
+                ? "bg-yellow-400 font-semibold text-slate-900"
+                : "text-white hover:bg-slate-700"
+            }`}
+          >
+            🏭 Manufacturing
+          </a>
+
+          <a
+            href="/admin/products"
+            class={`block rounded-lg px-4 py-3 transition ${
+              active === "products"
+                ? "bg-yellow-400 font-semibold text-slate-900"
+                : "text-white hover:bg-slate-700"
+            }`}
+          >
+            📦 Products
+          </a>
+
+          <a
+            href="/admin/materials"
+            class={`block rounded-lg px-4 py-3 transition ${
+              active === "materials"
+                ? "bg-yellow-400 font-semibold text-slate-900"
+                : "text-white hover:bg-slate-700"
+            }`}
+          >
+            🧱 Materials
+          </a>
+
+          <a
+            href="/admin/customers"
+            class={`block rounded-lg px-4 py-3 transition ${
+              active === "customers"
+                ? "bg-yellow-400 font-semibold text-slate-900"
+                : "text-white hover:bg-slate-700"
+            }`}
+          >
+            👥 Customers
+          </a>
+
+          <a
+            href="/admin/settings"
+            class={`block rounded-lg px-4 py-3 transition ${
+              active === "settings"
+                ? "bg-yellow-400 font-semibold text-slate-900"
+                : "text-white hover:bg-slate-700"
+            }`}
+          >
+            ⚙️ Settings
+          </a>
+        </nav>
+
+        <div class="border-t border-slate-700 p-4">
+          <div class="mb-3 overflow-hidden">
+            <p class="text-xs font-medium uppercase tracking-wide text-slate-500">
+              Signed in as
+            </p>
+
+            <p
+              class="mt-1 truncate text-sm text-slate-300"
+              title={user?.email ?? "Administrator"}
+            >
+              {user?.email ?? "Administrator"}
+            </p>
+
+            <p class="mt-1 text-xs font-medium text-green-400">
+              MFA verified
+            </p>
+          </div>
+
+          <form method="POST" action="/api/auth/admin/logout">
+            <button
+              type="submit"
+              class="w-full rounded-lg border border-slate-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:border-red-400 hover:bg-red-500 hover:text-white focus:outline-none focus:ring-2 focus:ring-red-400 focus:ring-offset-2 focus:ring-offset-slate-900"
+            >
+              Sign out
+            </button>
+          </form>
+        </div>
+      </aside>
+
+      <main class="flex-1 p-10">
+        <slot />
+      </main>
     </div>
-
-    <nav class="space-y-2 p-4">
-
-      <a
-        href="/admin"
-        class={`block rounded-lg px-4 py-3 transition ${
-          active === "dashboard"
-            ? "bg-yellow-400 text-slate-900 font-semibold"
-            : "text-white hover:bg-slate-700"
-        }`}
-      >
-        📊 Dashboard
-      </a>
-
-      <a
-        href="/admin/quotes"
-        class={`block rounded-lg px-4 py-3 transition ${
-          active === "quotes"
-            ? "bg-yellow-400 text-slate-900 font-semibold"
-            : "text-white hover:bg-slate-700"
-        }`}
-      >
-        📋 Quotes
-      </a>
-
-      <a
-  href="/admin/orders"
-  class={`block rounded-lg px-4 py-3 transition ${
-    active === "orders"
-      ? "bg-yellow-400 text-slate-900 font-semibold"
-      : "text-white hover:bg-slate-700"
-  }`}
->
-  🛒 Orders
-</a>
-
-<a
-  href="/admin/manufacturing"
-  class={`block rounded-lg px-4 py-3 transition ${
-    active === "manufacturing"
-      ? "bg-yellow-400 text-slate-900 font-semibold"
-      : "text-white hover:bg-slate-700"
-  }`}
->
-  🏭 Manufacturing
-</a>
-
-      <a href="/admin/products" class="block rounded-lg px-4 py-3 hover:bg-slate-700">
-        📦 Products
-      </a>
-
-     <a
-  href="/admin/materials"
-  class={`flex items-center gap-3 rounded-lg px-4 py-3 transition ${
-    active === "materials"
-      ? "bg-yellow-400 font-semibold text-slate-900"
-      : "text-white hover:bg-slate-800"
-  }`}
->
-  🧱 Materials
-</a>
-
-      <a href="/admin/customers" class="block rounded-lg px-4 py-3 hover:bg-slate-700">
-        👥 Customers
-      </a>
-      
-      <a href="/admin/settings" class="block rounded-lg px-4 py-3 hover:bg-slate-700">
-        ⚙️ Settings
-      </a>
-
-    </nav>
-
-  </aside>
-
-  <main class="flex-1 p-10">
-    <slot />
-  </main>
-
-</div>
-
-</body>
+  </body>
 </html>

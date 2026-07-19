@@ -21,7 +21,7 @@ if (error || !quote) {
 }
 
 const quoteNumber = quote.quote_number
-  ? "LF-" + String(quote.quote_number).padStart(4, "0")
+  ? String(quote.quote_number)
   : "Quote";
 
 const quantity = Number(quote.quantity ?? 1);
