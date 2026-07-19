@@ -112,10 +112,12 @@ export const POST: APIRoute = async ({
 
   if (error) {
     console.warn("Admin login failed.", {
-      email,
-      status: error.status,
-      code: error.code,
-    });
+  email,
+  name: error.name,
+  message: error.message,
+  status: error.status,
+  code: error.code,
+});
 
     const errorCode =
       error.status === 400 ||
