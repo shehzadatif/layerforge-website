@@ -9,47 +9,102 @@ export const POST: APIRoute = async ({ request }) => {
   try {
     const formData = await request.formData();
 
-    id = String(formData.get("id") ?? "");
+    id = String(formData.get("id") ?? "").trim();
 
-    const name = String(formData.get("name") ?? "");
+    const name = String(formData.get("name") ?? "").trim();
+    const categoryId = String(
+      formData.get("category_id") ?? "",
+    ).trim();
+
+    const shortDescription = String(
+      formData.get("short_description") ?? "",
+    ).trim();
+
     const description = String(
       formData.get("description") ?? "",
-    );
+    ).trim();
+
+    const sku = String(formData.get("sku") ?? "").trim();
 
     const priceValue = formData.get("price");
-
     const price =
       priceValue && String(priceValue).trim() !== ""
         ? Number(priceValue)
         : null;
 
+    const salePriceValue = formData.get("sale_price");
+    const salePrice =
+      salePriceValue &&
+      String(salePriceValue).trim() !== ""
+        ? Number(salePriceValue)
+        : null;
+
+    const featured = formData.get("featured") === "on";
+
+    const status =
+      formData.get("active") === "on"
+        ? "Active"
+        : "Inactive";
+
     const selectedMaterials = formData
       .getAll("materials")
       .map(String);
 
+    if (!id || !name || !categoryId) {
+      return new Response(
+        "Product ID, name, and category are required.",
+        {
+          status: 400,
+        },
+      );
+    }
+
+    if (
+      price !== null &&
+      (!Number.isFinite(price) || price < 0)
+    ) {
+      return new Response("Invalid base price.", {
+        status: 400,
+      });
+    }
+
+    if (
+      salePrice !== null &&
+      (!Number.isFinite(salePrice) || salePrice < 0)
+    ) {
+      return new Response("Invalid sale price.", {
+        status: 400,
+      });
+    }
+
     const slug = name
       .toLowerCase()
-      .trim()
       .replace(/[^a-z0-9]+/g, "-")
       .replace(/^-|-$/g, "");
 
-    const { error } = await supabaseAdmin
+    const { error: updateError } = await supabaseAdmin
       .from("products")
       .update({
         name,
         slug,
+        category_id: categoryId,
+        short_description: shortDescription,
         description,
         price,
+        sale_price: salePrice,
+        sku: sku || null,
+        featured,
+        status,
       })
       .eq("id", id);
 
-    if (error) {
+    if (updateError) {
       console.error("Unable to update product.", {
         productId: id,
-        error,
+        error: updateError,
       });
 
-      return new Response(error.message, {
+      return new Response(updateError.message, {
         status: 500,
       });
     }

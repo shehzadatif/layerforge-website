@@ -29,6 +29,19 @@ if (productError || !product) {
   return Astro.redirect("/admin/products");
 }
 
+const { data: categories, error: categoriesError } =
+  await supabaseAdmin
+    .from("categories")
+    .select("*")
+    .order("name");
+
+if (categoriesError) {
+  console.error("Unable to load product categories.", {
+    productId: product.id,
+    error: categoriesError,
+  });
+}
+
 const { data: materials, error: materialsError } =
   await supabaseAdmin
     .from("materials")
@@ -145,26 +158,45 @@ function getProductImageUrl(imagePath: string): string {
 
         <div>
           <label
-            for="price"
+            for="category_id"
             class="mb-2 block font-semibold"
           >
-            Base Price (PLA)
+            Category
           </label>
 
-          <p class="mb-2 text-sm text-slate-500">
-            Prices for other materials are calculated automatically.
-          </p>
-
-          <input
-            id="price"
-            type="number"
-            name="price"
-            min="0"
-            step="0.01"
-            value={product.price ?? ""}
+          <select
+            id="category_id"
+            name="category_id"
             required
             class="w-full rounded-lg border p-3"
-          />
+          >
+            {
+              categories?.map((category) => (
+                <option
+                  value={category.id}
+                  selected={category.id === product.category_id}
+                >
+                  {category.name}
+                </option>
+              ))
+            }
+          </select>
+        </div>
+
+        <div>
+          <label
+            for="short_description"
+            class="mb-2 block font-semibold"
+          >
+            Short Description
+          </label>
+
+          <textarea
+            id="short_description"
+            name="short_description"
+            rows="3"
+            class="w-full rounded-lg border p-3"
+          >{product.short_description ?? ""}</textarea>
         </div>
 
         <div>
@@ -181,6 +213,71 @@ function getProductImageUrl(imagePath: string): string {
             rows="8"
             class="w-full rounded-lg border p-3"
           >{product.description ?? ""}</textarea>
+        </div>
+
+        <div class="grid gap-6 md:grid-cols-2">
+          <div class="flex flex-col">
+            <label
+              for="price"
+              class="mb-2 block font-semibold"
+            >
+              Base Price (PLA)
+            </label>
+
+            <p class="mb-2 min-h-10 text-sm text-slate-500">
+              Prices for other materials are calculated automatically.
+            </p>
+
+            <input
+              id="price"
+              type="number"
+              name="price"
+              min="0"
+              step="0.01"
+              value={product.price ?? ""}
+              required
+              class="w-full rounded-lg border p-3"
+            />
+          </div>
+
+          <div class="flex flex-col">
+            <label
+              for="sale_price"
+              class="mb-2 block font-semibold"
+            >
+              Sale Price (Optional)
+            </label>
+
+            <p class="mb-2 min-h-10 text-sm text-slate-500">
+              Leave blank when the product is not on sale.
+            </p>
+
+            <input
+              id="sale_price"
+              type="number"
+              name="sale_price"
+              min="0"
+              step="0.01"
+              value={product.sale_price ?? ""}
+              class="w-full rounded-lg border p-3"
+            />
+          </div>
+        </div>
+
+        <div>
+          <label
+            for="sku"
+            class="mb-2 block font-semibold"
+          >
+            SKU
+          </label>
+
+          <input
+            id="sku"
+            name="sku"
+            value={product.sku ?? ""}
+            class="w-full rounded-lg border p-3"
+          />
         </div>
 
         <fieldset>
@@ -221,6 +318,28 @@ function getProductImageUrl(imagePath: string): string {
             )
           }
         </fieldset>
+
+        <div class="flex flex-wrap items-center gap-6">
+          <label class="flex items-center gap-2">
+            <input
+              type="checkbox"
+              name="featured"
+              checked={product.featured === true}
+            />
+
+            Featured
+          </label>
+
+          <label class="flex items-center gap-2">
+            <input
+              type="checkbox"
+              name="active"
+              checked={product.status === "Active"}
+            />
+
+            Active
+          </label>
+        </div>
 
         <button
           type="submit"
