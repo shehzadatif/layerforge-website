@@ -91,9 +91,7 @@ class="w-full rounded-lg border p-3"
 </div>
 
 <div class="grid gap-6 md:grid-cols-2">
-
   <div>
-
     <label class="mb-2 block font-semibold">
       PLA Base Price
     </label>
@@ -108,11 +106,9 @@ class="w-full rounded-lg border p-3"
       name="price"
       class="w-full rounded-lg border p-3"
     />
-
   </div>
 
   <div>
-
     <label class="mb-2 block font-semibold">
       Sale Price (Optional)
     </label>
@@ -123,48 +119,23 @@ class="w-full rounded-lg border p-3"
       name="sale_price"
       class="w-full rounded-lg border p-3"
     />
-
   </div>
-
 </div>
 
-
-
-<div class="grid gap-6 md:grid-cols-2">
 
 <div>
+  <label class="mb-2 block font-semibold">
+    SKU
+  </label>
 
-<label class="mb-2 block font-semibold">
-SKU
-</label>
-
-<input
-name="sku"
-class="w-full rounded-lg border p-3"
-/>
-
-</div>
-
-<div>
-
-<label class="mb-2 block font-semibold">
-Stock
-</label>
-
-<input
-type="number"
-name="stock"
-value="0"
-class="w-full rounded-lg border p-3"
-/>
-
-</div>
-
+  <input
+    name="sku"
+    class="w-full rounded-lg border p-3"
+  />
 </div>
 
 <hr class="my-8" />
 
-<hr class="my-8" />
 
 <div class="rounded-xl border p-6">
 
@@ -279,23 +250,6 @@ input?.addEventListener("change", () => {
 
 </script>
 
-<script>
-const input = document.getElementById("images");
-const output = document.getElementById("selectedFiles");
-
-input?.addEventListener("change", () => {
-  const files = [...input.files];
-
-  if (files.length === 0) {
-    output.textContent = "No images selected.";
-    return;
-  }
-
-  output.innerHTML = files
-    .map(file => `• ${file.name}`)
-    .join("<br>");
-});
-</script>
 
 <div class="flex items-center gap-6">
 

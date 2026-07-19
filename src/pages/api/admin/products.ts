@@ -8,9 +8,15 @@ export const POST: APIRoute = async ({ request }) => {
     const formData = await request.formData();
 
     const name = String(formData.get("name") ?? "");
-    const category_id = String(formData.get("category_id") ?? "");
-    const short_description = String(formData.get("short_description") ?? "");
-    const description = String(formData.get("description") ?? "");
+    const category_id = String(
+      formData.get("category_id") ?? "",
+    );
+    const short_description = String(
+      formData.get("short_description") ?? "",
+    );
+    const description = String(
+      formData.get("description") ?? "",
+    );
 
     const price = formData.get("price")
       ? Number(formData.get("price"))
@@ -22,10 +28,6 @@ export const POST: APIRoute = async ({ request }) => {
 
     const sku = String(formData.get("sku") ?? "");
 
-    const stock = formData.get("stock")
-      ? Number(formData.get("stock"))
-      : 0;
-
     const featured = formData.get("featured") === "on";
 
     const status =
@@ -33,15 +35,9 @@ export const POST: APIRoute = async ({ request }) => {
         ? "Active"
         : "Inactive";
 
-        const selectedMaterials = formData
-  .getAll("materials")
-  .map(String);
-
-  console.log("Selected Materials:", selectedMaterials);
-
-for (const [key, value] of formData.entries()) {
-  console.log(key, value);
-}
+    const selectedMaterials = formData
+      .getAll("materials")
+      .map(String);
 
     const slug = name
       .toLowerCase()
@@ -49,26 +45,27 @@ for (const [key, value] of formData.entries()) {
       .replace(/[^a-z0-9]+/g, "-")
       .replace(/^-|-$/g, "");
 
-   const { data: product, error } = await supabaseAdmin
-  .from("products")
-  .insert({
-    name,
-    slug,
-    category_id,
-    short_description,
-    description,
-    price,
-    sale_price,
-    sku,
-    stock,
-    featured,
-    status,
-  })
-  .select()
-  .single();
+    const { data: product, error } = await supabaseAdmin
+      .from("products")
+      .insert({
+        name,
+        slug,
+        category_id,
+        short_description,
+        description,
+        price,
+        sale_price,
+        sku,
+        featured,
+        status,
+      })
+      .select()
+      .single();
 
     if (error) {
-      console.error(error);
+      console.error("Unable to create product.", {
+        error,
+      });
 
       return Response.json(
         {
@@ -77,36 +74,44 @@ for (const [key, value] of formData.entries()) {
         },
         {
           status: 500,
-        }
+        },
       );
     }
 
-if (selectedMaterials.length > 0) {
+    if (selectedMaterials.length > 0) {
+      const rows = selectedMaterials.map(
+        (materialId) => ({
+          product_id: product.id,
+          material_id: materialId,
+        }),
+      );
 
-  const rows = selectedMaterials.map((materialId) => ({
-    product_id: product.id,
-    material_id: materialId,
-  }));
+      const { error: materialError } =
+        await supabaseAdmin
+          .from("product_materials")
+          .insert(rows);
 
-  const { error: materialError } = await supabaseAdmin
-    .from("product_materials")
-    .insert(rows);
-
-  if (materialError) {
-    console.error(materialError);
-  }
-
-}
+      if (materialError) {
+        console.error(
+          "Unable to save product materials.",
+          {
+            productId: product.id,
+            error: materialError,
+          },
+        );
+      }
+    }
 
     return new Response(null, {
-      status: 302,
+      status: 303,
       headers: {
         Location: "/admin/products",
       },
     });
-
-  } catch (err) {
-    console.error(err);
+  } catch (error) {
+    console.error("Product creation failed.", {
+      error,
+    });
 
     return Response.json(
       {
@@ -115,7 +120,7 @@ if (selectedMaterials.length > 0) {
       },
       {
         status: 500,
-      }
+      },
     );
   }
 };
