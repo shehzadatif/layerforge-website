@@ -29,13 +29,10 @@ export const POST: APIRoute = async ({ request }) => {
         .eq("material_id", materialId);
 
     if (usageError) {
-      console.error(
-        "Unable to check material usage.",
-        {
-          materialId,
-          error: usageError,
-        },
-      );
+      console.error("Unable to check material usage.", {
+        materialId,
+        error: usageError,
+      });
 
       return new Response(
         "Unable to verify whether the material is in use.",
