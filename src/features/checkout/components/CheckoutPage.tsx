@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { getShippingCost, type Province } from "../../../lib/shipping";
 import { useCheckout } from "../hooks/useCheckout";
 import { getCart } from "../../cart/cartStorage";
 import ContactForm from "./ContactForm";
@@ -15,6 +16,11 @@ export default function CheckoutPage() {
     () => cart.reduce((sum, item) => sum + item.price * item.quantity, 0),
     [cart],
   );
+  const shippingCost = getShippingCost(
+    form.deliveryMethod,
+    form.province as Province,
+  );
+  const totalBeforeTax = subtotal + shippingCost;
 
   async function handleCheckout() {
     if (cart.length === 0) {
@@ -142,9 +148,18 @@ export default function CheckoutPage() {
             <span>CAD ${subtotal.toFixed(2)}</span>
           </div>
 
-          <div className="mb-3 flex justify-between">
-            <span>Taxes & Shipping</span>
-            <span className="text-slate-500">
+          <div className="mb-3 flex justify-between gap-4">
+            <span>Shipping</span>
+            <span className="text-right text-slate-500">
+              {form.deliveryMethod === "pickup"
+                ? "Free"
+                : `CAD $${shippingCost.toFixed(2)} (${form.province})`}
+            </span>
+          </div>
+
+          <div className="mb-3 flex justify-between gap-4">
+            <span>Taxes</span>
+            <span className="text-right text-slate-500">
               Calculated at secure checkout
             </span>
           </div>
@@ -161,13 +176,14 @@ export default function CheckoutPage() {
           <hr className="my-6" />
 
           <div className="flex justify-between text-2xl font-bold">
-            <span>Subtotal</span>
-            <span>CAD ${subtotal.toFixed(2)}</span>
+            <span>Total before tax</span>
+            <span>CAD ${totalBeforeTax.toFixed(2)}</span>
           </div>
 
           <p className="mt-4 text-sm text-slate-500 leading-6">
-            Your final total, including applicable taxes and shipping, will be
-            calculated securely during the next step in Stripe Checkout.
+            Shipping is based on the province selected in your delivery address.
+            Applicable taxes are calculated securely in Stripe Checkout using
+            that same address.
           </p>
 
           <button
@@ -181,8 +197,8 @@ export default function CheckoutPage() {
               : "Continue to Secure Checkout"}
           </button>
           <p className="mt-4 text-center text-xs text-slate-500">
-            Secure checkout powered by Stripe. Taxes and shipping are calculated
-            based on your delivery details.
+            Secure checkout powered by Stripe. Your shipping address is entered
+            once and carried securely into payment.
           </p>
         </div>
       </div>

@@ -358,9 +358,43 @@ export const POST: APIRoute = async ({ request }) => {
     const order = await createOrder(customer, subtotal);
     await createOrderItems(order.id, trustedItems);
 
+    const stripeCustomer =
+      customer.deliveryMethod === "shipping"
+        ? await stripe.customers.create({
+            email: customer.email,
+            name: `${customer.firstName} ${customer.lastName}`,
+            phone: customer.phone,
+            address: {
+              line1: customer.address,
+              line2: customer.unit || undefined,
+              city: customer.city,
+              state: customer.province,
+              postal_code: customer.postalCode,
+              country: "CA",
+            },
+            shipping: {
+              name: `${customer.firstName} ${customer.lastName}`,
+              phone: customer.phone,
+              address: {
+                line1: customer.address,
+                line2: customer.unit || undefined,
+                city: customer.city,
+                state: customer.province,
+                postal_code: customer.postalCode,
+                country: "CA",
+              },
+            },
+            metadata: {
+              orderId: order.id,
+            },
+          })
+        : null;
+
     const session = await stripe.checkout.sessions.create({
       mode: "payment",
-      customer_email: customer.email,
+      ...(stripeCustomer
+        ? { customer: stripeCustomer.id }
+        : { customer_email: customer.email }),
       automatic_tax: {
         enabled: true,
       },
@@ -381,7 +415,7 @@ export const POST: APIRoute = async ({ request }) => {
           : [
               {
                 shipping_rate_data: {
-                  display_name: "Flat Rate Shipping",
+                  display_name: `Shipping to ${customer.province}`,
                   type: "fixed_amount",
                   fixed_amount: {
                     amount: Math.round(shippingCost * 100),
@@ -391,12 +425,6 @@ export const POST: APIRoute = async ({ request }) => {
               },
             ],
       billing_address_collection: "required",
-      shipping_address_collection:
-        customer.deliveryMethod === "shipping"
-          ? {
-              allowed_countries: ["CA"],
-            }
-          : undefined,
       metadata: {
         orderId: order.id,
       },
