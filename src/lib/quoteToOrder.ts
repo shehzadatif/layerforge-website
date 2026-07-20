@@ -7,10 +7,20 @@ import { ORDER_STATUS } from "./orderStatus";
 import { generateInvoicePdf } from "./invoicePdf";
 import { paymentConfirmationHtml } from "./emailTemplates/paymentConfirmation";
 
+interface CompletedOrder {
+  id: string;
+  order_number: number | string;
+  customer_name: string | null;
+  email: string | null;
+  total: number | string;
+  tracking_token: string;
+  order_items?: unknown[];
+}
+
 export async function convertPaidQuoteToOrder(
   quoteId: string,
-  session: Stripe.Checkout.Session
-) {
+  session: Stripe.Checkout.Session,
+): Promise<string> {
   const { data: quote, error: quoteError } =
     await supabaseAdmin
       .from("quotes")
@@ -19,28 +29,37 @@ export async function convertPaidQuoteToOrder(
       .single();
 
   if (quoteError) {
-    throw new Error(quoteError.message);
+    throw new Error(
+      `Unable to load quote: ${quoteError.message}`,
+    );
   }
 
   if (!quote) {
     throw new Error("Quote not found.");
   }
 
-  // Prevent duplicate orders and emails if Stripe retries the webhook.
+  /*
+   * Stripe may retry webhooks. Return the existing order
+   * instead of creating another one.
+   */
   if (quote.order_id) {
     return quote.order_id;
   }
 
   const quantity = Math.max(
     1,
-    Number(quote.quantity ?? 1)
+    Number(quote.quantity ?? 1),
   );
 
   const quotedPrice = Number(
     quote.quoted_price ??
       quote.estimated_price ??
-      0
+      0,
   );
+
+  if (!Number.isFinite(quotedPrice) || quotedPrice < 0) {
+    throw new Error("Quote price is invalid.");
+  }
 
   const projectDetails =
     quote.project_details &&
@@ -50,38 +69,36 @@ export async function convertPaidQuoteToOrder(
 
   const unitPrice = Number(
     projectDetails.unit_price ??
-      (quantity > 0
-        ? quotedPrice / quantity
-        : quotedPrice)
+      quotedPrice / quantity,
   );
 
-  const customerDetails =
-    session.customer_details;
+  if (!Number.isFinite(unitPrice) || unitPrice < 0) {
+    throw new Error("Quote unit price is invalid.");
+  }
 
-  const address =
-    customerDetails?.address;
+  const customerDetails = session.customer_details;
+  const address = customerDetails?.address;
 
   const subtotal =
-    (session.amount_subtotal ?? 0) / 100;
+    Number(session.amount_subtotal ?? 0) / 100;
 
   const shipping =
-    (session.shipping_cost?.amount_total ?? 0) /
+    Number(session.shipping_cost?.amount_total ?? 0) /
     100;
 
   const tax =
-    (session.total_details?.amount_tax ?? 0) /
+    Number(session.total_details?.amount_tax ?? 0) /
     100;
 
   const total =
-    (session.amount_total ?? 0) / 100;
+    Number(session.amount_total ?? 0) / 100;
 
   const paymentIntent =
     typeof session.payment_intent === "string"
       ? session.payment_intent
       : session.payment_intent?.id ?? "";
 
-  const trackingToken =
-    generateTrackingToken();
+  const trackingToken = generateTrackingToken();
 
   const { data: order, error: orderError } =
     await supabaseAdmin
@@ -131,23 +148,21 @@ export async function convertPaidQuoteToOrder(
         total,
 
         payment_status: "Paid",
-        order_status:
-          ORDER_STATUS.IN_PROGRESS,
+        order_status: ORDER_STATUS.IN_PROGRESS,
 
-        stripe_session_id:
-          session.id,
-
-        stripe_payment_intent:
-          paymentIntent,
-
-        tracking_token:
-          trackingToken,
+        stripe_session_id: session.id,
+        stripe_payment_intent: paymentIntent,
+        tracking_token: trackingToken,
       })
       .select()
       .single();
 
-  if (orderError) {
-    throw new Error(orderError.message);
+  if (orderError || !order) {
+    throw new Error(
+      `Unable to create order: ${
+        orderError?.message ?? "Unknown error"
+      }`,
+    );
   }
 
   const { error: itemError } =
@@ -155,7 +170,6 @@ export async function convertPaidQuoteToOrder(
       .from("order_items")
       .insert({
         order_id: order.id,
-
         product_id: null,
 
         product_name:
@@ -163,17 +177,10 @@ export async function convertPaidQuoteToOrder(
           quote.service ||
           "Custom Quote",
 
-        material:
-          quote.material ?? "",
-
+        material: quote.material ?? "",
         quantity,
-
-        unit_price:
-          unitPrice,
-
-        total_price:
-          quotedPrice,
-
+        unit_price: unitPrice,
+        total_price: quotedPrice,
         production_days: 0,
       });
 
@@ -183,7 +190,9 @@ export async function convertPaidQuoteToOrder(
       .delete()
       .eq("id", order.id);
 
-    throw new Error(itemError.message);
+    throw new Error(
+      `Unable to create order item: ${itemError.message}`,
+    );
   }
 
   const { error: updateQuoteError } =
@@ -192,42 +201,61 @@ export async function convertPaidQuoteToOrder(
       .update({
         status: "Converted",
         order_id: order.id,
-        converted_at:
-          new Date().toISOString(),
+        converted_at: new Date().toISOString(),
       })
-      .eq("id", quoteId);
+      .eq("id", quoteId)
+      .is("order_id", null);
 
   if (updateQuoteError) {
-    throw new Error(updateQuoteError.message);
-  }
+    await supabaseAdmin
+      .from("order_items")
+      .delete()
+      .eq("order_id", order.id);
 
-  const { data: completedOrder, error: completedOrderError } =
     await supabaseAdmin
       .from("orders")
-      .select(`
-        *,
-        order_items(*)
-      `)
-      .eq("id", order.id)
-      .single();
+      .delete()
+      .eq("id", order.id);
+
+    throw new Error(
+      `Unable to convert quote: ${updateQuoteError.message}`,
+    );
+  }
+
+  const {
+    data: completedOrder,
+    error: completedOrderError,
+  } = await supabaseAdmin
+    .from("orders")
+    .select(`
+      *,
+      order_items(*)
+    `)
+    .eq("id", order.id)
+    .single();
 
   if (completedOrderError || !completedOrder) {
     throw new Error(
       completedOrderError?.message ??
-        "Unable to load completed order."
+        "Unable to load completed order.",
     );
   }
 
   try {
     await sendPaymentConfirmation(
-      completedOrder
+      completedOrder as CompletedOrder,
     );
   } catch (emailError) {
-    // Payment and order creation must remain successful
-    // even if the email service temporarily fails.
+    /*
+     * Payment and order creation remain successful even
+     * when the email provider is temporarily unavailable.
+     */
     console.error(
-      "Unable to send payment confirmation email:",
-      emailError
+      "Unable to send payment confirmation email.",
+      {
+        orderId: order.id,
+        error: emailError,
+      },
     );
   }
 
@@ -235,24 +263,40 @@ export async function convertPaidQuoteToOrder(
 }
 
 async function sendPaymentConfirmation(
-  order: any
-) {
+  order: CompletedOrder,
+): Promise<void> {
   const apiKey =
-    import.meta.env.RESEND_API_KEY;
+    import.meta.env.RESEND_API_KEY?.trim();
 
   const fromEmail =
-    import.meta.env.ORDER_FROM_EMAIL ??
-    import.meta.env.QUOTE_FROM_EMAIL;
+    import.meta.env.FROM_EMAIL?.trim();
 
-  if (!apiKey || !fromEmail) {
+  const siteUrl =
+    import.meta.env.PUBLIC_SITE_URL
+      ?.trim()
+      .replace(/\/+$/, "");
+
+  if (!apiKey) {
     throw new Error(
-      "RESEND_API_KEY and ORDER_FROM_EMAIL are required."
+      "RESEND_API_KEY environment variable is required.",
+    );
+  }
+
+  if (!fromEmail) {
+    throw new Error(
+      "FROM_EMAIL environment variable is required.",
+    );
+  }
+
+  if (!siteUrl) {
+    throw new Error(
+      "PUBLIC_SITE_URL environment variable is required.",
     );
   }
 
   if (!order.email) {
     throw new Error(
-      "Order customer email is missing."
+      "Order customer email is missing.",
     );
   }
 
@@ -260,17 +304,14 @@ async function sendPaymentConfirmation(
     await generateInvoicePdf(order);
 
   const orderNumber =
-    "LF" +
-    String(order.order_number).padStart(
-      6,
-      "0"
-    );
+    `LF${String(order.order_number).padStart(6, "0")}`;
 
   const trackingUrl =
-    `https://layerforgecanada.com/t/${order.tracking_token}`;
+    `${siteUrl}/t/${encodeURIComponent(
+      order.tracking_token,
+    )}`;
 
-  const resend =
-    new Resend(apiKey);
+  const resend = new Resend(apiKey);
 
   const { error } =
     await resend.emails.send({
@@ -281,28 +322,29 @@ async function sendPaymentConfirmation(
         `Payment confirmed — Order ${orderNumber}`,
 
       html: paymentConfirmationHtml(
-        order.customer_name,
+        order.customer_name ?? "Customer",
         orderNumber,
         trackingUrl,
-        Number(order.total)
+        Number(order.total),
       ),
 
       attachments: [
         {
           filename:
             `Layer-Forge-Invoice-${orderNumber}.pdf`,
-
-          content:
-            Buffer.from(invoicePdf),
+          content: Buffer.from(invoicePdf),
         },
       ],
     });
 
   if (error) {
-    throw error;
+    throw new Error(
+      `Unable to send payment confirmation: ${error.message}`,
+    );
   }
 
-  console.log(
-    `Payment confirmation sent for ${orderNumber}`
-  );
+  console.log("Payment confirmation sent.", {
+    orderId: order.id,
+    orderNumber,
+  });
 }
