@@ -29,6 +29,29 @@ if (error) {
 }
 
 const paidOrders = orderRows ?? [];
+const paidOrderIds = new Set(paidOrders.map((order) => order.id));
+
+const [itemsResult, productsResult, categoriesResult, quotesResult] =
+  await Promise.all([
+    supabaseAdmin
+      .from("order_items")
+      .select("order_id, product_id, product_name, total_price"),
+    supabaseAdmin
+      .from("products")
+      .select("id, category_id"),
+    supabaseAdmin
+      .from("categories")
+      .select("id, name"),
+    supabaseAdmin
+      .from("quotes")
+      .select("order_id, service")
+      .not("order_id", "is", null),
+  ]);
+
+if (itemsResult.error) console.error("Unable to load order items:", itemsResult.error);
+if (productsResult.error) console.error("Unable to load product categories:", productsResult.error);
+if (categoriesResult.error) console.error("Unable to load categories:", categoriesResult.error);
+if (quotesResult.error) console.error("Unable to load quote services:", quotesResult.error);
 
 const currency = new Intl.NumberFormat("en-CA", {
   style: "currency",
@@ -56,6 +79,85 @@ const amount = (value: unknown) => {
   const parsed = Number(value ?? 0);
   return Number.isFinite(parsed) ? parsed : 0;
 };
+
+type ServiceKey = "3D Printing" | "Laser Engraving" | "UV Printing" | "Other / Unclassified";
+
+const categoryNameById = new Map(
+  (categoriesResult.data ?? []).map((category) => [category.id, category.name]),
+);
+const productCategoryById = new Map(
+  (productsResult.data ?? []).map((product) => [
+    product.id,
+    categoryNameById.get(product.category_id) ?? "",
+  ]),
+);
+const quoteServiceByOrderId = new Map(
+  (quotesResult.data ?? []).map((quote) => [quote.order_id, quote.service ?? ""]),
+);
+
+function classifyService(value: unknown): ServiceKey {
+  const label = String(value ?? "").toLowerCase();
+
+  if (label.includes("3d") || label.includes("3-d")) return "3D Printing";
+  if (label.includes("laser") || label.includes("engrav")) return "Laser Engraving";
+  if (
+    label.includes("uv") ||
+    label.includes("dtf") ||
+    label.includes("dtg") ||
+    label.includes("apparel")
+  ) return "UV Printing";
+
+  return "Other / Unclassified";
+}
+
+const serviceSummary = new Map<ServiceKey, { revenue: number; orderIds: Set<string> }>([
+  ["3D Printing", { revenue: 0, orderIds: new Set() }],
+  ["Laser Engraving", { revenue: 0, orderIds: new Set() }],
+  ["UV Printing", { revenue: 0, orderIds: new Set() }],
+  ["Other / Unclassified", { revenue: 0, orderIds: new Set() }],
+]);
+
+for (const item of itemsResult.data ?? []) {
+  if (!paidOrderIds.has(item.order_id)) continue;
+
+  const category = item.product_id
+    ? productCategoryById.get(item.product_id)
+    : quoteServiceByOrderId.get(item.order_id);
+  const service = classifyService(category || item.product_name);
+  const summary = serviceSummary.get(service)!;
+  summary.revenue += amount(item.total_price);
+  summary.orderIds.add(item.order_id);
+}
+
+const serviceCards = [
+  {
+    name: "3D Printing" as const,
+    description: "Parts, prototypes, and custom 3D-printed products",
+    accent: "bg-blue-500",
+    softAccent: "bg-blue-50 text-blue-700",
+  },
+  {
+    name: "Laser Engraving" as const,
+    description: "Engraved products, gifts, signage, and personalization",
+    accent: "bg-orange-500",
+    softAccent: "bg-orange-50 text-orange-700",
+  },
+  {
+    name: "UV Printing" as const,
+    description: "UV printing plus DTF and DTG apparel work",
+    accent: "bg-purple-500",
+    softAccent: "bg-purple-50 text-purple-700",
+  },
+];
+
+const classifiedRevenue = serviceCards.reduce(
+  (sum, service) => sum + serviceSummary.get(service.name)!.revenue,
+  0,
+);
+const highestServiceRevenue = Math.max(
+  ...serviceCards.map((service) => serviceSummary.get(service.name)!.revenue),
+  1,
+);
 
 const totalRevenue = paidOrders.reduce(
   (sum, order) => sum + amount(order.total),
@@ -245,6 +347,81 @@ const recentPayments = paidOrders.slice(0, 10);
       </p>
     </section>
   </div>
+
+  <section class="mt-8 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm sm:p-8">
+    <div class="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+      <div>
+        <h2 class="text-2xl font-bold text-slate-950">Income by service</h2>
+        <p class="mt-1 text-sm text-slate-500">
+          Paid line-item sales before shipping and tax
+        </p>
+      </div>
+      <div class="rounded-xl bg-slate-100 px-4 py-2 text-sm text-slate-600">
+        Classified sales: <strong class="text-slate-950">{currency.format(classifiedRevenue)}</strong>
+      </div>
+    </div>
+
+    <div class="mt-8 grid gap-5 lg:grid-cols-3">
+      {
+        serviceCards.map((service) => {
+          const summary = serviceSummary.get(service.name)!;
+          const share = productRevenue
+            ? (summary.revenue / productRevenue) * 100
+            : 0;
+          const barWidth = summary.revenue
+            ? Math.max((summary.revenue / highestServiceRevenue) * 100, 4)
+            : 0;
+
+          return (
+            <article class="rounded-2xl border border-slate-200 p-6">
+              <div class="flex items-start justify-between gap-4">
+                <div>
+                  <h3 class="text-xl font-bold text-slate-950">{service.name}</h3>
+                  <p class="mt-2 min-h-10 text-sm leading-5 text-slate-500">
+                    {service.description}
+                  </p>
+                </div>
+                <span class={`shrink-0 rounded-full px-3 py-1 text-xs font-bold ${service.softAccent}`}>
+                  {share.toFixed(1)}%
+                </span>
+              </div>
+
+              <p class="mt-7 text-3xl font-bold text-slate-950">
+                {currency.format(summary.revenue)}
+              </p>
+              <p class="mt-1 text-sm text-slate-500">
+                {summary.orderIds.size} {summary.orderIds.size === 1 ? "order" : "orders"}
+              </p>
+
+              <div class="mt-6 h-2 overflow-hidden rounded-full bg-slate-100">
+                <div class={`h-full rounded-full ${service.accent}`} style={`width: ${barWidth}%`}></div>
+              </div>
+            </article>
+          );
+        })
+      }
+    </div>
+
+    {
+      (() => {
+        const other = serviceSummary.get("Other / Unclassified")!;
+        return other.revenue > 0 ? (
+          <div class="mt-6 flex flex-col gap-3 rounded-xl border border-amber-200 bg-amber-50 p-5 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <p class="font-bold text-amber-900">Other / Unclassified</p>
+              <p class="mt-1 text-sm text-amber-800">
+                Items whose product category or quote service does not match one of the three services.
+              </p>
+            </div>
+            <div class="shrink-0 sm:text-right">
+              <p class="font-bold text-amber-950">{currency.format(other.revenue)}</p>
+              <p class="text-sm text-amber-800">{other.orderIds.size} orders</p>
+            </div>
+          </div>
+        ) : null;
+      })()
+    }
+  </section>
 
   <section class="mt-8 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
     <div class="border-b border-slate-200 p-6 sm:p-8">
