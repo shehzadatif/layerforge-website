@@ -41,10 +41,24 @@ const unitPrice = Number(
     (quantity > 0 ? quotedPrice / quantity : quotedPrice)
 );
 
+const siteUrl =
+  import.meta.env.PUBLIC_SITE_URL
+    ?.trim()
+    .replace(/\/+$/, "");
+
+if (!siteUrl) {
+  throw new Error(
+    "Missing PUBLIC_SITE_URL environment variable.",
+  );
+}
+
 const approvalUrl = quote.approval_token
-  ? `http://localhost:4321/q/${quote.approval_token}`
-  : "";
----
+  ? `${siteUrl}/q/${encodeURIComponent(
+      quote.approval_token,
+    )}`
+  : null;
+
+  ---
 
 <AdminLayout
   title={quoteNumber}

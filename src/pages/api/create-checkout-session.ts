@@ -63,9 +63,16 @@ export const POST: APIRoute = async ({ request }) => {
     //
     await createOrderItems(order.id, items);
 
-    const baseUrl =
-      import.meta.env.SITE ??
-      "http://localhost:4321";
+   const baseUrl =
+  import.meta.env.PUBLIC_SITE_URL
+    ?.trim()
+    .replace(/\/+$/, "");
+
+if (!baseUrl) {
+  throw new Error(
+    "Missing PUBLIC_SITE_URL environment variable.",
+  );
+}
 
 
 

@@ -305,8 +305,12 @@ function getProductImageUrl(imagePath: string): string {
                       </span>
 
                       <span class="block text-sm text-slate-500">
-                        +{material.markup_percent}% from PLA
-                      </span>
+  {
+    material.markup_percent === 0
+      ? "Base material"
+      : `+${material.markup_percent}% from PLA`
+  }
+</span>
                     </span>
                   </label>
                 ))}

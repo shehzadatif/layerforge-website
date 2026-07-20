@@ -191,10 +191,13 @@ const { data: materials } = await supabaseAdmin
                 <div class="font-semibold">
                   {material.name}
                 </div>
-
-                <div class="text-sm text-slate-500">
-                  +{material.markup_percent}% from PLA price
-                </div>
+<div class="text-sm text-slate-500">
+  {
+    material.markup_percent === 0
+      ? "Base material"
+      : `+${material.markup_percent}% from PLA`
+  }
+</div>
               </div>
             </label>
           ))
