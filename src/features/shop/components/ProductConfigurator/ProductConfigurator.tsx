@@ -18,6 +18,7 @@ type Product = {
   name: string;
   description: string;
   price: number;
+  sale_price?: number | null;
   product_materials: ProductMaterial[];
 };
 
@@ -26,23 +27,26 @@ interface Props {
   image: string;
 }
 
-export default function ProductConfigurator({
-  product,
-  image,
-}: Props) {
+export default function ProductConfigurator({ product, image }: Props) {
   const [selectedMaterial, setSelectedMaterial] = useState(
-    product.product_materials?.[0]
+    product.product_materials?.[0],
   );
 
   const [quantity, setQuantity] = useState(1);
 
   const unitPrice = useMemo(() => {
-    if (!selectedMaterial) return Number(product.price);
+    const salePrice = Number(product.sale_price);
+    const basePrice =
+      Number.isFinite(salePrice) && salePrice > 0
+        ? salePrice
+        : Number(product.price);
+
+    if (!selectedMaterial) return basePrice;
 
     const markup = selectedMaterial.materials.markup_percent;
 
-    return Number(product.price) * (1 + markup / 100);
-  }, [selectedMaterial, product.price]);
+    return basePrice * (1 + markup / 100);
+  }, [selectedMaterial, product.price, product.sale_price]);
 
   function handleAddToCart() {
     if (!selectedMaterial) return;
@@ -58,20 +62,18 @@ export default function ProductConfigurator({
     });
 
     toast.success("Added to Cart", {
-  description: `${product.name} • ${selectedMaterial.materials.name} • Qty ${quantity}`,
-});
+      description: `${product.name} • ${selectedMaterial.materials.name} • Qty ${quantity}`,
+    });
 
-console.log(
-  `${product.name} • ${selectedMaterial.materials.name} • Qty ${quantity}`
-);
+    console.log(
+      `${product.name} • ${selectedMaterial.materials.name} • Qty ${quantity}`,
+    );
   }
 
   return (
     <div className="space-y-8">
       <div>
-        <h2 className="mb-4 text-xl font-semibold">
-          Material
-        </h2>
+        <h2 className="mb-4 text-xl font-semibold">Material</h2>
 
         <div className="space-y-3">
           {product.product_materials.map((pm) => {
@@ -85,22 +87,15 @@ console.log(
                 <div className="flex items-center gap-3">
                   <input
                     type="radio"
-                    checked={
-                      selectedMaterial?.material_id ===
-                      pm.material_id
-                    }
+                    checked={selectedMaterial?.material_id === pm.material_id}
                     onChange={() => setSelectedMaterial(pm)}
                   />
 
-                  <span className="font-medium">
-                    {pm.materials.name}
-                  </span>
+                  <span className="font-medium">{pm.materials.name}</span>
                 </div>
 
                 <span className="text-slate-500">
-                  {markup === 0
-                    ? "Included"
-                    : `+${markup}%`}
+                  {markup === 0 ? "Included" : `+${markup}%`}
                 </span>
               </label>
             );
@@ -109,31 +104,23 @@ console.log(
       </div>
 
       <div>
-        <h2 className="mb-2 text-xl font-semibold">
-          Quantity
-        </h2>
+        <h2 className="mb-2 text-xl font-semibold">Quantity</h2>
 
         <div className="flex items-center gap-4">
           <button
             type="button"
             className="rounded-lg border px-4 py-2"
-            onClick={() =>
-              setQuantity(Math.max(1, quantity - 1))
-            }
+            onClick={() => setQuantity(Math.max(1, quantity - 1))}
           >
             −
           </button>
 
-          <span className="text-xl font-bold">
-            {quantity}
-          </span>
+          <span className="text-xl font-bold">{quantity}</span>
 
           <button
             type="button"
             className="rounded-lg border px-4 py-2"
-            onClick={() =>
-              setQuantity(quantity + 1)
-            }
+            onClick={() => setQuantity(quantity + 1)}
           >
             +
           </button>
@@ -141,9 +128,7 @@ console.log(
       </div>
 
       <div className="rounded-xl bg-slate-100 p-6">
-        <div className="text-sm text-slate-500">
-          Total
-        </div>
+        <div className="text-sm text-slate-500">Total</div>
 
         <div className="text-4xl font-bold">
           CAD ${(unitPrice * quantity).toFixed(2)}

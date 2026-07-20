@@ -1,31 +1,43 @@
 import type { APIRoute } from "astro";
 
+import { isSameOriginRequest } from "../../lib/isSameOriginRequest";
 import { stripe } from "../../lib/stripe";
 import { supabaseAdmin } from "../../lib/supabaseAdmin";
 
 export const prerender = false;
 
 export const POST: APIRoute = async ({ request }) => {
-  try {
-    const { quoteId } = await request.json();
+  if (!isSameOriginRequest(request)) {
+    return Response.json(
+      {
+        error: "Invalid request origin.",
+      },
+      { status: 403 },
+    );
+  }
 
-    if (!quoteId) {
+  try {
+    const body = await request.json();
+    const quoteId = String(body?.quoteId ?? "").trim();
+    const approvalToken = String(body?.approvalToken ?? "").trim();
+
+    if (!quoteId || !approvalToken) {
       return Response.json(
         {
-          error: "Quote ID is required.",
+          error: "Quote ID and approval token are required.",
         },
         {
           status: 400,
-        }
+        },
       );
     }
 
-    const { data: quote, error: quoteError } =
-      await supabaseAdmin
-        .from("quotes")
-        .select("*")
-        .eq("id", quoteId)
-        .single();
+    const { data: quote, error: quoteError } = await supabaseAdmin
+      .from("quotes")
+      .select("*")
+      .eq("id", quoteId)
+      .eq("approval_token", approvalToken)
+      .maybeSingle();
 
     if (quoteError || !quote) {
       return Response.json(
@@ -34,7 +46,7 @@ export const POST: APIRoute = async ({ request }) => {
         },
         {
           status: 404,
-        }
+        },
       );
     }
 
@@ -45,7 +57,7 @@ export const POST: APIRoute = async ({ request }) => {
         },
         {
           status: 400,
-        }
+        },
       );
     }
 
@@ -56,37 +68,39 @@ export const POST: APIRoute = async ({ request }) => {
         },
         {
           status: 409,
-        }
+        },
       );
     }
 
-    const quantity = Math.max(
-      1,
-      Number(quote.quantity ?? 1)
-    );
+    const quantity = Number(quote.quantity ?? 1);
+
+    if (!Number.isInteger(quantity) || quantity < 1 || quantity > 10000) {
+      return Response.json(
+        {
+          error: "Quote quantity is invalid.",
+        },
+        { status: 400 },
+      );
+    }
 
     const quotedPrice = Number(
-      quote.quoted_price ??
-      quote.estimated_price ??
-      0
+      quote.quoted_price ?? quote.estimated_price ?? 0,
     );
 
     const projectDetails =
-      quote.project_details &&
-      typeof quote.project_details === "object"
+      quote.project_details && typeof quote.project_details === "object"
         ? quote.project_details
         : {};
 
     const unitPrice = Number(
       projectDetails.unit_price ??
-      (quantity > 0
-        ? quotedPrice / quantity
-        : quotedPrice)
+        (quantity > 0 ? quotedPrice / quantity : quotedPrice),
     );
 
     if (
       !Number.isFinite(unitPrice) ||
-      unitPrice <= 0
+      unitPrice <= 0 ||
+      Math.round(unitPrice * 100) <= 0
     ) {
       return Response.json(
         {
@@ -94,96 +108,95 @@ export const POST: APIRoute = async ({ request }) => {
         },
         {
           status: 400,
-        }
+        },
       );
     }
 
-    const baseUrl =
-  import.meta.env.PUBLIC_SITE_URL
-    ?.trim()
-    .replace(/\/+$/, "");
+    const baseUrl = import.meta.env.PUBLIC_SITE_URL?.trim().replace(/\/+$/, "");
 
-if (!baseUrl) {
-  throw new Error(
-    "Missing PUBLIC_SITE_URL environment variable.",
-  );
-}
+    if (!baseUrl) {
+      throw new Error("Missing PUBLIC_SITE_URL environment variable.");
+    }
 
-    const session =
-      await stripe.checkout.sessions.create({
-        mode: "payment",
+    const isLocalPickup =
+      String(quote.delivery_method ?? "").toLowerCase() === "pickup";
 
-        customer_email: quote.email,
+    const session = await stripe.checkout.sessions.create({
+      mode: "payment",
 
-        automatic_tax: {
-          enabled: true,
-        },
+      customer_email: quote.email,
 
-        shipping_options: [
-  {
-    shipping_rate_data: {
-      display_name: "Flat Rate Shipping",
-      type: "fixed_amount",
-      fixed_amount: {
-        amount: 1500,
-        currency: "cad",
+      automatic_tax: {
+        enabled: true,
       },
-    },
-  },
-],
 
-        billing_address_collection: "required",
-
-        shipping_address_collection: {
-          allowed_countries: ["CA"],
-        },
-
-        metadata: {
-          source: "quote",
-          quoteId: quote.id,
-        },
-
-        line_items: [
-          {
-            price_data: {
-              currency: "cad",
-
-              product_data: {
-                name:
-                  quote.project_name ||
-                  quote.service ||
-                  "Custom Quote",
-
-                description:
-                  quote.material ||
-                  quote.description ||
-                  undefined,
+      shipping_options: isLocalPickup
+        ? [
+            {
+              shipping_rate_data: {
+                display_name: "Local Pickup",
+                type: "fixed_amount",
+                fixed_amount: {
+                  amount: 0,
+                  currency: "cad",
+                },
               },
+            },
+          ]
+        : [
+            {
+              shipping_rate_data: {
+                display_name: "Flat Rate Shipping",
+                type: "fixed_amount",
+                fixed_amount: {
+                  amount: 1500,
+                  currency: "cad",
+                },
+              },
+            },
+          ],
 
-              unit_amount: Math.round(
-                unitPrice * 100
-              ),
+      billing_address_collection: "required",
+
+      shipping_address_collection: isLocalPickup
+        ? undefined
+        : {
+            allowed_countries: ["CA"],
+          },
+
+      metadata: {
+        source: "quote",
+        quoteId: quote.id,
+      },
+
+      line_items: [
+        {
+          price_data: {
+            currency: "cad",
+
+            product_data: {
+              name: quote.project_name || quote.service || "Custom Quote",
+
+              description: quote.material || quote.description || undefined,
             },
 
-            quantity,
+            unit_amount: Math.round(unitPrice * 100),
           },
-        ],
 
-        success_url:
-          `${baseUrl}/checkout/success?session_id={CHECKOUT_SESSION_ID}`,
+          quantity,
+        },
+      ],
 
-        cancel_url:
-          `${baseUrl}/q/${quote.approval_token}`,
-      });
+      success_url: `${baseUrl}/checkout/success?session_id={CHECKOUT_SESSION_ID}`,
+
+      cancel_url: `${baseUrl}/q/${quote.approval_token}`,
+    });
 
     return Response.json({
       url: session.url,
     });
   } catch (error) {
-    console.error(
-      "Unable to create quote checkout session:",
-      error
-    );
+    console.error("Unable to create quote checkout session:", error);
 
     return Response.json(
       {
@@ -191,7 +204,7 @@ if (!baseUrl) {
       },
       {
         status: 500,
-      }
+      },
     );
   }
 };

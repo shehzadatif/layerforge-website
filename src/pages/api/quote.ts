@@ -1,182 +1,215 @@
 import type { APIRoute } from "astro";
-import { supabaseAdmin } from "../../lib/supabaseAdmin";
+
 import { sendQuoteEmails } from "../../lib/email";
+import { isSameOriginRequest } from "../../lib/isSameOriginRequest";
+import { generateApprovalToken } from "../../lib/tracking";
+import { supabaseAdmin } from "../../lib/supabaseAdmin";
 
 export const prerender = false;
 
+const MAX_QUOTE_FILE_SIZE = 50 * 1024 * 1024;
+const ALLOWED_SERVICES = new Set([
+  "3D Printing",
+  "Laser Engraving",
+  "UV Printing",
+]);
+const ALLOWED_FILE_EXTENSIONS = new Set([
+  "3mf",
+  "ai",
+  "dxf",
+  "eps",
+  "jpeg",
+  "jpg",
+  "obj",
+  "pdf",
+  "png",
+  "step",
+  "stl",
+  "stp",
+  "svg",
+  "webp",
+]);
+
+class QuoteRequestError extends Error {}
+
+function textValue(
+  formData: FormData,
+  key: string,
+  maxLength: number,
+  required = false,
+): string {
+  const value = String(formData.get(key) ?? "").trim();
+
+  if (required && !value) {
+    throw new QuoteRequestError(`${key} is required.`);
+  }
+
+  if (value.length > maxLength) {
+    throw new QuoteRequestError(`${key} is too long.`);
+  }
+
+  return value;
+}
+
+function getFileExtension(file: File): string {
+  return (
+    file.name
+      .split(".")
+      .pop()
+      ?.toLowerCase()
+      .replace(/[^a-z0-9]/g, "") ?? ""
+  );
+}
+
 export const POST: APIRoute = async ({ request }) => {
+  if (!isSameOriginRequest(request)) {
+    return Response.json(
+      {
+        success: false,
+        error: "Invalid request origin.",
+      },
+      { status: 403 },
+    );
+  }
+
   try {
     const formData = await request.formData();
+    const service = textValue(formData, "service", 80, true);
+    const submittedProjectName = textValue(formData, "projectName", 160);
+    const name = textValue(formData, "name", 120, true);
+    const email = textValue(formData, "email", 254, true).toLowerCase();
+    const phone = textValue(formData, "phone", 40);
+    const company = textValue(formData, "company", 160);
+    const material = textValue(formData, "material", 120);
+    const color = textValue(formData, "color", 120);
+    const deliveryMethod = textValue(formData, "deliveryMethod", 40);
+    const notes = textValue(formData, "notes", 5000);
+    const itemType = textValue(formData, "itemType", 160);
+    const customItem = textValue(formData, "customItem", 160);
+    const dueDate = textValue(formData, "dueDate", 40);
+    const units = textValue(formData, "units", 40);
+    const itemDimensions = textValue(formData, "itemDimensions", 160);
+    const printArea = textValue(formData, "printArea", 160);
+    const quantity = Number(formData.get("quantity") ?? 1);
 
-    // -------------------------------------------------
-    // Upload File (if provided)
-    // -------------------------------------------------
+    if (!ALLOWED_SERVICES.has(service)) {
+      throw new QuoteRequestError("Select a valid Layer Forge service.");
+    }
 
-    const file = formData.get("file") as File | null;
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      throw new QuoteRequestError("Enter a valid email address.");
+    }
 
+    if (!Number.isInteger(quantity) || quantity < 1 || quantity > 10000) {
+      throw new QuoteRequestError("Quantity must be between 1 and 10,000.");
+    }
+
+    const allowedDeliveryMethods = new Set([
+      "",
+      "Pickup",
+      "Local Delivery",
+      "Shipping",
+    ]);
+
+    if (!allowedDeliveryMethods.has(deliveryMethod)) {
+      throw new QuoteRequestError("Select a valid delivery method.");
+    }
+
+    const fileValue = formData.get("file");
+    const file = fileValue instanceof File ? fileValue : null;
     let fileUrl = "";
 
     if (file && file.size > 0) {
-      const filename = `${Date.now()}-${file.name}`;
+      const extension = getFileExtension(file);
 
-      const { error: uploadError } = await supabaseAdmin.storage
-        .from("quote-files")
-        .upload(filename, file);
-
-      if (uploadError) {
-        console.error(uploadError);
-
-        return Response.json(
-          {
-            success: false,
-            error: uploadError.message,
-          },
-          {
-            status: 500,
-          }
+      if (
+        file.size > MAX_QUOTE_FILE_SIZE ||
+        !ALLOWED_FILE_EXTENSIONS.has(extension)
+      ) {
+        throw new QuoteRequestError(
+          "Upload a supported design file no larger than 50 MB.",
         );
       }
 
-      fileUrl = filename;
+      const storagePath =
+        `${service.toLowerCase().replace(/[^a-z0-9]+/g, "-")}/` +
+        `${crypto.randomUUID()}.${extension}`;
+      const fileBytes = await file.arrayBuffer();
+      const { error: uploadError } = await supabaseAdmin.storage
+        .from("quote-files")
+        .upload(storagePath, fileBytes, {
+          contentType: file.type || "application/octet-stream",
+          upsert: false,
+        });
+
+      if (uploadError) {
+        console.error("Unable to upload quote file.", {
+          service,
+          extension,
+          size: file.size,
+          error: uploadError,
+        });
+
+        throw new Error("Quote file upload failed.");
+      }
+
+      fileUrl = storagePath;
     }
 
-    // -------------------------------------------------
-    // Common Fields
-    // -------------------------------------------------
-
-    const service = String(formData.get("service") ?? "");
-
-    const projectName = String(formData.get("projectName") ?? "");
-
-    const name = String(formData.get("name") ?? "");
-    const email = String(formData.get("email") ?? "");
-    const phone = String(formData.get("phone") ?? "");
-    const company = String(formData.get("company") ?? "");
-
-    const material = String(formData.get("material") ?? "");
-    const color = String(formData.get("color") ?? "");
-
-    const quantity = Number(formData.get("quantity") ?? 1);
-
-    const deliveryMethod = String(
-      formData.get("deliveryMethod") ?? ""
-    );
-
-    const notes = String(formData.get("notes") ?? "");
-
-    // -------------------------------------------------
-    // Laser Engraving Fields
-    // -------------------------------------------------
-
-    const itemType = String(formData.get("itemType") ?? "");
-
-    const customItem = String(formData.get("customItem") ?? "");
-
-    const customerSupplied =
-      formData.get("customerSupplied") ? "Yes" : "No";
-
-    const dueDate = String(formData.get("dueDate") ?? "");
-
-    // -------------------------------------------------
-    // UV Printing Fields
-    // -------------------------------------------------
-
-    const units = String(formData.get("units") ?? "");
-
-    const itemDimensions = String(
-      formData.get("itemDimensions") ?? ""
-    );
-
-    const printArea = String(formData.get("printArea") ?? "");
-
-    // -------------------------------------------------
-    // Build Description
-    // -------------------------------------------------
-
+    const customerSupplied = formData.get("customerSupplied") ? "Yes" : "No";
+    const projectName =
+      submittedProjectName || customItem || itemType || `${service} Project`;
     const projectDetails = [
       notes && `Notes: ${notes}`,
-
       itemType && `Item Type: ${itemType}`,
-
       customItem && `Custom Item: ${customItem}`,
-
-      itemDimensions &&
-        `Item Dimensions: ${itemDimensions}`,
-
-      printArea &&
-        `Print Area: ${printArea}`,
-
-      units &&
-        `Measurement Units: ${units}`,
-
-      dueDate &&
-        `Requested Completion: ${dueDate}`,
-
+      itemDimensions && `Item Dimensions: ${itemDimensions}`,
+      printArea && `Print Area: ${printArea}`,
+      units && `Measurement Units: ${units}`,
+      dueDate && `Requested Completion: ${dueDate}`,
       `Customer Supplied Item: ${customerSupplied}`,
     ]
       .filter(Boolean)
       .join("\n");
 
-// -------------------------------------------------
-// Generate Quote Number
-// -------------------------------------------------
-
-const { count } = await supabaseAdmin
-  .from("quotes")
-  .select("*", {
-    count: "exact",
-    head: true,
-  });
-
-const quoteNumber = `LF-${1001 + (count ?? 0)}`;
-
-    // -------------------------------------------------
-    // Save Quote
-    // -------------------------------------------------
-
-    const { error } = await supabaseAdmin
+    const { count, error: countError } = await supabaseAdmin
       .from("quotes")
-      .insert({
-        service,
-        quote_number: quoteNumber,
-        project_name: projectName,
-
-        name,
-        email,
-        phone,
-        company,
-
-        material,
-        color,
-
-        quantity,
-
-        delivery_method: deliveryMethod,
-
-        description: projectDetails,
-
-        file_url: fileUrl,
-
-        status: "New",
+      .select("*", {
+        count: "exact",
+        head: true,
       });
 
-    if (error) {
-      console.error(error);
-
-      return Response.json(
-        {
-          success: false,
-          error: error.message,
-        },
-        {
-          status: 500,
-        }
-      );
+    if (countError) {
+      throw new Error(countError.message);
     }
 
-    // -------------------------------------------------
-    // Email Notifications
-    // -------------------------------------------------
+    const quoteNumber = `LF-${1001 + (count ?? 0)}`;
+    const approvalToken = generateApprovalToken();
+    const { error: insertError } = await supabaseAdmin.from("quotes").insert({
+      service,
+      quote_number: quoteNumber,
+      project_name: projectName,
+      name,
+      email,
+      phone,
+      company,
+      material,
+      color,
+      quantity,
+      delivery_method: deliveryMethod,
+      description: projectDetails,
+      file_url: fileUrl,
+      approval_token: approvalToken,
+      status: "New",
+    });
+
+    if (insertError) {
+      if (fileUrl) {
+        await supabaseAdmin.storage.from("quote-files").remove([fileUrl]);
+      }
+
+      throw new Error(insertError.message);
+    }
 
     await sendQuoteEmails({
       name,
@@ -187,26 +220,31 @@ const quoteNumber = `LF-${1001 + (count ?? 0)}`;
       projectName,
     });
 
-    // -------------------------------------------------
-    // Success
-    // -------------------------------------------------
-
     return Response.json({
       success: true,
       redirect: "/quote/success",
     });
+  } catch (error) {
+    if (error instanceof QuoteRequestError) {
+      return Response.json(
+        {
+          success: false,
+          error: error.message,
+        },
+        { status: 400 },
+      );
+    }
 
-  } catch (err) {
-    console.error(err);
+    console.error("Unable to submit quote request.", {
+      error,
+    });
 
     return Response.json(
       {
         success: false,
-        error: "Unexpected server error.",
+        error: "Unable to submit your quote request.",
       },
-      {
-        status: 500,
-      }
+      { status: 500 },
     );
   }
 };

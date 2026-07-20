@@ -293,7 +293,12 @@ const unitPrice = Number(
 
   </section>
 
-  <script define:vars={{ quoteId: quote.id }}>
+  <script
+    define:vars={{
+      quoteId: quote.id,
+      approvalToken: token,
+    }}
+  >
 
     async function updateQuote(status) {
       try {
@@ -304,6 +309,7 @@ const unitPrice = Number(
           },
           body: JSON.stringify({
             quoteId,
+            approvalToken,
             status,
           }),
         });
@@ -341,6 +347,7 @@ const unitPrice = Number(
             },
             body: JSON.stringify({
               quoteId,
+              approvalToken,
             }),
           }
         );

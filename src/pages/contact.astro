@@ -1,5 +1,16 @@
 ---
 import MainLayout from "../layouts/MainLayout.astro";
+
+const turnstileSiteKey =
+  import.meta.env.PUBLIC_TURNSTILE_SITE_KEY?.trim();
+const errorCode = Astro.url.searchParams.get("error");
+const errorMessage = errorCode === "verification"
+  ? "Please complete the security check and try again."
+  : errorCode === "unavailable"
+    ? "The contact form is temporarily unavailable. Please email support@layerforgecanada.com."
+    : errorCode
+      ? "Please review your information and try again."
+      : "";
 ---
 
 <MainLayout title="Contact Us | Layer Forge">
@@ -62,7 +73,7 @@ import MainLayout from "../layouts/MainLayout.astro";
               </h3>
 
               <p class="mt-2 text-slate-300">
-                Surrrey, BC
+                Surrey, BC
                 <br />
                 Canada
               </p>
@@ -103,11 +114,36 @@ import MainLayout from "../layouts/MainLayout.astro";
             Fill out the form below and we'll respond as soon as possible.
           </p>
 
+          {
+            errorMessage && (
+              <div
+                class="mt-6 rounded-xl border border-red-200 bg-red-50 p-4 text-sm font-medium text-red-700"
+                role="alert"
+              >
+                {errorMessage}
+              </div>
+            )
+          }
+
           <form
-            action="/contact-success"
-            method="GET"
+            action="/api/contact"
+            method="POST"
             class="mt-10 space-y-6"
           >
+
+            <div
+              class="absolute -left-[10000px] h-px w-px overflow-hidden"
+              aria-hidden="true"
+            >
+              <label for="website">Website</label>
+              <input
+                id="website"
+                name="website"
+                type="text"
+                tabindex="-1"
+                autocomplete="off"
+              />
+            </div>
 
             <div class="grid gap-6 md:grid-cols-2">
 
@@ -207,6 +243,15 @@ import MainLayout from "../layouts/MainLayout.astro";
 
             </div>
 
+            {
+              turnstileSiteKey && (
+                <div
+                  class="cf-turnstile"
+                  data-sitekey={turnstileSiteKey}
+                ></div>
+              )
+            }
+
             <div class="pt-4">
 
               <button
@@ -260,5 +305,16 @@ import MainLayout from "../layouts/MainLayout.astro";
   </div>
 
 </section>
+
+{
+  turnstileSiteKey && (
+    <script
+      is:inline
+      src="https://challenges.cloudflare.com/turnstile/v0/api.js"
+      async
+      defer
+    ></script>
+  )
+}
 
 </MainLayout>
