@@ -56,7 +56,7 @@ async function embedLogo(
 ) {
   try {
     const response = await fetch(
-      `${siteUrl}/images/pdf.png`,
+    const logoUrl = `${siteUrl}/images/pdf/logo.png`;
     );
 
     if (!response.ok) {

@@ -121,7 +121,7 @@ export const POST: APIRoute = async ({ request }) => {
         approvalToken,
       )}`;
 
-    const logoUrl = `${siteUrl}/images/pdf.png`;
+    const logoUrl = `${siteUrl}/images/pdf/logo.png`;
 
     const resend = new Resend(apiKey);
 
