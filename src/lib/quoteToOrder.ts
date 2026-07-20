@@ -350,7 +350,7 @@ async function sendPaymentConfirmation(
       from: fromEmail,
       to: customerEmail,
       subject:
-        `Payment confirmed — Order ${orderNumber}`,
+    `Payment confirmed - Order ${orderNumber}`,
       html: paymentConfirmationHtml(
         order.customer_name ?? "Customer",
         orderNumber,
@@ -380,14 +380,15 @@ async function sendPaymentConfirmation(
   });
 }
 
-  if (error) {
+   if (error) {
     throw new Error(
-      `Unable to send payment confirmation: ${error.message}`,
+      `Resend rejected the payment confirmation: ${error.message}`,
     );
   }
 
   console.log("Payment confirmation sent.", {
     orderId: order.id,
     orderNumber,
+    recipient: customerEmail,
+    resendEmailId: data?.id,
   });
-}
