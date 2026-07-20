@@ -8,31 +8,70 @@ import { convertPaidQuoteToOrder } from "../../lib/quoteToOrder";
 export const prerender = false;
 
 export const POST: APIRoute = async ({ request }) => {
-  const signature = request.headers.get("stripe-signature");
+const signature =
+  request.headers.get("stripe-signature");
 
-  if (!signature) {
-    return new Response("Missing signature.", {
+if (!signature) {
+  console.error(
+    "Stripe webhook request is missing the stripe-signature header.",
+  );
+
+  return new Response("Missing signature.", {
+    status: 400,
+  });
+}
+
+const webhookSecret =
+  import.meta.env.STRIPE_WEBHOOK_SECRET?.trim();
+
+if (!webhookSecret) {
+  console.error(
+    "STRIPE_WEBHOOK_SECRET is unavailable to the Worker runtime.",
+  );
+
+  return new Response(
+    "Webhook configuration error.",
+    {
+      status: 500,
+    },
+  );
+}
+
+const body = await request.text();
+
+let event: Stripe.Event;
+
+try {
+  event = stripe.webhooks.constructEvent(
+    body,
+    signature,
+    webhookSecret,
+  );
+} catch (error) {
+  console.error(
+    "Stripe webhook signature verification failed.",
+    {
+      name:
+        error instanceof Error
+          ? error.name
+          : "UnknownError",
+      message:
+        error instanceof Error
+          ? error.message
+          : String(error),
+      hasSignature: Boolean(signature),
+      webhookSecretConfigured:
+        Boolean(webhookSecret),
+    },
+  );
+
+  return new Response(
+    "Webhook signature verification failed.",
+    {
       status: 400,
-    });
-  }
-
-  const body = await request.text();
-
-  let event: Stripe.Event;
-
-  try {
-    event = stripe.webhooks.constructEvent(
-      body,
-      signature,
-      import.meta.env.STRIPE_WEBHOOK_SECRET
-    );
-  } catch (error) {
-    console.error("Stripe webhook signature error:", error);
-
-    return new Response("Webhook Error", {
-      status: 400,
-    });
-  }
+    },
+  );
+}
 
   try {
     switch (event.type) {
