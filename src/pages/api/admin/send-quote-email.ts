@@ -66,7 +66,9 @@ export const POST: APIRoute = async ({ request }) => {
     }
 
     const apiKey = import.meta.env.RESEND_API_KEY;
-    const fromEmail = import.meta.env.QUOTE_FROM_EMAIL;
+   const fromEmail =
+  import.meta.env.QUOTE_FROM_EMAIL ??
+  import.meta.env.FROM_EMAIL;
 
     if (!apiKey || !fromEmail) {
       throw new Error(
