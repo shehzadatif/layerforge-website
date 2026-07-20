@@ -121,6 +121,8 @@ export const POST: APIRoute = async ({ request }) => {
         approvalToken,
       )}`;
 
+    const logoUrl = `${siteUrl}/images/pdf.png`;
+
     const resend = new Resend(apiKey);
 
     const { error: emailError } =
@@ -129,11 +131,22 @@ export const POST: APIRoute = async ({ request }) => {
         to: customerEmail,
         subject:
           `Your Layer Forge quote ${quoteNumber}`,
+
         html: quoteEmailHtml(
-          quote.customer_name ?? "Customer",
+          quote.customer_name ??
+            quote.name ??
+            "Customer",
           quoteNumber,
           approvalUrl,
         ),
+
+        attachments: [
+          {
+            path: logoUrl,
+            filename: "layer-forge-logo.png",
+            contentId: "layer-forge-logo",
+          },
+        ],
       });
 
     if (emailError) {
@@ -152,7 +165,7 @@ export const POST: APIRoute = async ({ request }) => {
 
     if (updateError) {
       throw new Error(
-        `Quote email was sent, but status could not be updated: ${updateError.message}`,
+        `Quote email was sent, but its status could not be updated: ${updateError.message}`,
       );
     }
 
