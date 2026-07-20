@@ -190,15 +190,9 @@ export async function generateQuotePdf(
     color: rgb(0.06, 0.09, 0.16),
   });
 
-  y -= 34;
+y -= 34;
 
-  drawText(
-    siteUrl.replace(/^https?:\/\//, ""),
-    LEFT_MARGIN,
-    10,
-  );
-
-  drawText(`Quote: ${quoteNumber}`, 420, 10);
+drawText(`Quote: ${quoteNumber}`, 420, 10);
 
   y -= 20;
 
@@ -345,45 +339,47 @@ export async function generateQuotePdf(
     );
   }
 
-  y -= 70;
+ y -= 70;
 
-  page.drawRectangle({
-    x: LEFT_MARGIN,
-    y: y - 18,
-    width:
-      PAGE_WIDTH -
-      LEFT_MARGIN -
-      RIGHT_MARGIN,
-    height: 54,
-    color: rgb(1, 0.98, 0.82),
-    borderColor: rgb(0.92, 0.7, 0.03),
-    borderWidth: 1,
-  });
+const noticeBoxY = y - 20;
+const noticeBoxHeight = 56;
 
-  drawText(
-    "Taxes and shipping charges, where applicable,",
-    68,
-    10,
-    bold,
-  );
+page.drawRectangle({
+  x: LEFT_MARGIN,
+  y: noticeBoxY,
+  width:
+    PAGE_WIDTH -
+    LEFT_MARGIN -
+    RIGHT_MARGIN,
+  height: noticeBoxHeight,
+  color: rgb(1, 0.98, 0.82),
+  borderColor: rgb(0.92, 0.7, 0.03),
+  borderWidth: 1,
+});
 
-  y -= 16;
+page.drawText(
+  "Taxes and shipping charges, where applicable,",
+  {
+    x: LEFT_MARGIN + 22,
+    y: noticeBoxY + 32,
+    size: 10,
+    font: bold,
+    color: rgb(0.06, 0.09, 0.16),
+  },
+);
 
-  drawText(
-    "will be calculated during secure checkout.",
-    68,
-    10,
-    bold,
-  );
+page.drawText(
+  "will be calculated during secure checkout.",
+  {
+    x: LEFT_MARGIN + 22,
+    y: noticeBoxY + 15,
+    size: 10,
+    font: bold,
+    color: rgb(0.06, 0.09, 0.16),
+  },
+);
 
-  y -= 62;
-
-  drawText(
-    "Thank you for considering Layer Forge for your project.",
-    LEFT_MARGIN,
-    11,
-    bold,
-  );
+y = noticeBoxY - 68;
 
   y -= 26;
 
