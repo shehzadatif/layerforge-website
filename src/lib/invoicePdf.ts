@@ -55,9 +55,10 @@ async function embedLogo(
   siteUrl: string,
 ) {
   try {
-    const response = await fetch(
-    const logoUrl = `${siteUrl}/images/pdf/logo.png`;
-    );
+    const logoUrl =
+      `${siteUrl}/images/pdf/logo.png`;
+
+    const response = await fetch(logoUrl);
 
     if (!response.ok) {
       throw new Error(
@@ -65,7 +66,8 @@ async function embedLogo(
       );
     }
 
-    const logoBytes = await response.arrayBuffer();
+    const logoBytes =
+      await response.arrayBuffer();
 
     return await pdf.embedPng(logoBytes);
   } catch (error) {
