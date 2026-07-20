@@ -1,7 +1,7 @@
 ---
 import AdminLayout from "../../../layouts/AdminLayout.astro";
 import { getOrders } from "../../../lib/orders";
-import { formatOrderDate } from "../../../lib/dateUtils";
+import { formatOrderDate, formatPacificDate } from "../../../lib/dateUtils";
 
 const orders = await getOrders();
 ---
@@ -138,7 +138,7 @@ const orders = await getOrders();
 
   <!-- Date -->
   <td class="px-6 py-5">
-    {new Date(order.created_at).toLocaleDateString("en-CA")}
+    {formatPacificDate(order.created_at)}
   </td>
 
   <!-- View -->

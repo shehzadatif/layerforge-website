@@ -1,6 +1,7 @@
 ---
 import AdminLayout from "../../layouts/AdminLayout.astro";
 import { supabaseAdmin } from "../../lib/supabaseAdmin";
+import { formatPacificDate } from "../../lib/dateUtils";
 
 const { data: orders, error: ordersError } =
   await supabaseAdmin
@@ -355,11 +356,7 @@ const totalRevenue =
 
                     {
                       customer.lastActivity
-                        ? new Date(
-                            customer.lastActivity
-                          ).toLocaleDateString(
-                            "en-CA"
-                          )
+                        ? formatPacificDate(customer.lastActivity)
                         : "-"
                     }
 

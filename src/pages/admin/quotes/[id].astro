@@ -1,6 +1,7 @@
 ---
 import AdminLayout from "../../../layouts/AdminLayout.astro";
 import { supabaseAdmin } from "../../../lib/supabaseAdmin";
+import { formatPacificDateTime } from "../../../lib/dateUtils";
 
 const { id } = Astro.params;
 
@@ -79,9 +80,7 @@ const approvalUrl = quote.approval_token
       </h1>
 
       <p class="mt-2 text-slate-500">
-        Created on {new Date(
-          quote.created_at,
-        ).toLocaleString()}
+        Created on {formatPacificDateTime(quote.created_at)}
       </p>
     </div>
 

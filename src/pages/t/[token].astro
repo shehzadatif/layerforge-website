@@ -1,6 +1,7 @@
 ---
 import MainLayout from "../../layouts/MainLayout.astro";
 import { supabaseAdmin } from "../../lib/supabaseAdmin";
+import { formatPacificDateTime } from "../../lib/dateUtils";
 
 const { token } = Astro.params;
 
@@ -34,7 +35,7 @@ const orderNumber = order
         </h1>
 
         <p class="mt-2 text-slate-500">
-          Placed on {new Date(order.created_at).toLocaleString()}
+          Placed on {formatPacificDateTime(order.created_at)}
         </p>
 
       </div>

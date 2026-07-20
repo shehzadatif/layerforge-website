@@ -1,6 +1,7 @@
 ---
 import AdminLayout from "../../../layouts/AdminLayout.astro";
 import { getOrder } from "../../../lib/orders";
+import { formatPacificDateTime } from "../../../lib/dateUtils";
 
 const { id } = Astro.params;
 
@@ -43,7 +44,7 @@ const trackingUrl =
       </h1>
 
       <p class="mt-2 text-slate-500">
-        Placed on {new Date(order.created_at).toLocaleString()}
+        Placed on {formatPacificDateTime(order.created_at)}
       </p>
 
     </div>
@@ -549,7 +550,7 @@ const trackingUrl =
     {
       order.shipped_at && (
         <div class="mt-6 rounded-xl bg-green-50 p-4 text-green-700">
-          Shipped on {new Date(order.shipped_at).toLocaleString()}
+          Shipped on {formatPacificDateTime(order.shipped_at)}
         </div>
       )
     }

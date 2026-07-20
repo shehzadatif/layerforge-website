@@ -1,6 +1,7 @@
 ---
 import AdminLayout from "../../../layouts/AdminLayout.astro";
 import { supabaseAdmin } from "../../../lib/supabaseAdmin";
+import { formatPacificDate } from "../../../lib/dateUtils";
 
 const { data: quotes, error } = await supabaseAdmin
   .from("quotes")
@@ -139,7 +140,7 @@ const quoteList = quotes ?? [];
                   </td>
 
                   <td class="px-6 py-5">
-                    {new Date(quote.created_at).toLocaleDateString("en-CA")}
+                    {formatPacificDate(quote.created_at)}
                   </td>
 
                   <td class="px-6 py-5 text-right">

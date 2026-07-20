@@ -5,6 +5,7 @@ import {
   type PDFFont,
   type PDFPage,
 } from "pdf-lib";
+import { formatPacificDate } from "./dateUtils";
 
 type InvoiceOrder = {
   order_number: number;
@@ -195,9 +196,7 @@ drawText(`Invoice: ${orderNumber}`, 420, 10);
   y -= 22;
 
   drawText(
-    `Date: ${new Date(
-      order.created_at,
-    ).toLocaleDateString("en-CA")}`,
+    `Date: ${formatPacificDate(order.created_at)}`,
     420,
     10,
   );

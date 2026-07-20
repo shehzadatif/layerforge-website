@@ -4,6 +4,7 @@ import {
   rgb,
   type PDFFont,
 } from "pdf-lib";
+import { formatPacificDate } from "./dateUtils";
 
 type QuoteRecord = {
   quote_number?: string | number | null;
@@ -197,9 +198,7 @@ drawText(`Quote: ${quoteNumber}`, 420, 10);
   y -= 20;
 
   drawText(
-    `Date: ${new Date(
-      quote.created_at,
-    ).toLocaleDateString("en-CA")}`,
+    `Date: ${formatPacificDate(quote.created_at)}`,
     420,
     10,
   );

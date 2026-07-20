@@ -121,18 +121,58 @@ export async function updateStripeSession(
  */
 export async function markOrderPaid(
   orderId: string,
-  paymentIntent: string
+  paymentIntent: string,
+  amounts: {
+    subtotal: number;
+    shipping: number;
+    tax: number;
+    total: number;
+  },
 ) {
-  const { error } = await supabaseAdmin
+  const { data, error } = await supabaseAdmin
     .from("orders")
     .update({
       payment_status: "Paid",
       order_status: ORDER_STATUS.IN_PROGRESS,
       stripe_payment_intent: paymentIntent,
+      subtotal: amounts.subtotal,
+      shipping: amounts.shipping,
+      tax: amounts.tax,
+      total: amounts.total,
     })
-    .eq("id", orderId);
+    .eq("id", orderId)
+    .neq("payment_status", "Paid")
+    .select(`
+      *,
+      order_items(*)
+    `)
+    .maybeSingle();
 
   if (error) throw error;
+
+  if (data) {
+    return {
+      order: data,
+      newlyPaid: true,
+    };
+  }
+
+  const { data: existingOrder, error: existingOrderError } =
+    await supabaseAdmin
+      .from("orders")
+      .select(`
+        *,
+        order_items(*)
+      `)
+      .eq("id", orderId)
+      .single();
+
+  if (existingOrderError) throw existingOrderError;
+
+  return {
+    order: existingOrder,
+    newlyPaid: false,
+  };
 }
 
 /**

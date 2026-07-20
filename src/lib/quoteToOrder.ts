@@ -7,14 +7,30 @@ import { ORDER_STATUS } from "./orderStatus";
 import { generateInvoicePdf } from "./invoicePdf";
 import { paymentConfirmationHtml } from "./emailTemplates/paymentConfirmation";
 
-interface CompletedOrder {
+export interface CompletedOrder {
   id: string;
-  order_number: number | string;
-  customer_name: string | null;
-  email: string | null;
-  total: number | string;
+  order_number: number;
+  customer_name: string;
+  email: string;
+  phone?: string;
+  shipping_address?: string;
+  unit?: string;
+  city?: string;
+  province?: string;
+  postal_code?: string;
+  subtotal: number;
+  shipping: number;
+  tax: number;
+  created_at: string;
+  total: number;
   tracking_token: string;
-  order_items?: unknown[];
+  order_items?: Array<{
+    product_name: string;
+    material?: string;
+    quantity: number;
+    unit_price: number;
+    total_price: number;
+  }>;
 }
 
 export async function convertPaidQuoteToOrder(
@@ -299,7 +315,7 @@ export async function convertPaidQuoteToOrder(
   return String(order.id);
 }
 
-async function sendPaymentConfirmation(
+export async function sendPaymentConfirmation(
   order: CompletedOrder,
 ): Promise<void> {
   const apiKey =

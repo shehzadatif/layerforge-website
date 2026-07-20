@@ -3,7 +3,11 @@ import Stripe from "stripe";
 
 import { stripe } from "../../lib/stripe";
 import { markOrderPaid } from "../../lib/orders";
-import { convertPaidQuoteToOrder } from "../../lib/quoteToOrder";
+import {
+  convertPaidQuoteToOrder,
+  sendPaymentConfirmation,
+  type CompletedOrder,
+} from "../../lib/quoteToOrder";
 
 export const prerender = false;
 
@@ -125,14 +129,61 @@ export const POST: APIRoute = async ({ request }) => {
             ? session.payment_intent
             : session.payment_intent?.id ?? "";
 
-        await markOrderPaid(
-          orderId,
-          paymentIntent,
-        );
+        const subtotal =
+          Number(session.amount_subtotal ?? 0) / 100;
+
+        const shipping =
+          Number(
+            session.shipping_cost?.amount_total ?? 0,
+          ) / 100;
+
+        const tax =
+          Number(
+            session.total_details?.amount_tax ?? 0,
+          ) / 100;
+
+        const total =
+          Number(session.amount_total ?? 0) / 100;
+
+        const { order, newlyPaid } =
+          await markOrderPaid(
+            orderId,
+            paymentIntent,
+            {
+              subtotal,
+              shipping,
+              tax,
+              total,
+            },
+          );
 
         console.log(
           `Order ${orderId} marked paid`,
         );
+
+        if (newlyPaid) {
+          try {
+            await sendPaymentConfirmation(
+              order as CompletedOrder,
+            );
+          } catch (emailError) {
+            /*
+             * Payment remains successful if invoice generation
+             * or email delivery fails.
+             */
+            console.error(
+              "Unable to send Shop payment confirmation email.",
+              {
+                orderId,
+                error: emailError,
+              },
+            );
+          }
+        } else {
+          console.log(
+            `Order ${orderId} was already paid; confirmation email skipped`,
+          );
+        }
 
         break;
       }

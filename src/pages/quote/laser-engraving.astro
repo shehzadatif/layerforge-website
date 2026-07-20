@@ -1,5 +1,6 @@
 ---
 import MainLayout from "../../layouts/MainLayout.astro";
+import { getPacificDateInputValue } from "../../lib/dateUtils";
 ---
 
 <MainLayout title="Laser Engraving Quote">
@@ -217,7 +218,7 @@ import MainLayout from "../../layouts/MainLayout.astro";
             id="dueDate"
             name="dueDate"
             type="date"
-            min={new Date(Date.now() + 3 * 86400000).toISOString().split("T")[0]}
+            min={getPacificDateInputValue(3)}
             class="mt-2 block w-full rounded-xl border border-slate-300 bg-white p-3 shadow-sm focus:border-yellow-400 focus:outline-none focus:ring-2 focus:ring-yellow-400"
           />
 
