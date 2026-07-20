@@ -75,16 +75,35 @@ if (error) {
               {material.active ? "✅ Active" : "❌ Inactive"}
             </td>
 
-            <td class="px-6 py-4 text-right">
+          <td class="px-6 py-4 text-right">
+  <div class="flex justify-end gap-2">
+    <a
+      href={`/admin/materials/${material.id}`}
+      class="rounded-lg bg-slate-900 px-4 py-2 text-white hover:bg-slate-700"
+    >
+      Edit
+    </a>
 
-              <a
-                href={`/admin/materials/${material.id}`}
-                class="rounded-lg bg-slate-900 px-4 py-2 text-white hover:bg-slate-700"
-              >
-                Edit
-              </a>
+    <form
+      action="/api/admin/delete-materials"
+      method="POST"
+      onsubmit="return confirm('Delete this material? This action cannot be undone.');"
+    >
+      <input
+        type="hidden"
+        name="material_id"
+        value={material.id}
+      />
 
-            </td>
+      <button
+        type="submit"
+        class="rounded-lg bg-red-600 px-4 py-2 text-white hover:bg-red-700"
+      >
+        Delete
+      </button>
+    </form>
+  </div>
+</td>
 
           </tr>
 
