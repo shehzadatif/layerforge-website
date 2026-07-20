@@ -55,6 +55,10 @@ if (factorsError) {
 
     <meta name="robots" content="noindex, nofollow" />
 
+    <link rel="icon" href="/favicon.ico" sizes="any" />
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png" />
+    <link rel="apple-touch-icon" href="/icon-192.png" />
+
     <title>Verify MFA | Layer Forge</title>
   </head>
 
@@ -62,7 +66,12 @@ if (factorsError) {
     <main class="auth-page">
       <section class="auth-card" aria-labelledby="mfa-heading">
         <header>
-          <a class="brand" href="/">Layer Forge</a>
+          <a class="brand" href="/" aria-label="Layer Forge home">
+            <img
+              src="/brand/logos/layer-forge-horizontal-reverse-transparent.png"
+              alt="Layer Forge"
+            />
+          </a>
 
           <p class="eyebrow">Admin security</p>
 
@@ -176,11 +185,15 @@ if (factorsError) {
 
   .brand {
     display: inline-block;
+    width: min(100%, 15rem);
     margin-bottom: 2rem;
-    color: #fafafa;
-    font-size: 1.125rem;
-    font-weight: 750;
     text-decoration: none;
+  }
+
+  .brand img {
+    display: block;
+    width: 100%;
+    height: auto;
   }
 
   .eyebrow {
