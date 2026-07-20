@@ -370,7 +370,7 @@ export async function generateInvoicePdf(
   y -= 22;
 
   drawText(
-    "Taxes and shipping charges, where applicable, were calculated during secure checkout.",
+    "Taxes and shipping charges, where applicable, will be calculated during secure checkout.",
     LEFT_MARGIN,
     9,
   );
