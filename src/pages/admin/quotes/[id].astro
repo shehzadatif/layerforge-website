@@ -233,6 +233,59 @@ const approvalUrl = quote.approval_token
     </div>
   </div>
 
+  <div class="mt-8 rounded-2xl border border-yellow-200 bg-yellow-50 p-8 shadow-sm">
+    <div class="grid gap-6 lg:grid-cols-[1fr_1.2fr] lg:items-end">
+      <div>
+        <p class="text-sm font-bold uppercase tracking-[0.2em] text-yellow-700">
+          Finance classification
+        </p>
+        <h2 class="mt-2 text-2xl font-bold text-slate-950">
+          Service Classification
+        </h2>
+        <p class="mt-2 max-w-xl text-sm leading-6 text-slate-600">
+          Choose the service that generated this quote. For converted quotes,
+          saving this field immediately updates the linked order’s category in Finance.
+        </p>
+      </div>
+
+      <div class="flex flex-col gap-3 sm:flex-row">
+        <label for="serviceClassification" class="sr-only">
+          Service classification
+        </label>
+        <select
+          id="serviceClassification"
+          class="min-w-0 flex-1 rounded-xl border border-slate-300 bg-white px-4 py-3 font-semibold text-slate-900"
+        >
+          <option value="3D Printing" selected={quote.service === "3D Printing"}>
+            3D Printing
+          </option>
+          <option value="Laser Engraving" selected={quote.service === "Laser Engraving"}>
+            Laser Engraving
+          </option>
+          <option value="UV Printing" selected={quote.service === "UV Printing"}>
+            UV Printing
+          </option>
+          <option value="DTF & DTG" selected={quote.service === "DTF & DTG"}>
+            DTF & DTG
+          </option>
+          <option
+            value="Other / Custom"
+            selected={!["3D Printing", "Laser Engraving", "UV Printing", "DTF & DTG"].includes(quote.service)}
+          >
+            Other / Custom
+          </option>
+        </select>
+        <button
+          id="saveServiceClassification"
+          type="button"
+          class="shrink-0 rounded-xl bg-slate-950 px-6 py-3 font-bold text-white transition hover:bg-slate-800 disabled:cursor-wait disabled:opacity-60"
+        >
+          Save Service
+        </button>
+      </div>
+    </div>
+  </div>
+
   {
     (quote.description || quote.internal_notes) && (
       <div class="mt-8 rounded-2xl bg-white p-8 shadow">
@@ -282,6 +335,50 @@ const approvalUrl = quote.approval_token
   </div>
 
   <script define:vars={{ quoteId: quote.id }}>
+    document
+      .getElementById("saveServiceClassification")
+      ?.addEventListener("click", async () => {
+        const button = document.getElementById("saveServiceClassification");
+        const select = document.getElementById("serviceClassification");
+
+        if (!(button instanceof HTMLButtonElement) || !(select instanceof HTMLSelectElement)) {
+          return;
+        }
+
+        button.disabled = true;
+        button.textContent = "Saving...";
+
+        try {
+          const response = await fetch("/api/admin/update-quote-service", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              quoteId,
+              service: select.value,
+            }),
+          });
+
+          const result = await response.json();
+
+          if (!response.ok || !result.success) {
+            alert(result.error || "Unable to update service classification.");
+            button.textContent = "Save Service";
+            return;
+          }
+
+          button.textContent = "Saved";
+          location.reload();
+        } catch (error) {
+          console.error(error);
+          alert("Unable to update service classification.");
+          button.textContent = "Save Service";
+        } finally {
+          button.disabled = false;
+        }
+      });
+
     window.updateQuoteStatus = async function (status) {
       try {
         const response = await fetch(
