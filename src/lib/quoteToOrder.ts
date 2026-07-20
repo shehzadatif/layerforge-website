@@ -39,11 +39,11 @@ export async function convertPaidQuoteToOrder(
   }
 
   /*
-   * Stripe may retry webhooks. Return the existing order
-   * instead of creating another one.
+   * Stripe may retry webhook deliveries. If this quote has
+   * already been converted, return the existing order ID.
    */
   if (quote.order_id) {
-    return quote.order_id;
+    return String(quote.order_id);
   }
 
   const quantity = Math.max(
@@ -57,48 +57,73 @@ export async function convertPaidQuoteToOrder(
       0,
   );
 
-  if (!Number.isFinite(quotedPrice) || quotedPrice < 0) {
+  if (
+    !Number.isFinite(quotedPrice) ||
+    quotedPrice < 0
+  ) {
     throw new Error("Quote price is invalid.");
   }
 
   const projectDetails =
     quote.project_details &&
     typeof quote.project_details === "object"
-      ? quote.project_details
+      ? (quote.project_details as Record<
+          string,
+          unknown
+        >)
       : {};
 
+  const storedUnitPrice =
+    projectDetails.unit_price;
+
   const unitPrice = Number(
-    projectDetails.unit_price ??
+    storedUnitPrice ??
       quotedPrice / quantity,
   );
 
-  if (!Number.isFinite(unitPrice) || unitPrice < 0) {
-    throw new Error("Quote unit price is invalid.");
+  if (
+    !Number.isFinite(unitPrice) ||
+    unitPrice < 0
+  ) {
+    throw new Error(
+      "Quote unit price is invalid.",
+    );
   }
 
-  const customerDetails = session.customer_details;
-  const address = customerDetails?.address;
+  const customerDetails =
+    session.customer_details;
+
+  const address =
+    customerDetails?.address;
 
   const subtotal =
-    Number(session.amount_subtotal ?? 0) / 100;
+    Number(session.amount_subtotal ?? 0) /
+    100;
 
   const shipping =
-    Number(session.shipping_cost?.amount_total ?? 0) /
-    100;
+    Number(
+      session.shipping_cost?.amount_total ??
+        0,
+    ) / 100;
 
   const tax =
-    Number(session.total_details?.amount_tax ?? 0) /
-    100;
+    Number(
+      session.total_details?.amount_tax ??
+        0,
+    ) / 100;
 
   const total =
-    Number(session.amount_total ?? 0) / 100;
+    Number(session.amount_total ?? 0) /
+    100;
 
   const paymentIntent =
-    typeof session.payment_intent === "string"
+    typeof session.payment_intent ===
+    "string"
       ? session.payment_intent
       : session.payment_intent?.id ?? "";
 
-  const trackingToken = generateTrackingToken();
+  const trackingToken =
+    generateTrackingToken();
 
   const { data: order, error: orderError } =
     await supabaseAdmin
@@ -148,11 +173,16 @@ export async function convertPaidQuoteToOrder(
         total,
 
         payment_status: "Paid",
-        order_status: ORDER_STATUS.IN_PROGRESS,
+        order_status:
+          ORDER_STATUS.IN_PROGRESS,
 
         stripe_session_id: session.id,
-        stripe_payment_intent: paymentIntent,
-        tracking_token: trackingToken,
+
+        stripe_payment_intent:
+          paymentIntent,
+
+        tracking_token:
+          trackingToken,
       })
       .select()
       .single();
@@ -160,7 +190,8 @@ export async function convertPaidQuoteToOrder(
   if (orderError || !order) {
     throw new Error(
       `Unable to create order: ${
-        orderError?.message ?? "Unknown error"
+        orderError?.message ??
+        "Unknown error"
       }`,
     );
   }
@@ -177,7 +208,9 @@ export async function convertPaidQuoteToOrder(
           quote.service ||
           "Custom Quote",
 
-        material: quote.material ?? "",
+        material:
+          quote.material ?? "",
+
         quantity,
         unit_price: unitPrice,
         total_price: quotedPrice,
@@ -201,7 +234,8 @@ export async function convertPaidQuoteToOrder(
       .update({
         status: "Converted",
         order_id: order.id,
-        converted_at: new Date().toISOString(),
+        converted_at:
+          new Date().toISOString(),
       })
       .eq("id", quoteId)
       .is("order_id", null);
@@ -234,7 +268,10 @@ export async function convertPaidQuoteToOrder(
     .eq("id", order.id)
     .single();
 
-  if (completedOrderError || !completedOrder) {
+  if (
+    completedOrderError ||
+    !completedOrder
+  ) {
     throw new Error(
       completedOrderError?.message ??
         "Unable to load completed order.",
@@ -248,7 +285,7 @@ export async function convertPaidQuoteToOrder(
   } catch (emailError) {
     /*
      * Payment and order creation remain successful even
-     * when the email provider is temporarily unavailable.
+     * if PDF generation or email delivery fails.
      */
     console.error(
       "Unable to send payment confirmation email.",
@@ -259,18 +296,21 @@ export async function convertPaidQuoteToOrder(
     );
   }
 
-  return order.id;
+  return String(order.id);
 }
 
 async function sendPaymentConfirmation(
   order: CompletedOrder,
 ): Promise<void> {
   const apiKey =
-    import.meta.env.RESEND_API_KEY?.trim();
+    import.meta.env.RESEND_API_KEY
+      ?.trim();
 
   const fromEmail =
-    import.meta.env.ORDER_FROM_EMAIL?.trim() ||
-    import.meta.env.FROM_EMAIL?.trim();
+    import.meta.env.ORDER_FROM_EMAIL
+      ?.trim() ||
+    import.meta.env.FROM_EMAIL
+      ?.trim();
 
   const siteUrl =
     import.meta.env.PUBLIC_SITE_URL
@@ -304,25 +344,27 @@ async function sendPaymentConfirmation(
     );
   }
 
-  console.log("Generating invoice PDF.", {
-    orderId: order.id,
-    recipient: customerEmail,
-  });
+  console.log(
+    "Generating invoice PDF.",
+    {
+      orderId: order.id,
+      recipient: customerEmail,
+    },
+  );
 
   const invoicePdf =
     await generateInvoicePdf(order);
 
-  if (!invoicePdf?.length) {
+  if (!invoicePdf.length) {
     throw new Error(
       "Invoice PDF generation returned an empty document.",
     );
   }
 
   const orderNumber =
-    `LF${String(order.order_number).padStart(
-      6,
-      "0",
-    )}`;
+    `LF${String(
+      order.order_number,
+    ).padStart(6, "0")}`;
 
   const trackingUrl =
     `${siteUrl}/t/${encodeURIComponent(
@@ -331,32 +373,42 @@ async function sendPaymentConfirmation(
 
   /*
    * Resend accepts Base64 attachment content. This avoids
-   * relying on Node Buffer objects in the Worker request.
+   * passing a raw Node Buffer as the attachment payload.
    */
   const invoiceBase64 =
-    Buffer.from(invoicePdf).toString("base64");
+    Buffer.from(invoicePdf).toString(
+      "base64",
+    );
 
-  console.log("Sending payment confirmation.", {
-    orderId: order.id,
-    orderNumber,
-    recipient: customerEmail,
-    invoiceBytes: invoicePdf.length,
-  });
+  console.log(
+    "Sending payment confirmation.",
+    {
+      orderId: order.id,
+      orderNumber,
+      recipient: customerEmail,
+      invoiceBytes: invoicePdf.length,
+    },
+  );
 
-  const resend = new Resend(apiKey);
+  const resend =
+    new Resend(apiKey);
 
   const { data, error } =
     await resend.emails.send({
       from: fromEmail,
       to: customerEmail,
+
       subject:
-    `Payment confirmed - Order ${orderNumber}`,
+        `Payment confirmed - Order ${orderNumber}`,
+
       html: paymentConfirmationHtml(
-        order.customer_name ?? "Customer",
+        order.customer_name ??
+          "Customer",
         orderNumber,
         trackingUrl,
         Number(order.total),
       ),
+
       attachments: [
         {
           filename:
@@ -372,23 +424,13 @@ async function sendPaymentConfirmation(
     );
   }
 
-  console.log("Payment confirmation sent.", {
-    orderId: order.id,
-    orderNumber,
-    recipient: customerEmail,
-    resendEmailId: data?.id,
-  });
+  console.log(
+    "Payment confirmation sent.",
+    {
+      orderId: order.id,
+      orderNumber,
+      recipient: customerEmail,
+      resendEmailId: data?.id,
+    },
+  );
 }
-
-   if (error) {
-    throw new Error(
-      `Resend rejected the payment confirmation: ${error.message}`,
-    );
-  }
-
-  console.log("Payment confirmation sent.", {
-    orderId: order.id,
-    orderNumber,
-    recipient: customerEmail,
-    resendEmailId: data?.id,
-  });
