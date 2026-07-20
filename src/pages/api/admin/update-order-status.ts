@@ -1,11 +1,128 @@
 import type { APIRoute } from "astro";
+import { Resend } from "resend";
+
 import { supabaseAdmin } from "../../../lib/supabaseAdmin";
+import { ORDER_STATUS } from "../../../lib/orderStatus";
+import { pickupReadyHtml } from "../../../lib/emailTemplates/pickupReady";
+
+export const prerender = false;
+
+const validStatuses = new Set<string>(
+  Object.values(ORDER_STATUS),
+);
 
 export const POST: APIRoute = async ({ request }) => {
-  try {
-    const { orderId, status } = await request.json();
+  let previousStatus = "";
+  let updatedOrderId = "";
 
-    const { error } = await supabaseAdmin
+  try {
+    const body = await request.json();
+    const orderId = String(body.orderId ?? "").trim();
+    const status = String(body.status ?? "").trim();
+
+    if (!orderId || !validStatuses.has(status)) {
+      return Response.json(
+        {
+          success: false,
+          error: "A valid order and status are required.",
+        },
+        { status: 400 },
+      );
+    }
+
+    const { data: order, error: orderError } =
+      await supabaseAdmin
+        .from("orders")
+        .select("*")
+        .eq("id", orderId)
+        .single();
+
+    if (orderError || !order) {
+      return Response.json(
+        {
+          success: false,
+          error: "Order not found.",
+        },
+        { status: 404 },
+      );
+    }
+
+    previousStatus = String(order.order_status ?? "");
+
+    const shouldSendPickupReadyEmail =
+      status === ORDER_STATUS.READY &&
+      previousStatus !== ORDER_STATUS.READY &&
+      String(order.delivery_method ?? "").toLowerCase() ===
+        "pickup";
+
+    let emailDetails:
+      | {
+          apiKey: string;
+          fromEmail: string;
+          pickupAddress: string;
+          trackingUrl: string;
+        }
+      | undefined;
+
+    if (shouldSendPickupReadyEmail) {
+      const apiKey =
+        import.meta.env.RESEND_API_KEY?.trim();
+
+      const siteUrl =
+        import.meta.env.PUBLIC_SITE_URL
+          ?.trim()
+          .replace(/\/+$/, "");
+
+      const { data: settings, error: settingsError } =
+        await supabaseAdmin
+          .from("settings")
+          .select("setting_key, setting_value")
+          .in("setting_key", [
+            "company_address",
+            "order_from_email",
+          ]);
+
+      if (settingsError) {
+        throw new Error(settingsError.message);
+      }
+
+      const settingsMap = new Map(
+        (settings ?? []).map((setting) => [
+          setting.setting_key,
+          String(setting.setting_value ?? "").trim(),
+        ]),
+      );
+
+      const fromEmail =
+        import.meta.env.ORDER_FROM_EMAIL?.trim() ||
+        settingsMap.get("order_from_email") ||
+        import.meta.env.FROM_EMAIL?.trim();
+
+      if (!apiKey || !fromEmail || !siteUrl) {
+        throw new Error(
+          "Pickup email settings are incomplete.",
+        );
+      }
+
+      if (!order.email) {
+        throw new Error(
+          "The order does not have a customer email address.",
+        );
+      }
+
+      emailDetails = {
+        apiKey,
+        fromEmail,
+        pickupAddress:
+          settingsMap.get("company_address") ?? "",
+        trackingUrl:
+          `${siteUrl}/t/${encodeURIComponent(
+            order.tracking_token,
+          )}`,
+      };
+    }
+
+    const { error: updateError } = await supabaseAdmin
       .from("orders")
       .update({
         order_status: status,
@@ -13,21 +130,77 @@ export const POST: APIRoute = async ({ request }) => {
       })
       .eq("id", orderId);
 
-    if (error) throw error;
+    if (updateError) {
+      throw new Error(updateError.message);
+    }
+
+    updatedOrderId = orderId;
+
+    if (shouldSendPickupReadyEmail && emailDetails) {
+      const orderNumber =
+        `LF${String(order.order_number).padStart(6, "0")}`;
+
+      const resend = new Resend(emailDetails.apiKey);
+      const { error: emailError } =
+        await resend.emails.send({
+          from: emailDetails.fromEmail,
+          to: order.email,
+          subject:
+            `Your order ${orderNumber} is ready for pickup`,
+          html: pickupReadyHtml(
+            order.customer_name || "Customer",
+            orderNumber,
+            emailDetails.pickupAddress,
+            emailDetails.trackingUrl,
+          ),
+        });
+
+      if (emailError) {
+        throw new Error(
+          `Resend rejected the pickup email: ${emailError.message}`,
+        );
+      }
+
+      console.log("Pickup-ready email sent.", {
+        orderId,
+        orderNumber,
+        recipient: order.email,
+      });
+    }
 
     return Response.json({
       success: true,
+      pickupEmailSent: shouldSendPickupReadyEmail,
     });
-  } catch (err) {
-    console.error(err);
+  } catch (error) {
+    if (updatedOrderId && previousStatus) {
+      const { error: rollbackError } = await supabaseAdmin
+        .from("orders")
+        .update({
+          order_status: previousStatus,
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", updatedOrderId);
+
+      if (rollbackError) {
+        console.error(
+          "Unable to roll back order status after email failure:",
+          rollbackError,
+        );
+      }
+    }
+
+    console.error("Unable to update order status:", error);
 
     return Response.json(
       {
         success: false,
+        error:
+          error instanceof Error
+            ? error.message
+            : "Unable to update status.",
       },
-      {
-        status: 500,
-      }
+      { status: 500 },
     );
   }
 };
