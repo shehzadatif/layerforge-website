@@ -113,6 +113,30 @@ const materialList = materials ?? [];
       <div class="grid gap-6 md:grid-cols-2">
 
         <div>
+          <label for="service" class="mb-2 block font-semibold">
+            Service
+          </label>
+
+          <select
+            id="service"
+            name="service"
+            required
+            class="w-full rounded-lg border px-4 py-3"
+          >
+            <option value="">Select a service</option>
+            <option value="3D Printing">3D Printing</option>
+            <option value="Laser Engraving">Laser Engraving</option>
+            <option value="UV Printing">UV Printing</option>
+            <option value="DTF & DTG">DTF & DTG</option>
+            <option value="Other / Custom">Other / Custom</option>
+          </select>
+
+          <p class="mt-2 text-sm text-slate-500">
+            Used to classify income in the Finance dashboard.
+          </p>
+        </div>
+
+        <div>
           <label class="mb-2 block font-semibold">
             Product
           </label>

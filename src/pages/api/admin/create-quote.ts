@@ -24,6 +24,10 @@ export const POST: APIRoute = async ({ request, redirect }) => {
       formData.get("product_name") ?? ""
     ).trim();
 
+    const service = String(
+      formData.get("service") ?? ""
+    ).trim();
+
     const material = String(
       formData.get("material") ?? ""
     ).trim();
@@ -42,9 +46,24 @@ export const POST: APIRoute = async ({ request, redirect }) => {
       Number(formData.get("unit_price") ?? 0)
     );
 
-    if (!name || !email || !projectName) {
+    const allowedServices = new Set([
+      "3D Printing",
+      "Laser Engraving",
+      "UV Printing",
+      "DTF & DTG",
+      "Other / Custom",
+    ]);
+
+    if (!name || !email || !projectName || !service) {
       return new Response(
-        "Customer name, email, and project name are required.",
+        "Customer name, email, service, and project name are required.",
+        { status: 400 }
+      );
+    }
+
+    if (!allowedServices.has(service)) {
+      return new Response(
+        "Please select a valid service.",
         { status: 400 }
       );
     }
@@ -95,7 +114,7 @@ const quoteNumber =
         email,
         phone,
 
-        service: "Custom Quote",
+        service,
         project_name: projectName,
         description: notes,
         material,
