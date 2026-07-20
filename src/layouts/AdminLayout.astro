@@ -27,14 +27,54 @@ const user = Astro.locals.user;
   <body class="bg-slate-100">
     <div class="flex min-h-screen">
       <aside class="flex w-64 flex-col bg-slate-900 text-white">
-        <div class="border-b border-slate-700 p-6">
-          <h1 class="text-2xl font-bold text-yellow-400">
-            Layer Forge
-          </h1>
+        <div class="border-b border-slate-700 px-5 py-5">
+          <a
+            href="/admin"
+            class="flex items-center gap-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-yellow-400 focus:ring-offset-2 focus:ring-offset-slate-900"
+            aria-label="Layer Forge admin dashboard"
+          >
+            <svg
+              viewBox="0 0 64 64"
+              class="h-12 w-12 shrink-0"
+              fill="none"
+              aria-hidden="true"
+            >
+              <path
+                d="m8 17 24-10 24 10-24 10L8 17Z"
+                fill="#facc15"
+                fill-opacity="0.18"
+                stroke="#facc15"
+                stroke-width="3.5"
+                stroke-linejoin="round"
+              ></path>
+              <path
+                d="m8 32 24-10 24 10-24 10L8 32Z"
+                fill="#facc15"
+                fill-opacity="0.3"
+                stroke="#facc15"
+                stroke-width="3.5"
+                stroke-linejoin="round"
+              ></path>
+              <path
+                d="m8 47 24-10 24 10-24 10L8 47Z"
+                fill="#fff"
+                fill-opacity="0.08"
+                stroke="#fff"
+                stroke-width="3.5"
+                stroke-linejoin="round"
+              ></path>
+            </svg>
 
-          <p class="mt-1 text-sm text-slate-400">
-            Admin Panel
-          </p>
+            <span class="min-w-0">
+              <span class="block whitespace-nowrap text-xl font-black tracking-tight">
+                <span class="text-white">Layer</span>
+                <span class="text-yellow-400">Forge</span>
+              </span>
+              <span class="mt-0.5 block text-xs font-medium uppercase tracking-[0.18em] text-slate-400">
+                Admin Panel
+              </span>
+            </span>
+          </a>
         </div>
 
         <nav class="flex-1 space-y-2 p-4">
