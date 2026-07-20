@@ -1,0 +1,94 @@
+---
+import MainLayout from "../layouts/MainLayout.astro";
+
+const applications = [
+  ["Drinkware", "Personalize tumblers, bottles, and flasks with crisp, permanent artwork and names."],
+  ["Gifts & Keepsakes", "Create memorable boxes, tags, coasters, and one-of-a-kind pieces for any occasion."],
+  ["Signs & Plaques", "Produce refined business signage, awards, recognition pieces, and display panels."],
+  ["Corporate Branding", "Add logos and messaging to client gifts, employee items, and promotional products."],
+];
+
+const materials = ["Wood", "Powder-coated metal", "Slate", "Acrylic", "Leatherette", "Anodized aluminum", "Glass", "Customer-supplied items"];
+---
+
+<MainLayout title="Custom Laser Engraving | Layer Forge">
+  <section class="relative isolate min-h-[680px] overflow-hidden bg-slate-950 text-white">
+    <img src="/images/laser-engraving/laser-engraving-hero.webp" alt="Laser-engraved tumbler, cutting board, slate plaque, and leather keychain" class="absolute inset-0 h-full w-full object-cover object-right" />
+    <div class="absolute inset-0 bg-gradient-to-r from-black via-black/90 to-black/10"></div>
+    <div class="relative mx-auto flex min-h-[680px] max-w-7xl items-center px-6 py-24">
+      <div class="max-w-2xl">
+        <p class="font-semibold uppercase tracking-[0.32em] text-yellow-400">Personal. Permanent. Precise.</p>
+        <h1 class="mt-5 text-5xl font-black leading-tight sm:text-6xl lg:text-7xl">Make a lasting impression.</h1>
+        <p class="mt-7 max-w-xl text-lg leading-8 text-slate-200 sm:text-xl">Precision laser engraving for personalized gifts, branded products, awards, signage, drinkware, and meaningful keepsakes.</p>
+        <div class="mt-10 flex flex-col gap-4 sm:flex-row">
+          <a href="/quote/laser-engraving" class="inline-flex items-center justify-center rounded-xl bg-yellow-400 px-8 py-4 text-lg font-bold text-slate-950 transition hover:bg-yellow-300">Request an Engraving Quote</a>
+          <a href="#applications" class="inline-flex items-center justify-center rounded-xl border border-white/40 bg-white/10 px-8 py-4 text-lg font-semibold text-white backdrop-blur transition hover:bg-white/20">See What We Engrave</a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="border-y border-slate-200 bg-white">
+    <div class="mx-auto grid max-w-7xl gap-px bg-slate-200 sm:grid-cols-2 lg:grid-cols-4">
+      {[["Permanent", "Marks made to last"], ["Precise", "Crisp fine detail"], ["Personal", "One piece or many"], ["Versatile", "Many products and materials"]].map(([title, text]) => (
+        <div class="bg-white px-6 py-7 text-center"><div class="text-2xl font-black text-slate-950">{title}</div><div class="mt-1 text-sm text-slate-500">{text}</div></div>
+      ))}
+    </div>
+  </section>
+
+  <section id="applications" class="bg-slate-50 py-24">
+    <div class="mx-auto max-w-7xl px-6">
+      <div class="mx-auto max-w-3xl text-center">
+        <p class="font-semibold uppercase tracking-[0.3em] text-yellow-600">Made memorable</p>
+        <h2 class="mt-4 text-4xl font-black text-slate-950 sm:text-5xl">Everyday products, elevated.</h2>
+        <p class="mt-6 text-lg leading-8 text-slate-600">From a single personalized gift to a coordinated business order, we create clean, permanent engraving with careful attention to placement and detail.</p>
+      </div>
+
+      <div class="mt-16 grid items-center gap-12 lg:grid-cols-2">
+        <img src="/images/laser-engraving/engraved-products.webp" alt="Collection of laser-engraved tumblers, coasters, keepsake box, and tags" loading="lazy" class="aspect-square w-full rounded-3xl object-cover shadow-2xl" />
+        <div class="grid gap-5 sm:grid-cols-2">
+          {applications.map(([title, description]) => (
+            <article class="rounded-2xl border border-slate-200 bg-white p-7 shadow-sm">
+              <div class="mb-5 flex h-11 w-11 items-center justify-center rounded-xl bg-yellow-400 text-xl font-black">+</div>
+              <h3 class="text-xl font-bold text-slate-950">{title}</h3>
+              <p class="mt-3 leading-7 text-slate-600">{description}</p>
+            </article>
+          ))}
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="bg-slate-950 py-24 text-white">
+    <div class="mx-auto grid max-w-7xl gap-16 px-6 lg:grid-cols-[0.9fr_1.1fr] lg:items-center">
+      <div>
+        <p class="font-semibold uppercase tracking-[0.3em] text-yellow-400">Material options</p>
+        <h2 class="mt-4 text-4xl font-black sm:text-5xl">A distinctive mark on every surface.</h2>
+        <p class="mt-6 text-lg leading-8 text-slate-300">Each material reacts differently to the laser. We adjust power, speed, focus, and preparation to achieve a clean result suited to the product.</p>
+        <a href="/quote/laser-engraving" class="mt-9 inline-flex rounded-xl bg-yellow-400 px-7 py-4 font-bold text-slate-950 transition hover:bg-yellow-300">Check Your Product</a>
+      </div>
+      <div class="grid grid-cols-2 gap-4 sm:grid-cols-4">
+        {materials.map((material) => <div class="flex min-h-28 items-center justify-center rounded-2xl border border-white/10 bg-white/5 p-5 text-center font-semibold">{material}</div>)}
+      </div>
+    </div>
+  </section>
+
+  <section class="bg-white py-24">
+    <div class="mx-auto max-w-7xl px-6 text-center">
+      <p class="font-semibold uppercase tracking-[0.3em] text-yellow-600">Simple process</p>
+      <h2 class="mt-4 text-4xl font-black text-slate-950 sm:text-5xl">From artwork to a permanent finish.</h2>
+      <div class="mt-14 grid gap-8 text-left md:grid-cols-3">
+        {[["01", "Share your idea", "Send your artwork, product details, quantity, preferred placement, and deadline."], ["02", "Approve the plan", "We review material compatibility, engraving area, artwork, pricing, and timing."], ["03", "We engrave it", "Your items are engraved, quality checked, and prepared for pickup or shipping."]].map(([number, title, text]) => (
+          <article class="rounded-3xl bg-slate-50 p-8"><div class="text-5xl font-black text-yellow-400">{number}</div><h3 class="mt-6 text-2xl font-bold text-slate-950">{title}</h3><p class="mt-3 leading-7 text-slate-600">{text}</p></article>
+        ))}
+      </div>
+    </div>
+  </section>
+
+  <section class="bg-yellow-400 py-20">
+    <div class="mx-auto flex max-w-7xl flex-col items-start justify-between gap-8 px-6 lg:flex-row lg:items-center">
+      <div><p class="font-semibold uppercase tracking-[0.3em] text-slate-700">Have something to personalize?</p><h2 class="mt-3 max-w-3xl text-4xl font-black text-slate-950 sm:text-5xl">Let’s create something worth keeping.</h2></div>
+      <a href="/quote/laser-engraving" class="shrink-0 rounded-xl bg-slate-950 px-8 py-4 text-lg font-bold text-white transition hover:bg-slate-800">Start Your Quote</a>
+    </div>
+  </section>
+</MainLayout>

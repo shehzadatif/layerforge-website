@@ -1,0 +1,94 @@
+---
+import MainLayout from "../layouts/MainLayout.astro";
+
+const applications = [
+  ["Functional Parts", "Durable brackets, mounts, housings, adapters, and components made for real-world use."],
+  ["Rapid Prototypes", "Test fit, form, and function quickly before committing to final production."],
+  ["Workshop Solutions", "Custom organizers, tool holders, cable management, and storage built around your space."],
+  ["Replacement Parts", "Recreate unavailable plastic components and improve weak or discontinued designs."],
+];
+
+const materials = ["PLA", "PETG", "ABS", "ASA", "TPU", "Nylon", "Carbon-fibre blends", "Specialty materials"];
+---
+
+<MainLayout title="Professional 3D Printing | Layer Forge">
+  <section class="relative isolate min-h-[680px] overflow-hidden bg-slate-950 text-white">
+    <img src="/images/3d-printing/3d-printing-hero.webp" alt="Collection of functional 3D-printed products and prototypes" class="absolute inset-0 h-full w-full object-cover object-right" />
+    <div class="absolute inset-0 bg-gradient-to-r from-black via-black/90 to-black/10"></div>
+    <div class="relative mx-auto flex min-h-[680px] max-w-7xl items-center px-6 py-24">
+      <div class="max-w-2xl">
+        <p class="font-semibold uppercase tracking-[0.32em] text-yellow-400">Design. Prototype. Produce.</p>
+        <h1 class="mt-5 text-5xl font-black leading-tight sm:text-6xl lg:text-7xl">Turn a digital idea into something useful.</h1>
+        <p class="mt-7 max-w-xl text-lg leading-8 text-slate-200 sm:text-xl">Professional FDM 3D printing for functional parts, prototypes, replacements, workshop solutions, and custom products—made locally by Layer Forge.</p>
+        <div class="mt-10 flex flex-col gap-4 sm:flex-row">
+          <a href="/quote/3d-printing" class="inline-flex items-center justify-center rounded-xl bg-yellow-400 px-8 py-4 text-lg font-bold text-slate-950 transition hover:bg-yellow-300">Request a 3D Printing Quote</a>
+          <a href="#applications" class="inline-flex items-center justify-center rounded-xl border border-white/40 bg-white/10 px-8 py-4 text-lg font-semibold text-white backdrop-blur transition hover:bg-white/20">Explore Applications</a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="border-y border-slate-200 bg-white">
+    <div class="mx-auto grid max-w-7xl gap-px bg-slate-200 sm:grid-cols-2 lg:grid-cols-4">
+      {[["Accurate", "Built to your dimensions"], ["Strong", "Materials for real use"], ["Flexible", "One part or small batches"], ["Local", "Direct project support"]].map(([title, text]) => (
+        <div class="bg-white px-6 py-7 text-center"><div class="text-2xl font-black text-slate-950">{title}</div><div class="mt-1 text-sm text-slate-500">{text}</div></div>
+      ))}
+    </div>
+  </section>
+
+  <section id="applications" class="bg-slate-50 py-24">
+    <div class="mx-auto max-w-7xl px-6">
+      <div class="mx-auto max-w-3xl text-center">
+        <p class="font-semibold uppercase tracking-[0.3em] text-yellow-600">Built for a purpose</p>
+        <h2 class="mt-4 text-4xl font-black text-slate-950 sm:text-5xl">Parts that solve real problems.</h2>
+        <p class="mt-6 text-lg leading-8 text-slate-600">From a single custom bracket to a short production run, we help refine your idea and manufacture it with the right material and settings.</p>
+      </div>
+
+      <div class="mt-16 grid items-center gap-12 lg:grid-cols-2">
+        <img src="/images/3d-printing/functional-products.webp" alt="3D-printed workshop organizers, holders, clips, and enclosures" loading="lazy" class="aspect-square w-full rounded-3xl object-cover shadow-2xl" />
+        <div class="grid gap-5 sm:grid-cols-2">
+          {applications.map(([title, description]) => (
+            <article class="rounded-2xl border border-slate-200 bg-white p-7 shadow-sm">
+              <div class="mb-5 flex h-11 w-11 items-center justify-center rounded-xl bg-yellow-400 text-xl font-black">+</div>
+              <h3 class="text-xl font-bold text-slate-950">{title}</h3>
+              <p class="mt-3 leading-7 text-slate-600">{description}</p>
+            </article>
+          ))}
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="bg-slate-950 py-24 text-white">
+    <div class="mx-auto grid max-w-7xl gap-16 px-6 lg:grid-cols-[0.9fr_1.1fr] lg:items-center">
+      <div>
+        <p class="font-semibold uppercase tracking-[0.3em] text-yellow-400">Material options</p>
+        <h2 class="mt-4 text-4xl font-black sm:text-5xl">The right plastic for the job.</h2>
+        <p class="mt-6 text-lg leading-8 text-slate-300">Strength, heat resistance, flexibility, weather exposure, finish, and budget all matter. We’ll recommend a material that suits how your part will actually be used.</p>
+        <a href="/quote/3d-printing" class="mt-9 inline-flex rounded-xl bg-yellow-400 px-7 py-4 font-bold text-slate-950 transition hover:bg-yellow-300">Discuss Your Part</a>
+      </div>
+      <div class="grid grid-cols-2 gap-4 sm:grid-cols-4">
+        {materials.map((material) => <div class="flex min-h-28 items-center justify-center rounded-2xl border border-white/10 bg-white/5 p-5 text-center font-semibold">{material}</div>)}
+      </div>
+    </div>
+  </section>
+
+  <section class="bg-white py-24">
+    <div class="mx-auto max-w-7xl px-6 text-center">
+      <p class="font-semibold uppercase tracking-[0.3em] text-yellow-600">Simple process</p>
+      <h2 class="mt-4 text-4xl font-black text-slate-950 sm:text-5xl">From file to finished part.</h2>
+      <div class="mt-14 grid gap-8 text-left md:grid-cols-3">
+        {[["01", "Share your model", "Upload an STL or 3MF file—or tell us what you need if design help is required."], ["02", "Review the plan", "We assess geometry, material, strength, finish, quantity, and production time."], ["03", "We manufacture it", "Your parts are printed, inspected, and prepared for pickup or shipping."]].map(([number, title, text]) => (
+          <article class="rounded-3xl bg-slate-50 p-8"><div class="text-5xl font-black text-yellow-400">{number}</div><h3 class="mt-6 text-2xl font-bold text-slate-950">{title}</h3><p class="mt-3 leading-7 text-slate-600">{text}</p></article>
+        ))}
+      </div>
+    </div>
+  </section>
+
+  <section class="bg-yellow-400 py-20">
+    <div class="mx-auto flex max-w-7xl flex-col items-start justify-between gap-8 px-6 lg:flex-row lg:items-center">
+      <div><p class="font-semibold uppercase tracking-[0.3em] text-slate-700">Ready to build it?</p><h2 class="mt-3 max-w-3xl text-4xl font-black text-slate-950 sm:text-5xl">Let’s turn your model into a finished part.</h2></div>
+      <a href="/quote/3d-printing" class="shrink-0 rounded-xl bg-slate-950 px-8 py-4 text-lg font-bold text-white transition hover:bg-slate-800">Start Your Quote</a>
+    </div>
+  </section>
+</MainLayout>
