@@ -1,52 +1,75 @@
----
-import Button from '../ui/Button.astro';
----
+<section class="relative isolate min-h-[720px] overflow-hidden bg-slate-950 text-white">
+  <img
+    src="/images/home/layer-forge-hero.webp"
+    alt="Layer Forge custom 3D-printed, laser-engraved, UV-printed, and apparel products"
+    fetchpriority="high"
+    class="absolute inset-0 h-full w-full object-cover object-[68%_center] sm:object-center lg:object-right"
+  />
 
-<section class="bg-slate-950 text-white">
+  <div class="absolute inset-0 bg-gradient-to-r from-black via-black/90 to-black/15"></div>
+  <div class="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-black/10"></div>
 
-  <div class="mx-auto grid max-w-7xl items-center gap-12 px-6 py-24 lg:grid-cols-2">
-
-    <div>
-
-      <p class="font-semibold uppercase tracking-[0.3em] text-yellow-400">
-        LAYER FORGE
-      </p>
-
-    <h1 class="text-6xl font-bold">
-Custom Manufacturing &
-Personalization Solutions
-</h1>
-      <p class="mt-8 text-xl leading-8 text-slate-300">
-       From functional 3D printed parts and workshop accessories to laser engraving, UV printing, and personalized gifts, Layer Forge transforms your ideas into high-quality custom creations.
-      </p>
-
-      <div class="mt-10 flex flex-wrap gap-4">
-
-        <Button
-          href="/solutions"
-          text="Explore Solutions"
-        />
-
-        <Button
-          href="/quote"
-          text="Request a Quote"
-          variant="secondary"
-        />
-
+  <div class="relative mx-auto flex min-h-[720px] max-w-7xl items-center px-6 py-24">
+    <div class="max-w-3xl">
+      <div class="inline-flex items-center gap-3 rounded-full border border-white/15 bg-black/30 px-4 py-2 backdrop-blur">
+        <span class="h-2 w-2 rounded-full bg-yellow-400"></span>
+        <span class="text-sm font-semibold uppercase tracking-[0.24em] text-slate-200">
+          Made locally. Built around your idea.
+        </span>
       </div>
 
+      <h1 class="mt-7 text-5xl font-black leading-[1.02] tracking-tight sm:text-6xl lg:text-7xl xl:text-8xl">
+        We make ideas
+        <span class="text-yellow-400">real.</span>
+      </h1>
+
+      <p class="mt-7 max-w-2xl text-lg leading-8 text-slate-200 sm:text-xl">
+        Custom 3D printing, laser engraving, UV printing, and apparel
+        decoration for functional parts, standout products, thoughtful gifts,
+        and bold business branding.
+      </p>
+
+      <div class="mt-10 flex flex-col gap-4 sm:flex-row">
+        <a
+          href="/quote"
+          class="inline-flex items-center justify-center rounded-xl bg-yellow-400 px-8 py-4 text-lg font-bold text-slate-950 transition hover:-translate-y-0.5 hover:bg-yellow-300"
+        >
+          Start Your Project
+          <span class="ml-2" aria-hidden="true">→</span>
+        </a>
+
+        <a
+          href="/shop"
+          class="inline-flex items-center justify-center rounded-xl border border-white/40 bg-white/10 px-8 py-4 text-lg font-semibold text-white backdrop-blur transition hover:-translate-y-0.5 hover:bg-white/20"
+        >
+          Shop Products
+        </a>
+      </div>
+
+      <div class="mt-14 border-t border-white/20 pt-7">
+        <p class="mb-4 text-xs font-bold uppercase tracking-[0.25em] text-slate-400">
+          Explore our capabilities
+        </p>
+
+        <div class="flex flex-wrap gap-x-7 gap-y-4 text-sm font-semibold sm:text-base">
+          <a href="/3d-printing" class="group inline-flex items-center gap-2 transition hover:text-yellow-400">
+            <span class="text-yellow-400">01</span>
+            3D Printing
+          </a>
+          <a href="/laser-engraving" class="group inline-flex items-center gap-2 transition hover:text-yellow-400">
+            <span class="text-yellow-400">02</span>
+            Laser Engraving
+          </a>
+          <a href="/uv-printing" class="group inline-flex items-center gap-2 transition hover:text-yellow-400">
+            <span class="text-yellow-400">03</span>
+            UV Printing
+          </a>
+          <a href="/uv-printing#apparel" class="group inline-flex items-center gap-2 transition hover:text-yellow-400">
+            <span class="text-yellow-400">04</span>
+            DTF & DTG
+          </a>
+        </div>
+      </div>
     </div>
-
-    <div>
-
-      <img
-        src="/images/products/3d-printing.png"
-        alt="Layer Forge"
-        class="rounded-3xl shadow-2xl"
-      />
-
-    </div>
-
   </div>
-
 </section>
