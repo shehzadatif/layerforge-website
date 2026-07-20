@@ -119,6 +119,19 @@ if (!baseUrl) {
           enabled: true,
         },
 
+        shipping_options: [
+  {
+    shipping_rate_data: {
+      display_name: "Flat Rate Shipping",
+      type: "fixed_amount",
+      fixed_amount: {
+        amount: 1500,
+        currency: "cad",
+      },
+    },
+  },
+],
+
         billing_address_collection: "required",
 
         shipping_address_collection: {
