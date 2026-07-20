@@ -269,6 +269,7 @@ async function sendPaymentConfirmation(
     import.meta.env.RESEND_API_KEY?.trim();
 
   const fromEmail =
+    import.meta.env.ORDER_FROM_EMAIL?.trim() ||
     import.meta.env.FROM_EMAIL?.trim();
 
   const siteUrl =
@@ -284,7 +285,7 @@ async function sendPaymentConfirmation(
 
   if (!fromEmail) {
     throw new Error(
-      "FROM_EMAIL environment variable is required.",
+      "ORDER_FROM_EMAIL or FROM_EMAIL environment variable is required.",
     );
   }
 
@@ -294,48 +295,90 @@ async function sendPaymentConfirmation(
     );
   }
 
-  if (!order.email) {
+  const customerEmail =
+    String(order.email ?? "").trim();
+
+  if (!customerEmail) {
     throw new Error(
       "Order customer email is missing.",
     );
   }
 
+  console.log("Generating invoice PDF.", {
+    orderId: order.id,
+    recipient: customerEmail,
+  });
+
   const invoicePdf =
     await generateInvoicePdf(order);
 
+  if (!invoicePdf?.length) {
+    throw new Error(
+      "Invoice PDF generation returned an empty document.",
+    );
+  }
+
   const orderNumber =
-    `LF${String(order.order_number).padStart(6, "0")}`;
+    `LF${String(order.order_number).padStart(
+      6,
+      "0",
+    )}`;
 
   const trackingUrl =
     `${siteUrl}/t/${encodeURIComponent(
       order.tracking_token,
     )}`;
 
+  /*
+   * Resend accepts Base64 attachment content. This avoids
+   * relying on Node Buffer objects in the Worker request.
+   */
+  const invoiceBase64 =
+    Buffer.from(invoicePdf).toString("base64");
+
+  console.log("Sending payment confirmation.", {
+    orderId: order.id,
+    orderNumber,
+    recipient: customerEmail,
+    invoiceBytes: invoicePdf.length,
+  });
+
   const resend = new Resend(apiKey);
 
-  const { error } =
+  const { data, error } =
     await resend.emails.send({
       from: fromEmail,
-      to: order.email,
-
+      to: customerEmail,
       subject:
         `Payment confirmed — Order ${orderNumber}`,
-
       html: paymentConfirmationHtml(
         order.customer_name ?? "Customer",
         orderNumber,
         trackingUrl,
         Number(order.total),
       ),
-
       attachments: [
         {
           filename:
             `Layer-Forge-Invoice-${orderNumber}.pdf`,
-          content: Buffer.from(invoicePdf),
+          content: invoiceBase64,
         },
       ],
     });
+
+  if (error) {
+    throw new Error(
+      `Resend rejected the payment confirmation: ${error.message}`,
+    );
+  }
+
+  console.log("Payment confirmation sent.", {
+    orderId: order.id,
+    orderNumber,
+    recipient: customerEmail,
+    resendEmailId: data?.id,
+  });
+}
 
   if (error) {
     throw new Error(
