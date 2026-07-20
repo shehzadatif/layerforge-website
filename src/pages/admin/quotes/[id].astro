@@ -41,17 +41,7 @@ const unitPrice = Number(
     (quantity > 0 ? quotedPrice / quantity : quotedPrice)
 );
 
-const siteUrl =
-  import.meta.env.PUBLIC_SITE_URL
-    ?.trim()
-    .replace(/\/+$/, "");
-
-if (!siteUrl) {
-  throw new Error(
-    "Missing PUBLIC_SITE_URL environment variable.",
-  );
-}
-
+const siteUrl = Astro.url.origin.replace(/\/+$/, "");
 const approvalUrl = quote.approval_token
   ? `${siteUrl}/q/${encodeURIComponent(
       quote.approval_token,
