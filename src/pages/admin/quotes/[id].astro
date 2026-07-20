@@ -41,7 +41,28 @@ const unitPrice = Number(
     (quantity > 0 ? quotedPrice / quantity : quotedPrice)
 );
 
-const siteUrl = Astro.url.origin.replace(/\/+$/, "");
+const host =
+  Astro.request.headers.get("x-forwarded-host") ??
+  Astro.request.headers.get("host");
+
+const protocol =
+  Astro.request.headers.get("x-forwarded-proto") ??
+  "https";
+
+if (!host) {
+  throw new Error(
+    "Unable to determine the public site hostname.",
+  );
+}
+
+const siteUrl = `${protocol}://${host}`.replace(/\/+$/, "");
+
+const approvalUrl = quote.approval_token
+  ? `${siteUrl}/q/${encodeURIComponent(
+      quote.approval_token,
+    )}`
+  : null;
+---
 const approvalUrl = quote.approval_token
   ? `${siteUrl}/q/${encodeURIComponent(
       quote.approval_token,
