@@ -188,10 +188,9 @@ export async function generateInvoicePdf(
     color: rgb(0.06, 0.09, 0.16),
   });
 
-  y -= 34;
+y -= 34;
 
-  drawText(siteUrl.replace(/^https?:\/\//, ""), 50, 10);
-  drawText(`Invoice: ${orderNumber}`, 420, 10);
+drawText(`Invoice: ${orderNumber}`, 420, 10);
 
   y -= 22;
 
@@ -372,7 +371,7 @@ export async function generateInvoicePdf(
   y -= 22;
 
   drawText(
-    "Taxes and shipping charges, where applicable, will be calculated during secure checkout.",
+    "Taxes and shipping charges, where applicable, were calculated during secure checkout.",
     LEFT_MARGIN,
     9,
   );
