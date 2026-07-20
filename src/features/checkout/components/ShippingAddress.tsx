@@ -13,12 +13,16 @@ export default function ShippingAddress({ form, errors, updateField }: Props) {
       <h2 className="mb-6 text-2xl font-bold">Shipping Address</h2>
 
       <div className="mb-6 rounded-xl border border-blue-200 bg-blue-50 px-4 py-3 text-sm font-medium text-blue-900">
-        Shipping is currently available to Canadian addresses only.
+        Shipping is currently available to Canadian addresses only. Select a
+        saved address from your browser to fill these fields automatically.
       </div>
 
       <div className="grid gap-5">
         <div>
           <input
+            id="shipping-address"
+            name="shipping-address-line1"
+            autoComplete="shipping address-line1"
             value={form.address}
             onChange={(e) => updateField("address", e.target.value)}
             placeholder="Street Address"
@@ -33,6 +37,9 @@ export default function ShippingAddress({ form, errors, updateField }: Props) {
         </div>
 
         <input
+          id="shipping-unit"
+          name="shipping-address-line2"
+          autoComplete="shipping address-line2"
           value={form.unit}
           onChange={(e) => updateField("unit", e.target.value)}
           placeholder="Apartment / Unit"
@@ -42,6 +49,9 @@ export default function ShippingAddress({ form, errors, updateField }: Props) {
         <div className="grid gap-5 md:grid-cols-2">
           <div>
             <input
+              id="shipping-city"
+              name="shipping-city"
+              autoComplete="shipping address-level2"
               value={form.city}
               onChange={(e) => updateField("city", e.target.value)}
               placeholder="City"
@@ -57,6 +67,10 @@ export default function ShippingAddress({ form, errors, updateField }: Props) {
 
           <div>
             <input
+              id="shipping-postal-code"
+              name="shipping-postal-code"
+              autoComplete="shipping postal-code"
+              inputMode="text"
               value={form.postalCode}
               onChange={(e) => updateField("postalCode", e.target.value)}
               placeholder="Postal Code"
@@ -76,6 +90,9 @@ export default function ShippingAddress({ form, errors, updateField }: Props) {
             Province or territory
           </span>
           <select
+            id="shipping-province"
+            name="shipping-province"
+            autoComplete="shipping address-level1"
             value={form.province}
             onChange={(e) =>
               updateField("province", e.target.value as Province)
@@ -99,6 +116,17 @@ export default function ShippingAddress({ form, errors, updateField }: Props) {
           <span className="text-sm text-slate-500">
             Your shipping rate updates from this selection.
           </span>
+        </label>
+
+        <label className="grid gap-2">
+          <span className="text-sm font-semibold text-slate-700">Country</span>
+          <input
+            name="shipping-country"
+            autoComplete="shipping country-name"
+            value="Canada"
+            readOnly
+            className="rounded-xl border bg-slate-100 p-4 text-slate-600"
+          />
         </label>
       </div>
     </div>

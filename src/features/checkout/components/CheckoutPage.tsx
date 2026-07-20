@@ -70,7 +70,14 @@ export default function CheckoutPage() {
     }
   }
   return (
-    <div className="grid gap-10 lg:grid-cols-3">
+    <form
+      autoComplete="on"
+      className="grid gap-10 lg:grid-cols-3"
+      onSubmit={(event) => {
+        event.preventDefault();
+        void handleCheckout();
+      }}
+    >
       <div className="space-y-8 lg:col-span-2">
         <ContactForm form={form} errors={errors} updateField={updateField} />
 
@@ -187,8 +194,7 @@ export default function CheckoutPage() {
           </p>
 
           <button
-            type="button"
-            onClick={handleCheckout}
+            type="submit"
             disabled={isSubmitting}
             className="mt-8 w-full rounded-xl bg-yellow-400 py-4 text-lg font-semibold hover:bg-yellow-300 disabled:cursor-not-allowed disabled:opacity-60"
           >
@@ -202,6 +208,6 @@ export default function CheckoutPage() {
           </p>
         </div>
       </div>
-    </div>
+    </form>
   );
 }
