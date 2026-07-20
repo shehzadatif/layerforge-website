@@ -7,8 +7,12 @@ import { quoteEmailHtml } from "../../../lib/emailTemplates/quoteEmail";
 export const prerender = false;
 
 export const POST: APIRoute = async ({ request }) => {
+  let quoteId = "";
+
   try {
-    const { quoteId } = await request.json();
+    const body = await request.json();
+
+    quoteId = String(body?.quoteId ?? "").trim();
 
     if (!quoteId) {
       return Response.json(
@@ -18,7 +22,7 @@ export const POST: APIRoute = async ({ request }) => {
         },
         {
           status: 400,
-        }
+        },
       );
     }
 
@@ -30,6 +34,11 @@ export const POST: APIRoute = async ({ request }) => {
         .single();
 
     if (quoteError || !quote) {
+      console.warn("Quote not found for email delivery.", {
+        quoteId,
+        error: quoteError,
+      });
+
       return Response.json(
         {
           success: false,
@@ -37,11 +46,15 @@ export const POST: APIRoute = async ({ request }) => {
         },
         {
           status: 404,
-        }
+        },
       );
     }
 
-    if (!quote.email) {
+    const customerEmail = String(
+      quote.email ?? "",
+    ).trim();
+
+    if (!customerEmail) {
       return Response.json(
         {
           success: false,
@@ -49,11 +62,15 @@ export const POST: APIRoute = async ({ request }) => {
         },
         {
           status: 400,
-        }
+        },
       );
     }
 
-    if (!quote.approval_token) {
+    const approvalToken = String(
+      quote.approval_token ?? "",
+    ).trim();
+
+    if (!approvalToken) {
       return Response.json(
         {
           success: false,
@@ -61,45 +78,68 @@ export const POST: APIRoute = async ({ request }) => {
         },
         {
           status: 400,
-        }
+        },
       );
     }
 
-    const apiKey = import.meta.env.RESEND_API_KEY;
-   const fromEmail =
-  import.meta.env.QUOTE_FROM_EMAIL ??
-  import.meta.env.FROM_EMAIL;
+    const apiKey =
+      import.meta.env.RESEND_API_KEY?.trim();
 
-    if (!apiKey || !fromEmail) {
+    const fromEmail =
+      import.meta.env.QUOTE_FROM_EMAIL?.trim() ||
+      import.meta.env.FROM_EMAIL?.trim();
+
+    const siteUrl =
+      import.meta.env.PUBLIC_SITE_URL
+        ?.trim()
+        .replace(/\/+$/, "");
+
+    if (!apiKey) {
       throw new Error(
-        "RESEND_API_KEY and QUOTE_FROM_EMAIL are required."
+        "RESEND_API_KEY environment variable is required.",
       );
     }
 
-    const quoteNumber =
-  quote.quote_number
-    ? String(quote.quote_number)
-    : "Quote";
+    if (!fromEmail) {
+      throw new Error(
+        "A sender email environment variable is required.",
+      );
+    }
+
+    if (!siteUrl) {
+      throw new Error(
+        "PUBLIC_SITE_URL environment variable is required.",
+      );
+    }
+
+    const quoteNumber = quote.quote_number
+      ? String(quote.quote_number)
+      : "Quote";
 
     const approvalUrl =
-      `https://layerforgecanada.com/q/${quote.approval_token}`;
+      `${siteUrl}/q/${encodeURIComponent(
+        approvalToken,
+      )}`;
 
     const resend = new Resend(apiKey);
 
     const { error: emailError } =
       await resend.emails.send({
         from: fromEmail,
-        to: quote.email,
-        subject: `Your Layer Forge quote ${quoteNumber}`,
+        to: customerEmail,
+        subject:
+          `Your Layer Forge quote ${quoteNumber}`,
         html: quoteEmailHtml(
-          quote.customer_name,
+          quote.customer_name ?? "Customer",
           quoteNumber,
-          approvalUrl
+          approvalUrl,
         ),
       });
 
     if (emailError) {
-      throw emailError;
+      throw new Error(
+        `Resend rejected the quote email: ${emailError.message}`,
+      );
     }
 
     const { error: updateError } =
@@ -111,14 +151,19 @@ export const POST: APIRoute = async ({ request }) => {
         .eq("id", quoteId);
 
     if (updateError) {
-      throw updateError;
+      throw new Error(
+        `Quote email was sent, but status could not be updated: ${updateError.message}`,
+      );
     }
 
     return Response.json({
       success: true,
     });
   } catch (error) {
-    console.error("Unable to send quote email:", error);
+    console.error("Unable to send quote email.", {
+      quoteId: quoteId || undefined,
+      error,
+    });
 
     return Response.json(
       {
@@ -127,7 +172,7 @@ export const POST: APIRoute = async ({ request }) => {
       },
       {
         status: 500,
-      }
+      },
     );
   }
 };
