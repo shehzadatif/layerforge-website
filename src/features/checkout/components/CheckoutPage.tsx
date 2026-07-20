@@ -71,7 +71,7 @@ export default function CheckoutPage() {
   }
   return (
     <form
-      autoComplete="on"
+      autoComplete="off"
       className="grid gap-10 lg:grid-cols-3"
       onSubmit={(event) => {
         event.preventDefault();
