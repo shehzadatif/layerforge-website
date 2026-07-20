@@ -3,8 +3,6 @@ export function quoteEmailHtml(
   quoteNumber: string,
   approvalUrl: string,
 ) {
-  const logoUrl =
-    "https://layerforge-website.shehzadatif.workers.dev/images/pdf.png";
 
   return `
 <!DOCTYPE html>
@@ -51,18 +49,7 @@ export function quoteEmailHtml(
               align="center"
               style="padding:40px 40px 24px;"
             >
-              <img
-                src="${logoUrl}"
-                alt="Layer Forge"
-                style="
-                  display:block;
-                  max-width:220px;
-                  width:100%;
-                  height:auto;
-                  margin:0 auto 24px;
-                "
-              >
-
+           
               <h1
                 style="
                   margin:0;

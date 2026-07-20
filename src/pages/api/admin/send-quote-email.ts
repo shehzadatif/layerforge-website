@@ -121,8 +121,6 @@ export const POST: APIRoute = async ({ request }) => {
         approvalToken,
       )}`;
 
-    const logoUrl = `${siteUrl}/images/pdf/logo.png`;
-
     const resend = new Resend(apiKey);
 
     const { error: emailError } =
@@ -131,7 +129,6 @@ export const POST: APIRoute = async ({ request }) => {
         to: customerEmail,
         subject:
           `Your Layer Forge quote ${quoteNumber}`,
-
         html: quoteEmailHtml(
           quote.customer_name ??
             quote.name ??
@@ -139,14 +136,6 @@ export const POST: APIRoute = async ({ request }) => {
           quoteNumber,
           approvalUrl,
         ),
-
-        attachments: [
-          {
-            path: logoUrl,
-            filename: "layer-forge-logo.png",
-            contentId: "layer-forge-logo",
-          },
-        ],
       });
 
     if (emailError) {
