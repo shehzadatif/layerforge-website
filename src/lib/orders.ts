@@ -133,7 +133,6 @@ export async function markOrderPaid(
     .from("orders")
     .update({
       payment_status: "Paid",
-      order_status: ORDER_STATUS.IN_PROGRESS,
       stripe_payment_intent: paymentIntent,
       subtotal: amounts.subtotal,
       shipping: amounts.shipping,

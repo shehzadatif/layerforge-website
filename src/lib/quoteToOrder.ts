@@ -190,7 +190,7 @@ export async function convertPaidQuoteToOrder(
 
         payment_status: "Paid",
         order_status:
-          ORDER_STATUS.IN_PROGRESS,
+          ORDER_STATUS.NEW,
 
         stripe_session_id: session.id,
 
