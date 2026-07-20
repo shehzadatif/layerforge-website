@@ -4,7 +4,6 @@ import { supabaseAdmin } from "../../../lib/supabaseAdmin";
 
 const { id } = Astro.params;
 
-// Prevent reserved route names from reaching the UUID query.
 if (!id) {
   return Astro.redirect("/admin/quotes");
 }
@@ -27,7 +26,9 @@ const quoteNumber = quote.quote_number
 const quantity = Number(quote.quantity ?? 1);
 
 const quotedPrice = Number(
-  quote.quoted_price ?? quote.estimated_price ?? 0
+  quote.quoted_price ??
+    quote.estimated_price ??
+    0,
 );
 
 const projectDetails =
@@ -38,7 +39,9 @@ const projectDetails =
 
 const unitPrice = Number(
   projectDetails.unit_price ??
-    (quantity > 0 ? quotedPrice / quantity : quotedPrice)
+    (quantity > 0
+      ? quotedPrice / quantity
+      : quotedPrice),
 );
 
 const host =
@@ -55,7 +58,8 @@ if (!host) {
   );
 }
 
-const siteUrl = `${protocol}://${host}`.replace(/\/+$/, "");
+const siteUrl =
+  `${protocol}://${host}`.replace(/\/+$/, "");
 
 const approvalUrl = quote.approval_token
   ? `${siteUrl}/q/${encodeURIComponent(
@@ -63,28 +67,21 @@ const approvalUrl = quote.approval_token
     )}`
   : null;
 ---
-const approvalUrl = quote.approval_token
-  ? `${siteUrl}/q/${encodeURIComponent(
-      quote.approval_token,
-    )}`
-  : null;
-
-  ---
 
 <AdminLayout
   title={quoteNumber}
   active="quotes"
 >
-
   <div class="mb-8 flex items-center justify-between">
-
     <div>
       <h1 class="text-4xl font-bold">
         {quoteNumber}
       </h1>
 
       <p class="mt-2 text-slate-500">
-        Created on {new Date(quote.created_at).toLocaleString()}
+        Created on {new Date(
+          quote.created_at,
+        ).toLocaleString()}
       </p>
     </div>
 
@@ -94,13 +91,11 @@ const approvalUrl = quote.approval_token
     >
       ← Back to Quotes
     </a>
-
   </div>
 
   {
     approvalUrl && (
       <div class="mb-8 rounded-2xl border border-blue-200 bg-blue-50 p-6">
-
         <h2 class="mb-3 text-xl font-bold text-blue-800">
           Customer Quote Link
         </h2>
@@ -108,21 +103,17 @@ const approvalUrl = quote.approval_token
         <div class="break-all rounded-lg bg-white p-3 font-mono text-sm">
           {approvalUrl}
         </div>
-
       </div>
     )
   }
 
   <div class="grid gap-8 lg:grid-cols-3">
-
     <div class="rounded-2xl bg-white p-8 shadow">
-
       <h2 class="mb-6 text-2xl font-bold">
         Customer
       </h2>
 
       <div class="space-y-4">
-
         <p>
           <span class="font-semibold">Name</span><br />
           {quote.name}
@@ -137,13 +128,10 @@ const approvalUrl = quote.approval_token
           <span class="font-semibold">Phone</span><br />
           {quote.phone || "-"}
         </p>
-
       </div>
-
     </div>
 
     <div class="rounded-2xl bg-white p-8 shadow">
-
       <h2 class="mb-6 text-2xl font-bold">
         Status
       </h2>
@@ -153,21 +141,19 @@ const approvalUrl = quote.approval_token
           quote.status === "Approved"
             ? "bg-green-100 text-green-700"
             : quote.status === "Rejected"
-            ? "bg-red-100 text-red-700"
-            : quote.status === "Sent"
-            ? "bg-blue-100 text-blue-700"
-            : quote.status === "Converted"
-            ? "bg-emerald-100 text-emerald-700"
-            : "bg-yellow-100 text-yellow-700"
+              ? "bg-red-100 text-red-700"
+              : quote.status === "Sent"
+                ? "bg-blue-100 text-blue-700"
+                : quote.status === "Converted"
+                  ? "bg-emerald-100 text-emerald-700"
+                  : "bg-yellow-100 text-yellow-700"
         }`}
       >
         {quote.status}
       </span>
-
     </div>
 
     <div class="rounded-2xl bg-white p-8 shadow">
-
       <h2 class="mb-6 text-2xl font-bold">
         Quote Total
       </h2>
@@ -179,24 +165,18 @@ const approvalUrl = quote.approval_token
       <p class="mt-2 text-sm text-slate-500">
         Final tax is calculated during Stripe Checkout.
       </p>
-
     </div>
-
   </div>
 
   <div class="mt-8 rounded-2xl bg-white p-8 shadow">
-
     <h2 class="mb-6 text-2xl font-bold">
       Project Details
     </h2>
 
     <div class="overflow-x-auto">
-
       <table class="min-w-full">
-
         <thead>
           <tr class="border-b">
-
             <th class="pb-4 text-left">
               Project
             </th>
@@ -220,14 +200,11 @@ const approvalUrl = quote.approval_token
             <th class="pb-4 text-right">
               Total
             </th>
-
           </tr>
         </thead>
 
         <tbody>
-
           <tr class="border-b">
-
             <td class="py-4 font-semibold">
               {quote.project_name}
             </td>
@@ -251,37 +228,29 @@ const approvalUrl = quote.approval_token
             <td class="py-4 text-right font-semibold">
               CAD ${quotedPrice.toFixed(2)}
             </td>
-
           </tr>
-
         </tbody>
-
       </table>
-
     </div>
-
   </div>
 
   {
     (quote.description || quote.internal_notes) && (
       <div class="mt-8 rounded-2xl bg-white p-8 shadow">
-
         <h2 class="mb-4 text-2xl font-bold">
           Notes
         </h2>
 
         <p class="whitespace-pre-wrap text-slate-600">
-          {quote.description || quote.internal_notes}
+          {quote.description ||
+            quote.internal_notes}
         </p>
-
       </div>
     )
   }
 
   <div class="mt-8 rounded-2xl bg-white p-8 shadow">
-
     <div class="flex flex-wrap gap-4">
-
       <button
         type="button"
         onclick="updateQuoteStatus('Draft')"
@@ -301,21 +270,19 @@ const approvalUrl = quote.approval_token
       {
         approvalUrl && (
           <a
-            href={`/q/${quote.approval_token}`}
+            href={approvalUrl}
             target="_blank"
+            rel="noreferrer"
             class="rounded-lg bg-green-600 px-5 py-3 font-semibold text-white hover:bg-green-700"
           >
             Open Customer Quote
           </a>
         )
       }
-
     </div>
-
   </div>
 
   <script define:vars={{ quoteId: quote.id }}>
-
     window.updateQuoteStatus = async function (status) {
       try {
         const response = await fetch(
@@ -329,13 +296,16 @@ const approvalUrl = quote.approval_token
               quoteId,
               status,
             }),
-          }
+          },
         );
 
         const result = await response.json();
 
         if (!response.ok || !result.success) {
-          alert(result.error || "Unable to update quote.");
+          alert(
+            result.error ||
+              "Unable to update quote.",
+          );
           return;
         }
 
@@ -358,13 +328,16 @@ const approvalUrl = quote.approval_token
             body: JSON.stringify({
               quoteId,
             }),
-          }
+          },
         );
 
         const result = await response.json();
 
         if (!response.ok || !result.success) {
-          alert(result.error || "Unable to send quote.");
+          alert(
+            result.error ||
+              "Unable to send quote.",
+          );
           return;
         }
 
@@ -375,7 +348,5 @@ const approvalUrl = quote.approval_token
         alert("Unable to send quote.");
       }
     };
-
   </script>
-
 </AdminLayout>
