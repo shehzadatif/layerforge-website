@@ -4,6 +4,7 @@ import { Resend } from "resend";
 import { supabaseAdmin } from "../../../lib/supabaseAdmin";
 import { ORDER_STATUS } from "../../../lib/orderStatus";
 import { pickupReadyHtml } from "../../../lib/emailTemplates/pickupReady";
+import { orderCompletedHtml } from "../../../lib/emailTemplates/orderCompleted";
 
 export const prerender = false;
 
@@ -55,6 +56,14 @@ export const POST: APIRoute = async ({ request }) => {
       String(order.delivery_method ?? "").toLowerCase() ===
         "pickup";
 
+    const shouldSendCompletionEmail =
+      status === ORDER_STATUS.COMPLETED &&
+      previousStatus !== ORDER_STATUS.COMPLETED;
+
+    const shouldSendStatusEmail =
+      shouldSendPickupReadyEmail ||
+      shouldSendCompletionEmail;
+
     let emailDetails:
       | {
           apiKey: string;
@@ -64,7 +73,7 @@ export const POST: APIRoute = async ({ request }) => {
         }
       | undefined;
 
-    if (shouldSendPickupReadyEmail) {
+    if (shouldSendStatusEmail) {
       const apiKey =
         import.meta.env.RESEND_API_KEY?.trim();
 
@@ -100,7 +109,7 @@ export const POST: APIRoute = async ({ request }) => {
 
       if (!apiKey || !fromEmail || !siteUrl) {
         throw new Error(
-          "Pickup email settings are incomplete.",
+          "Order email settings are incomplete.",
         );
       }
 
@@ -136,34 +145,46 @@ export const POST: APIRoute = async ({ request }) => {
 
     updatedOrderId = orderId;
 
-    if (shouldSendPickupReadyEmail && emailDetails) {
+    if (shouldSendStatusEmail && emailDetails) {
       const orderNumber =
         `LF${String(order.order_number).padStart(6, "0")}`;
 
       const resend = new Resend(emailDetails.apiKey);
-      const { error: emailError } =
-        await resend.emails.send({
-          from: emailDetails.fromEmail,
-          to: order.email,
-          subject:
-            `Your order ${orderNumber} is ready for pickup`,
-          html: pickupReadyHtml(
+      const subject = shouldSendPickupReadyEmail
+        ? `Your order ${orderNumber} is ready for pickup`
+        : `Your order ${orderNumber} is complete`;
+
+      const html = shouldSendPickupReadyEmail
+        ? pickupReadyHtml(
             order.customer_name || "Customer",
             orderNumber,
             emailDetails.pickupAddress,
             emailDetails.trackingUrl,
-          ),
+          )
+        : orderCompletedHtml(
+            order.customer_name || "Customer",
+            orderNumber,
+            emailDetails.trackingUrl,
+          );
+
+      const { error: emailError } =
+        await resend.emails.send({
+          from: emailDetails.fromEmail,
+          to: order.email,
+          subject,
+          html,
         });
 
       if (emailError) {
         throw new Error(
-          `Resend rejected the pickup email: ${emailError.message}`,
+          `Resend rejected the order status email: ${emailError.message}`,
         );
       }
 
-      console.log("Pickup-ready email sent.", {
+      console.log("Order status email sent.", {
         orderId,
         orderNumber,
+        status,
         recipient: order.email,
       });
     }
@@ -171,6 +192,7 @@ export const POST: APIRoute = async ({ request }) => {
     return Response.json({
       success: true,
       pickupEmailSent: shouldSendPickupReadyEmail,
+      completionEmailSent: shouldSendCompletionEmail,
     });
   } catch (error) {
     if (updatedOrderId && previousStatus) {
