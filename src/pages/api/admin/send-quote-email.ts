@@ -3,6 +3,7 @@ import { Resend } from "resend";
 
 import { supabaseAdmin } from "../../../lib/supabaseAdmin";
 import { quoteEmailHtml } from "../../../lib/emailTemplates/quoteEmail";
+import { generateQuotePdf } from "../../../lib/quotePdf";
 
 export const prerender = false;
 
@@ -34,10 +35,13 @@ export const POST: APIRoute = async ({ request }) => {
         .single();
 
     if (quoteError || !quote) {
-      console.warn("Quote not found for email delivery.", {
-        quoteId,
-        error: quoteError,
-      });
+      console.warn(
+        "Quote not found for email delivery.",
+        {
+          quoteId,
+          error: quoteError,
+        },
+      );
 
       return Response.json(
         {
@@ -121,6 +125,14 @@ export const POST: APIRoute = async ({ request }) => {
         approvalToken,
       )}`;
 
+    const quotePdf =
+      await generateQuotePdf(quote);
+
+    const safeQuoteNumber = quoteNumber.replace(
+      /[^a-zA-Z0-9_-]/g,
+      "-",
+    );
+
     const resend = new Resend(apiKey);
 
     const { error: emailError } =
@@ -136,6 +148,13 @@ export const POST: APIRoute = async ({ request }) => {
           quoteNumber,
           approvalUrl,
         ),
+        attachments: [
+          {
+            filename:
+              `Layer-Forge-Quote-${safeQuoteNumber}.pdf`,
+            content: Buffer.from(quotePdf),
+          },
+        ],
       });
 
     if (emailError) {
