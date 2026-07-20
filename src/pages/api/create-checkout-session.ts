@@ -77,13 +77,35 @@ if (!baseUrl) {
 
 
 
-    //
-    // Calculate shipping cost
-    //
-    const shippingCost = getShippingCost(
-      customer.deliveryMethod,
-      customer.province
-    );
+ //
+// Calculate shipping cost
+//
+const shippingCost = getShippingCost(
+  customer.deliveryMethod,
+  customer.province
+);
+
+console.log("Stripe shipping calculation", {
+  deliveryMethod: customer.deliveryMethod,
+  province: customer.province,
+  shippingCost,
+});
+
+if (
+  customer.deliveryMethod !== "pickup" &&
+  (!Number.isFinite(shippingCost) || shippingCost <= 0)
+) {
+  throw new Error(
+    `Invalid shipping cost for province: ${customer.province || "missing"}`
+  );
+}
+
+console.log("Stripe shipping calculation", {
+  deliveryMethod: customer.deliveryMethod,
+  province: customer.province,
+  shippingCost,
+});
+    
     //
 
     //
