@@ -322,6 +322,13 @@ export const POST: APIRoute = async ({ request }) => {
     const requestedItems = Array.isArray(body?.items)
       ? (body.items as RequestedCheckoutItem[])
       : [];
+
+    if (body?.refundPolicyAccepted !== true) {
+      throw new CheckoutRequestError(
+        "You must acknowledge the final-sale and non-refundable policy.",
+      );
+    }
+
     const customer = validateCustomer(body?.customer);
     const trustedItems = await buildTrustedItems(requestedItems);
 
@@ -398,6 +405,12 @@ export const POST: APIRoute = async ({ request }) => {
       automatic_tax: {
         enabled: true,
       },
+      custom_text: {
+        submit: {
+          message:
+            "Final sale: By completing payment, you acknowledge that this order is non-refundable, except where a refund is required by applicable law.",
+        },
+      },
       shipping_options:
         customer.deliveryMethod === "pickup"
           ? [
@@ -427,6 +440,7 @@ export const POST: APIRoute = async ({ request }) => {
       billing_address_collection: "required",
       metadata: {
         orderId: order.id,
+        refundPolicyAccepted: "true",
       },
       line_items: trustedItems.map((item) => ({
         price_data: {

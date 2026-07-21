@@ -21,6 +21,16 @@ export const POST: APIRoute = async ({ request }) => {
     const quoteId = String(body?.quoteId ?? "").trim();
     const approvalToken = String(body?.approvalToken ?? "").trim();
 
+    if (body?.refundPolicyAccepted !== true) {
+      return Response.json(
+        {
+          error:
+            "You must acknowledge the final-sale and non-refundable policy.",
+        },
+        { status: 400 },
+      );
+    }
+
     if (!quoteId || !approvalToken) {
       return Response.json(
         {
@@ -130,6 +140,13 @@ export const POST: APIRoute = async ({ request }) => {
         enabled: true,
       },
 
+      custom_text: {
+        submit: {
+          message:
+            "Final sale: By completing payment, you acknowledge that this order is non-refundable, except where a refund is required by applicable law.",
+        },
+      },
+
       shipping_options: isLocalPickup
         ? [
             {
@@ -167,6 +184,7 @@ export const POST: APIRoute = async ({ request }) => {
       metadata: {
         source: "quote",
         quoteId: quote.id,
+        refundPolicyAccepted: "true",
       },
 
       line_items: [

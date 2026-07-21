@@ -8,6 +8,7 @@ import ShippingAddress from "./ShippingAddress";
 
 export default function CheckoutPage() {
   const cart = getCart();
+  const [refundPolicyAccepted, setRefundPolicyAccepted] = useState(false);
 
   const { form, errors, isSubmitting, setIsSubmitting, updateField, validate } =
     useCheckout();
@@ -32,6 +33,11 @@ export default function CheckoutPage() {
       return;
     }
 
+    if (!refundPolicyAccepted) {
+      alert("Please acknowledge the final-sale and non-refundable policy.");
+      return;
+    }
+
     if (isSubmitting) {
       return;
     }
@@ -47,6 +53,7 @@ export default function CheckoutPage() {
         body: JSON.stringify({
           items: cart,
           customer: form,
+          refundPolicyAccepted,
         }),
       });
 
@@ -193,10 +200,30 @@ export default function CheckoutPage() {
             that same address.
           </p>
 
+          <label className="mt-6 flex cursor-pointer items-start gap-3 rounded-xl border-2 border-yellow-400 bg-yellow-50 p-4 text-sm leading-6 text-slate-800">
+            <input
+              id="refund-policy-accepted"
+              type="checkbox"
+              required
+              checked={refundPolicyAccepted}
+              onChange={(event) =>
+                setRefundPolicyAccepted(event.target.checked)
+              }
+              className="mt-1 h-5 w-5 shrink-0 accent-yellow-500"
+            />
+            <span>
+              <strong className="block text-slate-950">
+                Final sale — paid orders are non-refundable
+              </strong>
+              I understand that once payment is completed, this order is final
+              and non-refundable, except where required by applicable law.
+            </span>
+          </label>
+
           <button
             type="submit"
             disabled={isSubmitting}
-            className="mt-8 w-full rounded-xl bg-yellow-400 py-4 text-lg font-semibold hover:bg-yellow-300 disabled:cursor-not-allowed disabled:opacity-60"
+            className="mt-5 w-full rounded-xl bg-yellow-400 py-4 text-lg font-semibold hover:bg-yellow-300 disabled:cursor-not-allowed disabled:opacity-60"
           >
             {isSubmitting
               ? "Preparing Secure Checkout..."

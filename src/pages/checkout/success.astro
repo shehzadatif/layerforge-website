@@ -22,6 +22,14 @@ const sessionId = Astro.url.searchParams.get("session_id");
         Your payment has been received successfully.
       </p>
 
+      <div class="mt-6 rounded-xl border-2 border-yellow-400 bg-yellow-50 p-5 text-left text-sm leading-6 text-slate-800">
+        <strong class="block text-slate-950">
+          Final sale — paid orders are non-refundable
+        </strong>
+        Once payment is completed, the order is final and non-refundable,
+        except where required by applicable law.
+      </div>
+
       {
         sessionId && (
           <p class="mb-8 text-sm text-slate-500">
@@ -38,7 +46,7 @@ const sessionId = Astro.url.searchParams.get("session_id");
 
         <ul class="space-y-3 text-slate-600">
           <li>• Your order has been received.</li>
-          <li>• We'll begin production shortly.</li>
+          <li>• Your order is confirmed and awaiting production.</li>
           <li>• You'll receive an email confirmation.</li>
           <li>• We'll notify you when your order is ready or shipped.</li>
         </ul>

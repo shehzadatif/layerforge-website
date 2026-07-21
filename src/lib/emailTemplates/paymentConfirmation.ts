@@ -2,7 +2,7 @@ export function paymentConfirmationHtml(
   customerName: string,
   orderNumber: string,
   trackingUrl: string,
-  total: number
+  total: number,
 ) {
   return `
   <div style="font-family:Arial,sans-serif;max-width:700px;margin:auto">
@@ -37,8 +37,13 @@ export function paymentConfirmationHtml(
     </table>
 
     <p>
-      Production will begin shortly.
+      Your order is confirmed and awaiting production.
     </p>
+
+    <div style="margin:24px 0;padding:16px;border:2px solid #eab308;border-radius:8px;background:#fefce8;color:#111827;">
+      <strong>Final sale — paid orders are non-refundable.</strong><br>
+      Once payment is completed, the order is final and non-refundable, except where required by applicable law.
+    </div>
 
     <p>
 

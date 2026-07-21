@@ -194,8 +194,11 @@ const unitPrice = Number(
 
         <ul class="list-disc space-y-2 pl-6 text-slate-600">
           <li>This quote is valid for 30 days.</li>
-          <li>Production begins after full payment is received.</li>
-          <li>Custom products are non-refundable once production begins.</li>
+          <li>Payment confirms the order; production begins when scheduled.</li>
+          <li>
+            Once payment is completed, the order is final and non-refundable,
+            except where required by applicable law.
+          </li>
           <li>Production time may vary based on project complexity.</li>
         </ul>
 
@@ -215,6 +218,22 @@ const unitPrice = Number(
               <p class="mt-2 text-green-700">
                 Continue to secure payment to place your order.
               </p>
+
+              <label class="mt-6 flex cursor-pointer items-start gap-3 rounded-xl border-2 border-yellow-400 bg-yellow-50 p-4 text-left text-sm leading-6 text-slate-800">
+                <input
+                  id="quote-refund-policy-accepted"
+                  type="checkbox"
+                  class="mt-1 h-5 w-5 shrink-0 accent-yellow-500"
+                />
+                <span>
+                  <strong class="block text-slate-950">
+                    Final sale — paid orders are non-refundable
+                  </strong>
+                  I understand that once payment is completed, this order is
+                  final and non-refundable, except where required by applicable
+                  law.
+                </span>
+              </label>
 
               <button
                 type="button"
@@ -337,6 +356,19 @@ const unitPrice = Number(
     };
 
     window.proceedToPayment = async function () {
+      const refundPolicyCheckbox = document.getElementById(
+        "quote-refund-policy-accepted"
+      );
+
+      if (
+        !(refundPolicyCheckbox instanceof HTMLInputElement) ||
+        !refundPolicyCheckbox.checked
+      ) {
+        alert("Please acknowledge the final-sale and non-refundable policy.");
+        refundPolicyCheckbox?.focus();
+        return;
+      }
+
       try {
         const response = await fetch(
           "/api/create-quote-checkout-session",
@@ -348,6 +380,7 @@ const unitPrice = Number(
             body: JSON.stringify({
               quoteId,
               approvalToken,
+              refundPolicyAccepted: true,
             }),
           }
         );
