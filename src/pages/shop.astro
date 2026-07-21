@@ -49,14 +49,16 @@ if (error) {
             class="flex h-full flex-col overflow-hidden rounded-2xl bg-white shadow transition hover:-translate-y-1 hover:shadow-xl"
           >
 
-            <div class="aspect-square bg-slate-100">
+            <div class="aspect-square overflow-hidden bg-slate-100 p-3">
 
               {cover ? (
 
                 <img
                   src={`${import.meta.env.PUBLIC_SUPABASE_URL}/storage/v1/object/public/product-images/${cover.image_url}`}
                   alt={product.name}
-                  class="h-full w-full object-cover"
+                  loading="lazy"
+                  decoding="async"
+                  class="h-full w-full rounded-xl object-contain"
                 />
 
               ) : (
