@@ -6,11 +6,24 @@ import Footer from "../components/Footer.astro";
 
 interface Props {
   title?: string;
+  description?: string;
+  image?: string;
+  noIndex?: boolean;
 }
 
 const {
   title = "Layer Forge",
+  description = "Custom 3D printing, laser engraving, UV printing, and apparel decoration from Layer Forge in Surrey, British Columbia.",
+  image = "/images/home/layer-forge-hero.webp",
+  noIndex = false,
 } = Astro.props;
+
+const configuredSiteUrl = import.meta.env.PUBLIC_SITE_URL
+  ?.trim()
+  .replace(/\/+$/, "");
+const siteUrl = configuredSiteUrl || Astro.url.origin;
+const canonicalUrl = new URL(Astro.url.pathname, siteUrl).toString();
+const socialImageUrl = new URL(image, siteUrl).toString();
 ---
 
 <!DOCTYPE html>
@@ -21,6 +34,23 @@ const {
     <link rel="icon" href="/favicon.ico" sizes="any" />
     <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png" />
     <link rel="apple-touch-icon" href="/icon-192.png" />
+    <meta name="description" content={description} />
+    <meta name="robots" content={noIndex ? "noindex, nofollow" : "index, follow"} />
+    <meta name="theme-color" content="#020617" />
+    <link rel="canonical" href={canonicalUrl} />
+
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="Layer Forge" />
+    <meta property="og:title" content={title} />
+    <meta property="og:description" content={description} />
+    <meta property="og:url" content={canonicalUrl} />
+    <meta property="og:image" content={socialImageUrl} />
+    <meta property="og:locale" content="en_CA" />
+
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content={title} />
+    <meta name="twitter:description" content={description} />
+    <meta name="twitter:image" content={socialImageUrl} />
     <title>{title}</title>
   </head>
 

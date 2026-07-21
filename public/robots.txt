@@ -1,0 +1,9 @@
+User-agent: *
+Allow: /
+Disallow: /admin/
+Disallow: /api/
+Disallow: /checkout/
+Disallow: /q/
+Disallow: /t/
+
+Sitemap: https://layerforgecanada.com/sitemap.xml

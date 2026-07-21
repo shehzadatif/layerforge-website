@@ -1,0 +1,33 @@
+---
+import MainLayout from "../layouts/MainLayout.astro";
+---
+
+<MainLayout
+  title="Page Not Found | Layer Forge"
+  description="The requested Layer Forge page could not be found."
+  noIndex={true}
+>
+  <section class="bg-slate-50 px-6 py-24 sm:py-32">
+    <div class="mx-auto max-w-2xl text-center">
+      <div class="text-sm font-black uppercase tracking-[0.3em] text-amber-600">Error 404</div>
+      <h1 class="mt-5 text-5xl font-black tracking-tight text-slate-950 sm:text-6xl">
+        This page isn’t here.
+      </h1>
+      <p class="mt-6 text-lg leading-8 text-slate-600">
+        The link may be outdated, or the page may have moved. Use one of the
+        options below to get back on track.
+      </p>
+      <div class="mt-9 flex flex-col justify-center gap-4 sm:flex-row">
+        <a href="/" class="rounded-xl bg-yellow-400 px-7 py-4 font-bold text-slate-950 transition hover:bg-yellow-300">
+          Return Home
+        </a>
+        <a href="/shop" class="rounded-xl border border-slate-300 bg-white px-7 py-4 font-bold text-slate-950 transition hover:border-slate-950">
+          Browse the Shop
+        </a>
+        <a href="/contact" class="rounded-xl border border-slate-300 bg-white px-7 py-4 font-bold text-slate-950 transition hover:border-slate-950">
+          Contact Us
+        </a>
+      </div>
+    </div>
+  </section>
+</MainLayout>

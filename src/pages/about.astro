@@ -1,17 +1,182 @@
 ---
-import MainLayout from '../layouts/MainLayout.astro';
+import MainLayout from "../layouts/MainLayout.astro";
+
+const capabilities = [
+  {
+    title: "3D Printing",
+    description:
+      "Functional parts, prototypes, replacement components, and small production runs made for real-world use.",
+    image: "/images/3d-printing/functional-products.webp",
+    href: "/3d-printing",
+  },
+  {
+    title: "Laser Engraving",
+    description:
+      "Permanent personalization for gifts, business branding, awards, tools, and customer-supplied products.",
+    image: "/images/laser-engraving/engraved-products.webp",
+    href: "/laser-engraving",
+  },
+  {
+    title: "UV & Apparel Printing",
+    description:
+      "Vibrant UV printing plus DTF and DTG decoration for promotional products, apparel, and custom projects.",
+    image: "/images/uv-printing/uv-tumbler.webp",
+    href: "/uv-printing",
+  },
+];
 ---
 
-<MainLayout title="About | Layer Forge">
+<MainLayout
+  title="About Layer Forge | Custom Manufacturing in Surrey, BC"
+  description="Meet Layer Forge, a home-based production studio in Surrey, BC specializing in 3D printing, laser engraving, UV printing, DTF, and DTG projects."
+>
+  <section class="overflow-hidden bg-slate-950 text-white">
+    <div class="mx-auto grid max-w-7xl items-center gap-14 px-6 py-20 lg:grid-cols-2 lg:py-28">
+      <div>
+        <p class="text-sm font-bold uppercase tracking-[0.25em] text-yellow-400">
+          About Layer Forge
+        </p>
+        <h1 class="mt-5 text-5xl font-black leading-[0.95] tracking-tight sm:text-6xl lg:text-7xl">
+          Built for ideas that don’t fit off the shelf.
+        </h1>
+        <p class="mt-7 max-w-2xl text-lg leading-8 text-slate-300">
+          Layer Forge is a home-based production studio in Surrey, British
+          Columbia. We turn practical needs, creative concepts, and brand ideas
+          into finished products through 3D printing, laser engraving, UV
+          printing, DTF, and DTG.
+        </p>
+        <div class="mt-9 flex flex-col gap-4 sm:flex-row">
+          <a
+            href="/quote"
+            class="rounded-xl bg-yellow-400 px-7 py-4 text-center font-bold text-slate-950 transition hover:bg-yellow-300"
+          >
+            Start a Project
+          </a>
+          <a
+            href="/gallery"
+            class="rounded-xl border border-white/25 px-7 py-4 text-center font-bold text-white transition hover:border-yellow-400 hover:text-yellow-400"
+          >
+            View Our Work
+          </a>
+        </div>
+      </div>
 
-<section class="mx-auto max-w-7xl px-6 py-24">
+      <div class="relative">
+        <div class="absolute -inset-6 rounded-[2rem] bg-yellow-400/15 blur-3xl"></div>
+        <img
+          src="/images/home/layer-forge-hero.webp"
+          alt="Layer Forge custom manufacturing workspace and finished products"
+          class="relative aspect-[4/3] w-full rounded-3xl object-cover shadow-2xl"
+        />
+      </div>
+    </div>
+  </section>
 
-<h1 class="text-5xl font-bold">About</h1>
+  <section class="bg-white py-20">
+    <div class="mx-auto grid max-w-7xl gap-12 px-6 lg:grid-cols-[0.9fr_1.1fr] lg:items-center">
+      <div>
+        <p class="text-sm font-bold uppercase tracking-[0.2em] text-amber-600">
+          A direct, personal process
+        </p>
+        <h2 class="mt-4 text-4xl font-black tracking-tight text-slate-950 sm:text-5xl">
+          One studio. Multiple ways to make it real.
+        </h2>
+      </div>
+      <div class="space-y-5 text-lg leading-8 text-slate-600">
+        <p>
+          Every project starts with the same question: what does the finished
+          product need to accomplish? From there, we help select the right
+          process, material, finish, quantity, and production approach.
+        </p>
+        <p>
+          Working directly with a small production studio means clear
+          communication and practical attention to detail from quote through
+          completion. We support individual customers, makers, teams, and local
+          businesses—whether the project is a single personalized item or a
+          repeatable small batch.
+        </p>
+      </div>
+    </div>
+  </section>
 
-<p class="mt-6 text-lg">
-This page is under construction.
-</p>
+  <section class="bg-slate-50 py-20">
+    <div class="mx-auto max-w-7xl px-6">
+      <div class="max-w-3xl">
+        <p class="text-sm font-bold uppercase tracking-[0.2em] text-amber-600">
+          What we make
+        </p>
+        <h2 class="mt-4 text-4xl font-black tracking-tight text-slate-950 sm:text-5xl">
+          The right process for the right product.
+        </h2>
+      </div>
 
-</section>
+      <div class="mt-12 grid gap-7 lg:grid-cols-3">
+        {
+          capabilities.map((capability) => (
+            <article class="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm transition hover:-translate-y-1 hover:shadow-xl">
+              <img
+                src={capability.image}
+                alt={`${capability.title} examples by Layer Forge`}
+                class="aspect-[4/3] w-full object-cover"
+                loading="lazy"
+              />
+              <div class="p-7">
+                <h3 class="text-2xl font-bold text-slate-950">
+                  {capability.title}
+                </h3>
+                <p class="mt-3 leading-7 text-slate-600">
+                  {capability.description}
+                </p>
+                <a
+                  href={capability.href}
+                  class="mt-6 inline-flex font-bold text-slate-950 underline decoration-yellow-400 decoration-2 underline-offset-4"
+                >
+                  Explore {capability.title}
+                </a>
+              </div>
+            </article>
+          ))
+        }
+      </div>
+    </div>
+  </section>
 
+  <section class="bg-white py-20">
+    <div class="mx-auto grid max-w-7xl gap-6 px-6 md:grid-cols-3">
+      <div class="rounded-2xl border border-slate-200 p-7">
+        <div class="text-sm font-bold uppercase tracking-[0.18em] text-amber-600">01 · Understand</div>
+        <h3 class="mt-3 text-2xl font-bold text-slate-950">Start with the purpose</h3>
+        <p class="mt-3 leading-7 text-slate-600">We review the intended use, artwork or model, material, finish, quantity, and timing.</p>
+      </div>
+      <div class="rounded-2xl border border-slate-200 p-7">
+        <div class="text-sm font-bold uppercase tracking-[0.18em] text-amber-600">02 · Produce</div>
+        <h3 class="mt-3 text-2xl font-bold text-slate-950">Make it with care</h3>
+        <p class="mt-3 leading-7 text-slate-600">The project is scheduled, produced, and checked against the confirmed details.</p>
+      </div>
+      <div class="rounded-2xl border border-slate-200 p-7">
+        <div class="text-sm font-bold uppercase tracking-[0.18em] text-amber-600">03 · Deliver</div>
+        <h3 class="mt-3 text-2xl font-bold text-slate-950">Pickup or ship</h3>
+        <p class="mt-3 leading-7 text-slate-600">Collect by appointment in Surrey or have your finished order shipped within Canada.</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="bg-yellow-400 py-16">
+    <div class="mx-auto flex max-w-7xl flex-col gap-7 px-6 lg:flex-row lg:items-center lg:justify-between">
+      <div>
+        <h2 class="text-4xl font-black tracking-tight text-slate-950">
+          Have something in mind?
+        </h2>
+        <p class="mt-3 text-lg text-slate-800">
+          Tell us what you need, even if you’re not sure which process fits.
+        </p>
+      </div>
+      <a
+        href="/quote"
+        class="rounded-xl bg-slate-950 px-8 py-4 text-center font-bold text-white transition hover:bg-slate-800"
+      >
+        Request a Quote
+      </a>
+    </div>
+  </section>
 </MainLayout>
