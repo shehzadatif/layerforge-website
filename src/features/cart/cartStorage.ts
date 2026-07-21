@@ -6,6 +6,7 @@ export type CartItem = {
   price: number;
   image: string;
   quantity: number;
+  productionDays?: number;
 };
 
 const STORAGE_KEY = "lf-cart";
@@ -39,9 +40,7 @@ export function addToCart(item: CartItem) {
   const cart = getCart();
 
   const existing = cart.find(
-    (i) =>
-      i.id === item.id &&
-      i.materialId === item.materialId
+    (i) => i.id === item.id && i.materialId === item.materialId,
   );
 
   if (existing) {
@@ -53,33 +52,20 @@ export function addToCart(item: CartItem) {
   saveCart(cart);
 }
 
-export function removeFromCart(
-  id: string,
-  materialId: string
-) {
+export function removeFromCart(id: string, materialId: string) {
   saveCart(
-    getCart().filter(
-      (i) =>
-        !(
-          i.id === id &&
-          i.materialId === materialId
-        )
-    )
+    getCart().filter((i) => !(i.id === id && i.materialId === materialId)),
   );
 }
 
 export function updateQuantity(
   id: string,
   materialId: string,
-  quantity: number
+  quantity: number,
 ) {
   const cart = getCart();
 
-  const item = cart.find(
-    (i) =>
-      i.id === id &&
-      i.materialId === materialId
-  );
+  const item = cart.find((i) => i.id === id && i.materialId === materialId);
 
   if (item) {
     item.quantity = quantity;

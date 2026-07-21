@@ -10,6 +10,11 @@ import {
 import { getShippingCost, SHIPPING_RATES } from "../../lib/shipping";
 import { stripe } from "../../lib/stripe";
 import { supabaseAdmin } from "../../lib/supabaseAdmin";
+import {
+  formatProductionDuration,
+  getEstimatedReadyDate,
+  getOrderProductionDays,
+} from "../../lib/productionEstimate";
 
 export const prerender = false;
 
@@ -336,7 +341,13 @@ export const POST: APIRoute = async ({ request }) => {
       (sum, item) => sum + item.unitPriceCents * item.quantity,
       0,
     );
+    const orderStartTime = new Date();
     const subtotal = subtotalCents / 100;
+    const productionDays = getOrderProductionDays(trustedItems);
+    const estimatedReadyDate = getEstimatedReadyDate(
+      orderStartTime,
+      productionDays,
+    );
 
     customer.materialSummary = [
       ...new Set(trustedItems.map((item) => item.materialName)),
@@ -443,13 +454,21 @@ export const POST: APIRoute = async ({ request }) => {
         termsAccepted: "true",
         termsVersion: "2026-07-20",
         refundPolicyAccepted: "true",
+        productionDays: String(productionDays),
+        ...(estimatedReadyDate
+          ? {
+              estimatedReadyDate: estimatedReadyDate.toISOString().slice(0, 10),
+            }
+          : {}),
       },
       line_items: trustedItems.map((item) => ({
         price_data: {
           currency: "cad",
           product_data: {
             name: item.name,
-            description: item.materialName,
+            description: item.productionDays
+              ? `${item.materialName} · ${formatProductionDuration(item.productionDays)} production`
+              : item.materialName,
           },
           unit_amount: item.unitPriceCents,
         },

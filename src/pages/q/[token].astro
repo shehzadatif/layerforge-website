@@ -2,6 +2,10 @@
 import MainLayout from "../../layouts/MainLayout.astro";
 import { supabaseAdmin } from "../../lib/supabaseAdmin";
 import { formatPacificDate } from "../../lib/dateUtils";
+import {
+  formatProductionDuration,
+  normalizeProductionDays,
+} from "../../lib/productionEstimate";
 
 const { token } = Astro.params;
 
@@ -44,6 +48,10 @@ const projectDetails =
 const unitPrice = Number(
   projectDetails.unit_price ??
   (quantity > 0 ? quotedPrice / quantity : quotedPrice)
+);
+
+const productionDays = normalizeProductionDays(
+  projectDetails.production_days,
 );
 ---
 
@@ -184,6 +192,22 @@ const unitPrice = Number(
           Applicable taxes and shipping charges are calculated during secure checkout.
         </p>
 
+      </div>
+
+      <div class="mt-8 rounded-2xl border border-yellow-300 bg-yellow-50 p-6">
+        <div class="text-sm font-semibold uppercase tracking-wide text-amber-700">
+          Estimated production
+        </div>
+        <div class="mt-2 text-xl font-bold text-slate-950">
+          {
+            productionDays > 0
+              ? `${formatProductionDuration(productionDays)} after payment`
+              : "To be confirmed before production"
+          }
+        </div>
+        <p class="mt-2 text-sm text-slate-600">
+          Shipping transit time, when applicable, is additional.
+        </p>
       </div>
 
       <div class="mt-10 rounded-2xl border border-slate-200 bg-slate-50 p-8">

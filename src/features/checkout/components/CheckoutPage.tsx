@@ -5,6 +5,11 @@ import { getCart } from "../../cart/cartStorage";
 import ContactForm from "./ContactForm";
 import DeliveryMethod from "./DeliveryMethod";
 import ShippingAddress from "./ShippingAddress";
+import {
+  formatEstimatedReadyDate,
+  formatProductionDuration,
+  getOrderProductionDays,
+} from "../../../lib/productionEstimate";
 
 export default function CheckoutPage() {
   const cart = getCart();
@@ -22,6 +27,11 @@ export default function CheckoutPage() {
     form.province as Province,
   );
   const totalBeforeTax = subtotal + shippingCost;
+  const productionDays = getOrderProductionDays(cart);
+  const estimatedReadyDate = formatEstimatedReadyDate(
+    new Date(),
+    productionDays,
+  );
 
   async function handleCheckout() {
     if (cart.length === 0) {
@@ -152,6 +162,11 @@ export default function CheckoutPage() {
                   <div className="text-sm text-slate-500">
                     ${item.price.toFixed(2)} each
                   </div>
+                  {item.productionDays ? (
+                    <div className="mt-1 text-xs font-medium text-amber-700">
+                      {formatProductionDuration(item.productionDays)} production
+                    </div>
+                  ) : null}
                 </div>
               </div>
             ))}
@@ -188,6 +203,23 @@ export default function CheckoutPage() {
           </div>
 
           <hr className="my-6" />
+
+          {estimatedReadyDate ? (
+            <div className="mb-6 rounded-xl border border-yellow-300 bg-yellow-50 p-4">
+              <div className="text-sm font-semibold text-slate-950">
+                {form.deliveryMethod === "pickup"
+                  ? "Estimated ready for pickup"
+                  : "Estimated ready to ship"}
+              </div>
+              <div className="mt-1 font-bold text-slate-900">
+                {estimatedReadyDate}
+              </div>
+              <p className="mt-1 text-xs leading-5 text-slate-600">
+                Based on {formatProductionDuration(productionDays)} after
+                payment. Carrier transit time is additional for shipped orders.
+              </p>
+            </div>
+          ) : null}
 
           <div className="flex justify-between text-2xl font-bold">
             <span>Total before tax</span>

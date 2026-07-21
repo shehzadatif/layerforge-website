@@ -3,6 +3,11 @@ import type { APIRoute } from "astro";
 import { isSameOriginRequest } from "../../lib/isSameOriginRequest";
 import { stripe } from "../../lib/stripe";
 import { supabaseAdmin } from "../../lib/supabaseAdmin";
+import {
+  formatProductionDuration,
+  getEstimatedReadyDate,
+  normalizeProductionDays,
+} from "../../lib/productionEstimate";
 
 export const prerender = false;
 
@@ -105,6 +110,13 @@ export const POST: APIRoute = async ({ request }) => {
       projectDetails.unit_price ??
         (quantity > 0 ? quotedPrice / quantity : quotedPrice),
     );
+    const productionDays = normalizeProductionDays(
+      projectDetails.production_days,
+    );
+    const estimatedReadyDate = getEstimatedReadyDate(
+      new Date(),
+      productionDays,
+    );
 
     if (
       !Number.isFinite(unitPrice) ||
@@ -186,6 +198,12 @@ export const POST: APIRoute = async ({ request }) => {
         termsAccepted: "true",
         termsVersion: "2026-07-20",
         refundPolicyAccepted: "true",
+        productionDays: String(productionDays),
+        ...(estimatedReadyDate
+          ? {
+              estimatedReadyDate: estimatedReadyDate.toISOString().slice(0, 10),
+            }
+          : {}),
       },
 
       line_items: [
@@ -196,7 +214,15 @@ export const POST: APIRoute = async ({ request }) => {
             product_data: {
               name: quote.project_name || quote.service || "Custom Quote",
 
-              description: quote.material || quote.description || undefined,
+              description:
+                [
+                  quote.material || quote.description,
+                  productionDays
+                    ? `${formatProductionDuration(productionDays)} production`
+                    : "",
+                ]
+                  .filter(Boolean)
+                  .join(" · ") || undefined,
             },
 
             unit_amount: Math.round(unitPrice * 100),

@@ -1,11 +1,16 @@
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
 import { addToCart } from "../../../cart/cartStorage";
+import {
+  formatProductionDuration,
+  normalizeProductionDays,
+} from "../../../../lib/productionEstimate";
 
 type Material = {
   id: string;
   name: string;
   markup_percent: number;
+  default_production_days?: number | string | null;
 };
 
 type ProductMaterial = {
@@ -34,6 +39,10 @@ export default function ProductConfigurator({ product, image }: Props) {
 
   const [quantity, setQuantity] = useState(1);
 
+  const productionDays = normalizeProductionDays(
+    selectedMaterial?.materials.default_production_days,
+  );
+
   const unitPrice = useMemo(() => {
     const salePrice = Number(product.sale_price);
     const basePrice =
@@ -59,6 +68,7 @@ export default function ProductConfigurator({ product, image }: Props) {
       quantity,
       price: Number(unitPrice),
       image,
+      productionDays,
     });
 
     toast.success("Added to Cart", {
@@ -100,6 +110,17 @@ export default function ProductConfigurator({ product, image }: Props) {
               </label>
             );
           })}
+        </div>
+      </div>
+
+      <div className="rounded-xl border border-yellow-300 bg-yellow-50 p-5">
+        <div className="text-sm font-semibold text-slate-950">
+          Estimated production
+        </div>
+        <div className="mt-1 text-slate-700">
+          {productionDays > 0
+            ? `${formatProductionDuration(productionDays)} after payment`
+            : "Confirmed after we review your order"}
         </div>
       </div>
 

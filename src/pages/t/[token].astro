@@ -2,6 +2,11 @@
 import MainLayout from "../../layouts/MainLayout.astro";
 import { supabaseAdmin } from "../../lib/supabaseAdmin";
 import { formatPacificDateTime } from "../../lib/dateUtils";
+import {
+  formatEstimatedReadyDate,
+  formatProductionDuration,
+  getOrderProductionDays,
+} from "../../lib/productionEstimate";
 
 const { token } = Astro.params;
 
@@ -21,6 +26,11 @@ const orderNumber = order
 const isLocalPickup =
   String(order?.delivery_method ?? "").toLowerCase() ===
   "pickup";
+
+const productionDays = getOrderProductionDays(order?.order_items);
+const estimatedReadyDate = order
+  ? formatEstimatedReadyDate(order.created_at, productionDays)
+  : null;
 ---
 
 <MainLayout title="Track Order | Layer Forge">
@@ -43,6 +53,23 @@ const isLocalPickup =
         </p>
 
       </div>
+
+      {
+        estimatedReadyDate && (
+          <div class="mb-8 rounded-2xl border border-yellow-300 bg-yellow-50 p-6">
+            <div class="text-sm font-semibold uppercase tracking-wide text-amber-700">
+              {isLocalPickup ? "Estimated ready for pickup" : "Estimated ready to ship"}
+            </div>
+            <div class="mt-2 text-2xl font-bold text-slate-950">
+              {estimatedReadyDate}
+            </div>
+            <p class="mt-2 text-sm text-slate-600">
+              Based on {formatProductionDuration(productionDays)} after your order was placed.
+              {!isLocalPickup && " Carrier transit time is additional."}
+            </p>
+          </div>
+        )
+      }
 
       <div class="grid gap-8 lg:grid-cols-2">
 
@@ -166,6 +193,14 @@ const isLocalPickup =
                   <div class="text-slate-500">
                     Quantity: {item.quantity}
                   </div>
+
+                  {
+                    Number(item.production_days ?? 0) > 0 && (
+                      <div class="text-sm text-amber-700">
+                        Production: {formatProductionDuration(item.production_days)}
+                      </div>
+                    )
+                  }
 
                   <div class="mt-2 font-semibold">
                     CAD ${Number(item.total_price).toFixed(2)}

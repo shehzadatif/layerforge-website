@@ -2,6 +2,11 @@
 import AdminLayout from "../../../layouts/AdminLayout.astro";
 import { getOrder } from "../../../lib/orders";
 import { formatPacificDateTime } from "../../../lib/dateUtils";
+import {
+  formatEstimatedReadyDate,
+  formatProductionDuration,
+  getOrderProductionDays,
+} from "../../../lib/productionEstimate";
 
 const { id } = Astro.params;
 
@@ -26,6 +31,12 @@ const trackingUrl =
   `${baseUrl}/t/${encodeURIComponent(
     order.tracking_token,
   )}`;
+
+const productionDays = getOrderProductionDays(order.order_items);
+const estimatedReadyDate = formatEstimatedReadyDate(
+  order.created_at,
+  productionDays,
+);
 ---
 
 <AdminLayout
@@ -79,6 +90,49 @@ const trackingUrl =
       🌐 Open Tracking Page
     </a>
 
+  </div>
+
+  <!-- Production Estimate -->
+
+  <div class="mb-8 rounded-2xl border border-yellow-300 bg-yellow-50 p-6">
+    <div class="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
+      <div>
+        <h2 class="text-xl font-bold text-slate-950">
+          Customer Production Estimate
+        </h2>
+        <p class="mt-2 text-slate-600">
+          {
+            estimatedReadyDate
+              ? `${formatProductionDuration(productionDays)} · Estimated ${String(order.delivery_method).toLowerCase() === "pickup" ? "pickup" : "ready to ship"}: ${estimatedReadyDate}`
+              : "No production estimate is currently shown to the customer."
+          }
+        </p>
+      </div>
+
+      <div class="flex flex-col gap-3 sm:flex-row sm:items-end">
+        <label class="block">
+          <span class="mb-2 block text-sm font-semibold text-slate-700">
+            Business days
+          </span>
+          <input
+            id="productionDays"
+            type="number"
+            min="1"
+            max="365"
+            value={productionDays || 5}
+            class="w-full rounded-lg border border-slate-300 bg-white px-4 py-3 sm:w-36"
+          />
+        </label>
+
+        <button
+          type="button"
+          onclick="saveProductionEstimate()"
+          class="rounded-lg bg-yellow-400 px-5 py-3 font-semibold text-slate-950 hover:bg-yellow-300"
+        >
+          Save Estimate
+        </button>
+      </div>
+    </div>
   </div>
 
   <!-- Customer, Delivery and Status -->
@@ -336,6 +390,10 @@ const trackingUrl =
             Qty
           </th>
 
+          <th class="pb-4 text-center">
+            Production
+          </th>
+
           <th class="pb-4 text-right">
             Unit Price
           </th>
@@ -368,6 +426,14 @@ const trackingUrl =
                   {item.quantity}
                 </td>
 
+                <td class="py-4 text-center">
+                  {
+                    Number(item.production_days ?? 0) > 0
+                      ? formatProductionDuration(item.production_days)
+                      : "-"
+                  }
+                </td>
+
                 <td class="py-4 text-right">
                   CAD ${Number(item.unit_price).toFixed(2)}
                 </td>
@@ -382,7 +448,7 @@ const trackingUrl =
           ) : (
             <tr>
               <td
-                colspan="5"
+                colspan="6"
                 class="py-8 text-center text-slate-500"
               >
                 No products found.
@@ -638,6 +704,53 @@ const trackingUrl =
       } catch (error) {
         console.error(error);
         alert("Unable to save notes.");
+      }
+    };
+
+    window.saveProductionEstimate = async function () {
+      try {
+        const productionDaysElement =
+          document.getElementById("productionDays");
+
+        const productionDays = Number(
+          productionDaysElement?.value ?? 0
+        );
+
+        if (
+          !Number.isInteger(productionDays) ||
+          productionDays < 1 ||
+          productionDays > 365
+        ) {
+          alert("Enter production days between 1 and 365.");
+          return;
+        }
+
+        const response = await fetch(
+          "/api/admin/update-order-production-estimate",
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              orderId,
+              productionDays,
+            }),
+          }
+        );
+
+        const result = await response.json();
+
+        if (!response.ok || !result.success) {
+          alert(result.error || "Unable to save production estimate.");
+          return;
+        }
+
+        alert("Production estimate updated.");
+        location.reload();
+      } catch (error) {
+        console.error(error);
+        alert("Unable to save production estimate.");
       }
     };
 

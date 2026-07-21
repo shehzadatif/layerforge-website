@@ -6,6 +6,10 @@ import {
   type PDFPage,
 } from "pdf-lib";
 import { formatPacificDate } from "./dateUtils";
+import {
+  formatEstimatedReadyDate,
+  getOrderProductionDays,
+} from "./productionEstimate";
 
 type InvoiceOrder = {
   order_number: number;
@@ -23,12 +27,14 @@ type InvoiceOrder = {
   total: number;
   created_at: string;
   tracking_token?: string;
+  delivery_method?: string;
   order_items?: Array<{
     product_name: string;
     material?: string;
     quantity: number;
     unit_price: number;
     total_price: number;
+    production_days?: number;
   }>;
 };
 
@@ -38,46 +44,32 @@ const LEFT_MARGIN = 50;
 const RIGHT_MARGIN = 50;
 
 function getSiteUrl(): string {
-  const siteUrl = import.meta.env.PUBLIC_SITE_URL
-    ?.trim()
-    .replace(/\/+$/, "");
+  const siteUrl = import.meta.env.PUBLIC_SITE_URL?.trim().replace(/\/+$/, "");
 
   if (!siteUrl) {
-    throw new Error(
-      "PUBLIC_SITE_URL environment variable is required.",
-    );
+    throw new Error("PUBLIC_SITE_URL environment variable is required.");
   }
 
   return siteUrl;
 }
 
-async function embedLogo(
-  pdf: PDFDocument,
-  siteUrl: string,
-) {
+async function embedLogo(pdf: PDFDocument, siteUrl: string) {
   try {
-    const logoUrl =
-      `${siteUrl}/images/pdf/logo.png`;
+    const logoUrl = `${siteUrl}/images/pdf/logo.png`;
 
     const response = await fetch(logoUrl);
 
     if (!response.ok) {
-      throw new Error(
-        `Logo request returned ${response.status}.`,
-      );
+      throw new Error(`Logo request returned ${response.status}.`);
     }
 
-    const logoBytes =
-      await response.arrayBuffer();
+    const logoBytes = await response.arrayBuffer();
 
     return await pdf.embedPng(logoBytes);
   } catch (error) {
-    console.error(
-      "Unable to load the invoice logo.",
-      {
-        error,
-      },
-    );
+    console.error("Unable to load the invoice logo.", {
+      error,
+    });
 
     return null;
   }
@@ -101,10 +93,7 @@ function truncateText(
 
   while (
     truncated.length > 0 &&
-    font.widthOfTextAtSize(
-      `${truncated}…`,
-      size,
-    ) > maxWidth
+    font.widthOfTextAtSize(`${truncated}…`, size) > maxWidth
   ) {
     truncated = truncated.slice(0, -1);
   }
@@ -117,27 +106,16 @@ export async function generateInvoicePdf(
 ): Promise<Uint8Array> {
   const pdf = await PDFDocument.create();
 
-  const page = pdf.addPage([
-    PAGE_WIDTH,
-    PAGE_HEIGHT,
-  ]);
+  const page = pdf.addPage([PAGE_WIDTH, PAGE_HEIGHT]);
 
-  const regular = await pdf.embedFont(
-    StandardFonts.Helvetica,
-  );
+  const regular = await pdf.embedFont(StandardFonts.Helvetica);
 
-  const bold = await pdf.embedFont(
-    StandardFonts.HelveticaBold,
-  );
+  const bold = await pdf.embedFont(StandardFonts.HelveticaBold);
 
   const siteUrl = getSiteUrl();
   const logo = await embedLogo(pdf, siteUrl);
 
-  const orderNumber =
-    `LF${String(order.order_number).padStart(
-      6,
-      "0",
-    )}`;
+  const orderNumber = `LF${String(order.order_number).padStart(6, "0")}`;
 
   let y = 742;
 
@@ -162,8 +140,7 @@ export async function generateInvoicePdf(
    */
   if (logo) {
     const logoWidth = 150;
-    const logoHeight =
-      logo.height * (logoWidth / logo.width);
+    const logoHeight = logo.height * (logoWidth / logo.width);
 
     page.drawImage(logo, {
       x: LEFT_MARGIN,
@@ -189,17 +166,13 @@ export async function generateInvoicePdf(
     color: rgb(0.06, 0.09, 0.16),
   });
 
-y -= 34;
+  y -= 34;
 
-drawText(`Invoice: ${orderNumber}`, 420, 10);
+  drawText(`Invoice: ${orderNumber}`, 420, 10);
 
   y -= 22;
 
-  drawText(
-    `Date: ${formatPacificDate(order.created_at)}`,
-    420,
-    10,
-  );
+  drawText(`Date: ${formatPacificDate(order.created_at)}`, 420, 10);
 
   y -= 48;
 
@@ -229,11 +202,7 @@ drawText(`Invoice: ${orderNumber}`, 420, 10);
     drawText(`Unit ${order.unit}`, LEFT_MARGIN);
   }
 
-  const cityLine = [
-    order.city,
-    order.province,
-    order.postal_code,
-  ]
+  const cityLine = [order.city, order.province, order.postal_code]
     .filter(Boolean)
     .join(", ");
 
@@ -250,10 +219,7 @@ drawText(`Invoice: ${orderNumber}`, 420, 10);
   page.drawRectangle({
     x: LEFT_MARGIN,
     y: y - 5,
-    width:
-      PAGE_WIDTH -
-      LEFT_MARGIN -
-      RIGHT_MARGIN,
+    width: PAGE_WIDTH - LEFT_MARGIN - RIGHT_MARGIN,
     height: 24,
     color: rgb(0.94, 0.95, 0.97),
   });
@@ -270,34 +236,13 @@ drawText(`Invoice: ${orderNumber}`, 420, 10);
       ? `${item.product_name} (${item.material})`
       : item.product_name;
 
-    drawText(
-      truncateText(
-        itemName,
-        regular,
-        10,
-        250,
-      ),
-      60,
-      10,
-    );
+    drawText(truncateText(itemName, regular, 10, 250), 60, 10);
 
-    drawText(
-      String(item.quantity),
-      330,
-      10,
-    );
+    drawText(String(item.quantity), 330, 10);
 
-    drawText(
-      formatCurrency(item.unit_price),
-      390,
-      10,
-    );
+    drawText(formatCurrency(item.unit_price), 390, 10);
 
-    drawText(
-      formatCurrency(item.total_price),
-      490,
-      10,
-    );
+    drawText(formatCurrency(item.total_price), 490, 10);
 
     y -= 24;
   }
@@ -308,29 +253,17 @@ drawText(`Invoice: ${orderNumber}`, 420, 10);
    * Totals
    */
   drawText("Subtotal", 390, 11, bold);
-  drawText(
-    formatCurrency(order.subtotal),
-    490,
-    11,
-  );
+  drawText(formatCurrency(order.subtotal), 490, 11);
 
   y -= 20;
 
   drawText("Shipping", 390, 11, bold);
-  drawText(
-    formatCurrency(order.shipping),
-    490,
-    11,
-  );
+  drawText(formatCurrency(order.shipping), 490, 11);
 
   y -= 20;
 
   drawText("Tax", 390, 11, bold);
-  drawText(
-    formatCurrency(order.tax),
-    490,
-    11,
-  );
+  drawText(formatCurrency(order.tax), 490, 11);
 
   y -= 25;
 
@@ -348,12 +281,7 @@ drawText(`Invoice: ${orderNumber}`, 420, 10);
   });
 
   drawText("Total Paid", 390, 14, bold);
-  drawText(
-    `${formatCurrency(order.total)} CAD`,
-    480,
-    14,
-    bold,
-  );
+  drawText(`${formatCurrency(order.total)} CAD`, 480, 14, bold);
 
   y -= 55;
 
@@ -375,19 +303,31 @@ drawText(`Invoice: ${orderNumber}`, 420, 10);
     9,
   );
 
+  const productionDays = getOrderProductionDays(order.order_items);
+  const estimatedReadyDate = formatEstimatedReadyDate(
+    order.created_at,
+    productionDays,
+  );
+
+  if (estimatedReadyDate) {
+    y -= 22;
+
+    drawText(
+      `${String(order.delivery_method).toLowerCase() === "pickup" ? "Estimated ready for pickup" : "Estimated ready to ship"}: ${estimatedReadyDate}`,
+      LEFT_MARGIN,
+      9,
+      bold,
+    );
+  }
+
   if (order.tracking_token) {
     y -= 22;
 
-    const trackingUrl =
-      `${siteUrl}/t/${encodeURIComponent(
-        order.tracking_token,
-      )}`;
+    const trackingUrl = `${siteUrl}/t/${encodeURIComponent(
+      order.tracking_token,
+    )}`;
 
-    drawText(
-      `Track your order: ${trackingUrl}`,
-      LEFT_MARGIN,
-      9,
-    );
+    drawText(`Track your order: ${trackingUrl}`, LEFT_MARGIN, 9);
   }
 
   y -= 32;
@@ -408,10 +348,7 @@ drawText(`Invoice: ${orderNumber}`, 420, 10);
   y -= 18;
 
   drawText(
-    `Layer Forge · ${siteUrl.replace(
-      /^https?:\/\//,
-      "",
-    )}`,
+    `Layer Forge · ${siteUrl.replace(/^https?:\/\//, "")}`,
     LEFT_MARGIN,
     9,
   );

@@ -8,43 +8,25 @@ export const POST: APIRoute = async ({ request, redirect }) => {
   try {
     const formData = await request.formData();
 
-    const name = String(
-      formData.get("customer_name") ?? ""
-    ).trim();
+    const name = String(formData.get("customer_name") ?? "").trim();
 
-    const email = String(
-      formData.get("email") ?? ""
-    ).trim();
+    const email = String(formData.get("email") ?? "").trim();
 
-    const phone = String(
-      formData.get("phone") ?? ""
-    ).trim();
+    const phone = String(formData.get("phone") ?? "").trim();
 
-    const projectName = String(
-      formData.get("product_name") ?? ""
-    ).trim();
+    const projectName = String(formData.get("product_name") ?? "").trim();
 
-    const service = String(
-      formData.get("service") ?? ""
-    ).trim();
+    const service = String(formData.get("service") ?? "").trim();
 
-    const material = String(
-      formData.get("material") ?? ""
-    ).trim();
+    const material = String(formData.get("material") ?? "").trim();
 
-    const notes = String(
-      formData.get("notes") ?? ""
-    ).trim();
+    const notes = String(formData.get("notes") ?? "").trim();
 
-    const quantity = Math.max(
-      1,
-      Number(formData.get("quantity") ?? 1)
-    );
+    const quantity = Math.max(1, Number(formData.get("quantity") ?? 1));
 
-    const unitPrice = Math.max(
-      0,
-      Number(formData.get("unit_price") ?? 0)
-    );
+    const unitPrice = Math.max(0, Number(formData.get("unit_price") ?? 0));
+
+    const productionDays = Number(formData.get("production_days") ?? 0);
 
     const allowedServices = new Set([
       "3D Printing",
@@ -57,59 +39,54 @@ export const POST: APIRoute = async ({ request, redirect }) => {
     if (!name || !email || !projectName || !service) {
       return new Response(
         "Customer name, email, service, and project name are required.",
-        { status: 400 }
+        { status: 400 },
       );
     }
 
     if (!allowedServices.has(service)) {
-      return new Response(
-        "Please select a valid service.",
-        { status: 400 }
-      );
+      return new Response("Please select a valid service.", { status: 400 });
     }
 
     if (
       !Number.isFinite(quantity) ||
-      !Number.isFinite(unitPrice)
+      !Number.isFinite(unitPrice) ||
+      !Number.isInteger(productionDays) ||
+      productionDays < 1 ||
+      productionDays > 365
     ) {
       return new Response(
-        "Quantity and unit price must be valid numbers.",
-        { status: 400 }
+        "Quantity, unit price, and production days must be valid.",
+        { status: 400 },
       );
     }
 
     const quotedPrice = quantity * unitPrice;
     const approvalToken = generateApprovalToken();
 
-    const { data: lastQuote, error: lastQuoteError } =
-  await supabaseAdmin
-    .from("quotes")
-    .select("quote_number")
-    .not("quote_number", "is", null)
-    .order("created_at", {
-      ascending: false,
-    })
-    .limit(1)
-    .maybeSingle();
+    const { data: lastQuote, error: lastQuoteError } = await supabaseAdmin
+      .from("quotes")
+      .select("quote_number")
+      .not("quote_number", "is", null)
+      .order("created_at", {
+        ascending: false,
+      })
+      .limit(1)
+      .maybeSingle();
 
-if (lastQuoteError) {
-  throw new Error(lastQuoteError.message);
-}
+    if (lastQuoteError) {
+      throw new Error(lastQuoteError.message);
+    }
 
-const lastNumber = lastQuote?.quote_number
-  ? Number(
-      String(lastQuote.quote_number)
-        .replace("LF-", "")
-    )
-  : 1000;
+    const lastNumber = lastQuote?.quote_number
+      ? Number(String(lastQuote.quote_number).replace("LF-", ""))
+      : 1000;
 
-const quoteNumber =
-  `LF-${String(lastNumber + 1).padStart(4, "0")}`;
+    const quoteNumber = `LF-${String(lastNumber + 1).padStart(4, "0")}`;
 
     const { data: quote, error } = await supabaseAdmin
       .from("quotes")
       .insert({
-         quote_number: quoteNumber,
+        quote_number: quoteNumber,
         name,
         email,
         phone,
@@ -128,6 +105,7 @@ const quoteNumber =
 
         project_details: {
           unit_price: unitPrice,
+          production_days: productionDays,
         },
 
         approval_token: approvalToken,
@@ -139,18 +117,13 @@ const quoteNumber =
       throw new Error(error.message);
     }
 
-    return redirect(
-      `/admin/quotes/${quote.id}`,
-      303
-    );
+    return redirect(`/admin/quotes/${quote.id}`, 303);
   } catch (error) {
     console.error("Unable to create quote:", error);
 
     return new Response(
-      error instanceof Error
-        ? error.message
-        : "Unable to create quote.",
-      { status: 500 }
+      error instanceof Error ? error.message : "Unable to create quote.",
+      { status: 500 },
     );
   }
 };

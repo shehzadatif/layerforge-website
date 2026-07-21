@@ -221,6 +221,26 @@ const materialList = materials ?? [];
           />
         </div>
 
+        <div>
+          <label class="mb-2 block font-semibold">
+            Estimated Production Days
+          </label>
+
+          <input
+            type="number"
+            name="production_days"
+            value="5"
+            min="1"
+            max="365"
+            required
+            class="w-full rounded-lg border px-4 py-3"
+          />
+
+          <p class="mt-2 text-sm text-slate-500">
+            Business days after payment. The customer will see this estimate.
+          </p>
+        </div>
+
       </div>
 
       <div class="mt-6 rounded-xl bg-slate-50 p-5">

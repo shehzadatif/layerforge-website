@@ -3,6 +3,8 @@ export function paymentConfirmationHtml(
   orderNumber: string,
   trackingUrl: string,
   total: number,
+  estimatedReadyDate?: string | null,
+  deliveryMethod?: string,
 ) {
   return `
   <div style="font-family:Arial,sans-serif;max-width:700px;margin:auto">
@@ -34,11 +36,26 @@ export function paymentConfirmationHtml(
         <td>Payment Received</td>
       </tr>
 
+      ${
+        estimatedReadyDate
+          ? `<tr>
+        <td style="padding:8px 20px 8px 0;"><strong>${String(deliveryMethod).toLowerCase() === "pickup" ? "Estimated pickup" : "Estimated ready to ship"}</strong></td>
+        <td>${estimatedReadyDate}</td>
+      </tr>`
+          : ""
+      }
+
     </table>
 
     <p>
       Your order is confirmed and awaiting production.
     </p>
+
+    ${
+      estimatedReadyDate
+        ? `<p style="color:#4b5563;">This is a production estimate. Carrier transit time is additional for shipped orders.</p>`
+        : ""
+    }
 
     <div style="margin:24px 0;padding:16px;border:2px solid #eab308;border-radius:8px;background:#fefce8;color:#111827;">
       <strong>Final sale — paid orders are non-refundable.</strong><br>
