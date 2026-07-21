@@ -122,6 +122,10 @@ export default function ProductConfigurator({ product, image }: Props) {
             ? `${formatProductionDuration(productionDays)} after payment`
             : "Confirmed after we review your order"}
         </div>
+        <p className="mt-2 text-xs leading-5 text-slate-600">
+          Production time may vary based on order quantity and material
+          availability.
+        </p>
       </div>
 
       <div>
