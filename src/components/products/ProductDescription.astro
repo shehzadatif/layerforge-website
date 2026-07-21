@@ -1,0 +1,59 @@
+---
+import { parseProductDescription } from "../../lib/productDescription";
+
+interface Props {
+  description?: string | null;
+  productName?: string;
+}
+
+const { description, productName = "" } = Astro.props;
+const blocks = parseProductDescription(description, productName);
+---
+
+{
+  blocks.length > 0 && (
+    <div class="mb-10 space-y-5 text-slate-600">
+      {blocks.map((block) => (
+        <>
+          {block.type === "heading" && block.level === 2 && (
+            <h2 class="mt-8 flex items-center gap-3 text-2xl font-bold leading-tight text-slate-900 first:mt-0">
+              <span
+                class="h-6 w-1 rounded-full bg-yellow-400"
+                aria-hidden="true"
+              />
+              {block.text}
+            </h2>
+          )}
+
+          {block.type === "heading" && block.level === 3 && (
+            <h3 class="mt-7 text-xl font-bold text-slate-900">
+              {block.text}
+            </h3>
+          )}
+
+          {block.type === "heading" && block.level === 4 && (
+            <h4 class="mt-6 text-lg font-bold text-slate-900">
+              {block.text}
+            </h4>
+          )}
+
+          {block.type === "paragraph" && (
+            <p class="text-lg leading-8">{block.text}</p>
+          )}
+
+          {block.type === "unordered-list" && (
+            <ul class="list-disc space-y-2 pl-6 text-base leading-7 marker:text-yellow-500">
+              {block.items.map((item) => <li class="pl-1">{item}</li>)}
+            </ul>
+          )}
+
+          {block.type === "ordered-list" && (
+            <ol class="list-decimal space-y-2 pl-6 text-base leading-7 marker:font-bold marker:text-slate-900">
+              {block.items.map((item) => <li class="pl-1">{item}</li>)}
+            </ol>
+          )}
+        </>
+      ))}
+    </div>
+  )
+}

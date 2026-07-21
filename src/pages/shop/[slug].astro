@@ -1,5 +1,6 @@
 ---
 import MainLayout from "../../layouts/MainLayout.astro";
+import ProductDescription from "../../components/products/ProductDescription.astro";
 import { supabaseAdmin } from "../../lib/supabaseAdmin";
 import ProductGallery from "../../features/shop/components/ProductGallery/ProductGallery";
 import ProductConfiguratorWithProvider from "../../features/shop/components/ProductConfigurator/ProductConfiguratorWithProvider";
@@ -69,9 +70,10 @@ const cover = imageUrls[0] ?? "";
           {product.name}
         </h1>
 
-        <p class="mb-8 text-lg text-slate-600">
-          {product.description}
-        </p>
+        <ProductDescription
+          description={product.description}
+          productName={product.name}
+        />
 
         <ProductConfiguratorWithProvider
           client:load

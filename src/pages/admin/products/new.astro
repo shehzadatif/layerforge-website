@@ -98,9 +98,26 @@ const { data: materials } = await supabaseAdmin
       <textarea
         id="description"
         name="description"
-        rows="6"
+        rows="12"
+        placeholder={`Write a short introduction here.
+
+## Features
+- First feature
+- Second feature
+
+## Installation
+1. First step
+2. Second step`}
         class="w-full rounded-lg border p-3"
       ></textarea>
+
+      <p class="mt-2 text-sm leading-6 text-slate-500">
+        Formatting supported: use a blank line for a new paragraph,
+        <code class="rounded bg-slate-100 px-1.5 py-0.5">## Heading</code>,
+        <code class="rounded bg-slate-100 px-1.5 py-0.5">- Bullet point</code>,
+        or <code class="rounded bg-slate-100 px-1.5 py-0.5">1. Numbered step</code>.
+        HTML is not required.
+      </p>
     </div>
 
    <div class="grid gap-6 md:grid-cols-2">
