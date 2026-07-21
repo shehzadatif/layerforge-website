@@ -1,7 +1,5 @@
 ---
 import MainLayout from "../../layouts/MainLayout.astro";
-
-const sessionId = Astro.url.searchParams.get("session_id");
 ---
 
 <MainLayout title="Order Successful | Layer Forge">
@@ -29,14 +27,6 @@ const sessionId = Astro.url.searchParams.get("session_id");
         Once payment is completed, the order is final and non-refundable,
         except where required by applicable law.
       </div>
-
-      {
-        sessionId && (
-          <p class="mb-8 text-sm text-slate-500">
-            Stripe Session: {sessionId}
-          </p>
-        )
-      }
 
       <div class="rounded-xl bg-slate-50 p-6 text-left">
 
