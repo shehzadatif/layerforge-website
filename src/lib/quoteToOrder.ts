@@ -33,6 +33,7 @@ export interface CompletedOrder {
   delivery_method?: string;
   order_items?: Array<{
     product_name: string;
+    variant_name?: string;
     material?: string;
     quantity: number;
     unit_price: number;

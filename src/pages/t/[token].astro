@@ -186,6 +186,14 @@ const estimatedReadyDate = order
                     {item.product_name}
                   </div>
 
+                  {
+                    item.variant_name && (
+                      <div class="mt-1 text-slate-500">
+                        Variant: {item.variant_name}
+                      </div>
+                    )
+                  }
+
                   <div class="mt-1 text-slate-500">
                     Material: {item.material}
                   </div>

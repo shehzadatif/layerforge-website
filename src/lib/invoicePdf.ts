@@ -30,6 +30,7 @@ type InvoiceOrder = {
   delivery_method?: string;
   order_items?: Array<{
     product_name: string;
+    variant_name?: string;
     material?: string;
     quantity: number;
     unit_price: number;
@@ -250,8 +251,9 @@ export async function generateInvoicePdf(
   y -= 32;
 
   for (const item of order.order_items ?? []) {
-    const itemName = item.material
-      ? `${item.product_name} (${item.material})`
+    const itemDetails = [item.variant_name, item.material].filter(Boolean);
+    const itemName = itemDetails.length
+      ? `${item.product_name} (${itemDetails.join(" · ")})`
       : item.product_name;
 
     drawText(truncateText(itemName, regular, 10, 250), 60, 10);

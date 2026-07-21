@@ -49,6 +49,8 @@ const { data: products, error } = await supabaseAdmin
 
 <th class="px-6 py-4 text-left">Category</th>
 
+<th class="px-6 py-4 text-left">Brand</th>
+
 <th class="px-6 py-4 text-right">Price</th>
 
 <th class="px-6 py-4 text-center">Status</th>
@@ -86,6 +88,12 @@ const { data: products, error } = await supabaseAdmin
 <td class="px-6 py-4">
 
 {product.categories?.name ?? "-"}
+
+</td>
+
+<td class="px-6 py-4">
+
+{product.brand || "-"}
 
 </td>
 

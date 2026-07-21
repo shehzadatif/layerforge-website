@@ -7,13 +7,34 @@ const { data: products, error } = await supabaseAdmin
   .select(`
     *,
     categories(name),
-    product_images(*)
+    product_images(*),
+    product_variants(id, price, active, sort_order)
   `)
   .eq("status", "Active")
   .order("created_at", { ascending: false });
 
 if (error) {
   console.error(error);
+}
+
+const productList = products ?? [];
+const brands = [
+  ...new Set(
+    productList
+      .map((product) => String(product.brand ?? "").trim())
+      .filter(Boolean),
+  ),
+].sort((left, right) => left.localeCompare(right, "en-CA"));
+const categories = [
+  ...new Set(
+    productList
+      .map((product) => String(product.categories?.name ?? "").trim())
+      .filter(Boolean),
+  ),
+].sort((left, right) => left.localeCompare(right, "en-CA"));
+
+function normalizedFilterValue(value: unknown): string {
+  return String(value ?? "").trim().toLocaleLowerCase("en-CA");
 }
 ---
 
@@ -35,18 +56,115 @@ if (error) {
 
     </div>
 
+    <section
+      class="mb-10 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm"
+      aria-label="Filter products"
+      data-shop-filters
+    >
+      <div class="grid gap-4 md:grid-cols-3">
+        <label class="block">
+          <span class="mb-2 block text-sm font-semibold text-slate-700">
+            Search
+          </span>
+          <input
+            type="search"
+            placeholder="Search products"
+            class="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 focus:border-yellow-400 focus:outline-none focus:ring-2 focus:ring-yellow-200"
+            data-product-search
+          />
+        </label>
+
+        <label class="block">
+          <span class="mb-2 block text-sm font-semibold text-slate-700">
+            Brand
+          </span>
+          <select
+            class="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 focus:border-yellow-400 focus:outline-none focus:ring-2 focus:ring-yellow-200"
+            data-brand-filter
+          >
+            <option value="">All brands</option>
+            {brands.map((brand) => (
+              <option value={normalizedFilterValue(brand)}>{brand}</option>
+            ))}
+          </select>
+        </label>
+
+        <label class="block">
+          <span class="mb-2 block text-sm font-semibold text-slate-700">
+            Category
+          </span>
+          <select
+            class="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 focus:border-yellow-400 focus:outline-none focus:ring-2 focus:ring-yellow-200"
+            data-category-filter
+          >
+            <option value="">All categories</option>
+            {categories.map((category) => (
+              <option value={normalizedFilterValue(category)}>{category}</option>
+            ))}
+          </select>
+        </label>
+      </div>
+
+      <div class="mt-4 flex flex-wrap items-center justify-between gap-3">
+        <p
+          class="text-sm text-slate-500"
+          aria-live="polite"
+          data-product-count
+        >
+          {productList.length} {productList.length === 1 ? "product" : "products"}
+        </p>
+
+        <button
+          type="button"
+          class="text-sm font-semibold text-slate-700 underline decoration-yellow-400 decoration-2 underline-offset-4 hover:text-slate-950"
+          data-clear-filters
+        >
+          Clear filters
+        </button>
+      </div>
+    </section>
+
     <div class="grid gap-8 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
 
-      {products?.map((product) => {
+      {productList.map((product) => {
 
         const cover = (product.product_images ?? [])
           .sort((a, b) => a.sort_order - b.sort_order)[0];
+        const category = product.categories?.name ?? "General";
+        const brand = String(product.brand ?? "").trim();
+        const regularPrice = Number(product.price ?? 0);
+        const salePrice = Number(product.sale_price ?? 0);
+        const basePrice =
+          Number.isFinite(salePrice) && salePrice > 0
+            ? salePrice
+            : regularPrice;
+        const variantPrices = (product.product_variants ?? [])
+          .filter((variant) => variant.active !== false)
+          .map((variant) => Number(variant.price))
+          .filter((price) => Number.isFinite(price) && price > 0);
+        const availablePrices = [basePrice, ...variantPrices].filter(
+          (price) => Number.isFinite(price) && price > 0,
+        );
+        const startingPrice =
+          availablePrices.length > 0 ? Math.min(...availablePrices) : 0;
+        const hasVariants = variantPrices.length > 0;
 
         return (
 
           <a
             href={`/shop/${product.slug}`}
             class="flex h-full flex-col overflow-hidden rounded-2xl bg-white shadow transition hover:-translate-y-1 hover:shadow-xl"
+            data-product-card
+            data-brand={normalizedFilterValue(brand)}
+            data-category={normalizedFilterValue(category)}
+            data-search={normalizedFilterValue(
+              [
+                product.name,
+                product.short_description,
+                brand,
+                category,
+              ].join(" "),
+            )}
           >
 
             <div class="aspect-square overflow-hidden bg-slate-100 p-3">
@@ -78,7 +196,7 @@ if (error) {
               </h2>
 
               <p class="mt-2 text-sm text-slate-500">
-                {product.categories?.name ?? "General"}
+                {[brand, category].filter(Boolean).join(" · ")}
               </p>
 
               <p class="mt-4 line-clamp-2 flex-1 text-slate-600">
@@ -88,7 +206,7 @@ if (error) {
               <div class="mt-6 flex items-center justify-between gap-4">
 
                 <span class="whitespace-nowrap text-2xl font-bold">
-                  CAD ${Number(product.price ?? 0).toFixed(2)}
+                  {hasVariants ? "From " : ""}CAD ${startingPrice.toFixed(2)}
                 </span>
 
                 <span class="shrink-0 rounded-lg bg-yellow-400 px-4 py-2 font-semibold text-slate-900">
@@ -107,8 +225,77 @@ if (error) {
 
     </div>
 
+    <div
+      class="mt-10 rounded-2xl border border-dashed border-slate-300 bg-white p-12 text-center"
+      hidden
+      data-no-products
+    >
+      <h2 class="text-2xl font-bold text-slate-900">No matching products</h2>
+      <p class="mt-3 text-slate-500">
+        Try another brand, category, or search term.
+      </p>
+    </div>
+
   </div>
 
 </section>
+
+<script>
+  const filterRoot = document.querySelector<HTMLElement>("[data-shop-filters]");
+
+  if (filterRoot) {
+    const searchInput = filterRoot.querySelector<HTMLInputElement>(
+      "[data-product-search]",
+    );
+    const brandSelect = filterRoot.querySelector<HTMLSelectElement>(
+      "[data-brand-filter]",
+    );
+    const categorySelect = filterRoot.querySelector<HTMLSelectElement>(
+      "[data-category-filter]",
+    );
+    const clearButton = filterRoot.querySelector<HTMLButtonElement>(
+      "[data-clear-filters]",
+    );
+    const count = filterRoot.querySelector<HTMLElement>("[data-product-count]");
+    const emptyState = document.querySelector<HTMLElement>("[data-no-products]");
+    const cards = [...document.querySelectorAll<HTMLElement>("[data-product-card]")];
+
+    const applyFilters = () => {
+      const query = searchInput?.value.trim().toLocaleLowerCase("en-CA") ?? "";
+      const brand = brandSelect?.value ?? "";
+      const category = categorySelect?.value ?? "";
+      let visibleCount = 0;
+
+      for (const card of cards) {
+        const matches =
+          (!query || (card.dataset.search ?? "").includes(query)) &&
+          (!brand || card.dataset.brand === brand) &&
+          (!category || card.dataset.category === category);
+
+        card.hidden = !matches;
+
+        if (matches) visibleCount += 1;
+      }
+
+      if (count) {
+        count.textContent = `${visibleCount} ${visibleCount === 1 ? "product" : "products"}`;
+      }
+
+      if (emptyState) {
+        emptyState.hidden = visibleCount > 0;
+      }
+    };
+
+    searchInput?.addEventListener("input", applyFilters);
+    brandSelect?.addEventListener("change", applyFilters);
+    categorySelect?.addEventListener("change", applyFilters);
+    clearButton?.addEventListener("click", () => {
+      if (searchInput) searchInput.value = "";
+      if (brandSelect) brandSelect.value = "";
+      if (categorySelect) categorySelect.value = "";
+      applyFilters();
+    });
+  }
+</script>
 
 </MainLayout>

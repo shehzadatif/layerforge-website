@@ -15,6 +15,7 @@ const { data: product } = await supabaseAdmin
     *,
     categories(name),
     product_images(*),
+    product_variants(*),
     product_materials(
       material_id,
       materials(

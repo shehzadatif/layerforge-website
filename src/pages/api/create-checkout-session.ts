@@ -23,6 +23,7 @@ const MAX_QUANTITY_PER_LINE = 100;
 
 interface RequestedCheckoutItem {
   id?: unknown;
+  variantId?: unknown;
   materialId?: unknown;
   quantity?: unknown;
   price?: unknown;
@@ -40,6 +41,13 @@ interface ProductMaterialRecord {
   materials: MaterialRecord | MaterialRecord[] | null;
 }
 
+interface ProductVariantRecord {
+  id: string;
+  option_value: string | null;
+  price: number | string | null;
+  active: boolean | null;
+}
+
 interface ProductRecord {
   id: string;
   name: string;
@@ -47,11 +55,14 @@ interface ProductRecord {
   sale_price: number | string | null;
   status: string | null;
   product_materials: ProductMaterialRecord[] | null;
+  product_variants: ProductVariantRecord[] | null;
 }
 
 interface TrustedCheckoutItem {
   id: string;
   name: string;
+  variantId?: string;
+  variantName?: string;
   materialId: string;
   materialName: string;
   quantity: number;
@@ -162,6 +173,7 @@ async function buildTrustedItems(
 
   const normalizedItems = requestedItems.map((item) => {
     const id = textValue(item?.id, "Product", 100);
+    const variantId = textValue(item?.variantId, "Variant", 100, false);
     const materialId = textValue(item?.materialId, "Material", 100);
     const quantity = Number(item?.quantity);
     const displayedPrice = Number(item?.price);
@@ -184,6 +196,7 @@ async function buildTrustedItems(
 
     return {
       id,
+      variantId,
       materialId,
       quantity,
       displayedPriceCents: Math.round(displayedPrice * 100),
@@ -201,6 +214,12 @@ async function buildTrustedItems(
       price,
       sale_price,
       status,
+      product_variants(
+        id,
+        option_value,
+        price,
+        active
+      ),
       product_materials(
         material_id,
         materials(
@@ -256,8 +275,28 @@ async function buildTrustedItems(
 
     const regularPrice = Number(product.price);
     const salePrice = Number(product.sale_price);
-    const basePrice =
-      Number.isFinite(salePrice) && salePrice > 0 ? salePrice : regularPrice;
+    const selectedVariant = requestedItem.variantId
+      ? (product.product_variants ?? []).find(
+          (variant) =>
+            String(variant.id) === requestedItem.variantId &&
+            variant.active !== false,
+        )
+      : null;
+
+    if (requestedItem.variantId && !selectedVariant) {
+      throw new CheckoutRequestError(
+        `The selected variant is unavailable for ${product.name}.`,
+        409,
+        "VARIANT_UNAVAILABLE",
+      );
+    }
+
+    const variantPrice = Number(selectedVariant?.price);
+    const basePrice = selectedVariant
+      ? variantPrice
+      : Number.isFinite(salePrice) && salePrice > 0
+        ? salePrice
+        : regularPrice;
     const markupPercent = Number(material.markup_percent ?? 0);
 
     if (
@@ -298,6 +337,12 @@ async function buildTrustedItems(
     return {
       id: String(product.id),
       name: String(product.name),
+      ...(selectedVariant
+        ? {
+            variantId: String(selectedVariant.id),
+            variantName: String(selectedVariant.option_value ?? "Variant"),
+          }
+        : {}),
       materialId: String(material.id),
       materialName: String(material.name),
       quantity: requestedItem.quantity,
@@ -465,10 +510,17 @@ export const POST: APIRoute = async ({ request }) => {
         price_data: {
           currency: "cad",
           product_data: {
-            name: item.name,
-            description: item.productionDays
-              ? `${item.materialName} · ${formatProductionDuration(item.productionDays)} production`
-              : item.materialName,
+            name: item.variantName
+              ? `${item.name} — ${item.variantName}`
+              : item.name,
+            description: [
+              item.materialName,
+              item.productionDays
+                ? `${formatProductionDuration(item.productionDays)} production`
+                : "",
+            ]
+              .filter(Boolean)
+              .join(" · "),
           },
           unit_amount: item.unitPriceCents,
         },

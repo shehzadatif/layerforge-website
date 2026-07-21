@@ -80,6 +80,16 @@ export const POST: APIRoute = async ({ request }) => {
       throw new Error(materialsError.message);
     }
 
+    const { error: variantsError } =
+      await supabaseAdmin
+        .from("product_variants")
+        .delete()
+        .eq("product_id", productId);
+
+    if (variantsError) {
+      throw new Error(variantsError.message);
+    }
+
     const { error: imagesError } =
       await supabaseAdmin
         .from("product_images")

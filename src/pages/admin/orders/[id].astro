@@ -416,6 +416,13 @@ const estimatedReadyDate = formatEstimatedReadyDate(
 
                 <td class="py-4">
                   {item.product_name}
+                  {
+                    item.variant_name && (
+                      <div class="mt-1 text-sm text-slate-500">
+                        Variant: {item.variant_name}
+                      </div>
+                    )
+                  }
                 </td>
 
                 <td class="py-4">

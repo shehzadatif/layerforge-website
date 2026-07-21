@@ -1,5 +1,6 @@
 ---
 import AdminLayout from "../../../layouts/AdminLayout.astro";
+import ProductVariantsField from "../../../components/admin/ProductVariantsField.astro";
 import { supabaseAdmin } from "../../../lib/supabaseAdmin";
 
 const { data: categories } = await supabaseAdmin
@@ -45,6 +46,27 @@ const { data: materials } = await supabaseAdmin
         required
         class="w-full rounded-lg border p-3"
       />
+    </div>
+
+    <div>
+      <label
+        for="brand"
+        class="mb-2 block font-semibold"
+      >
+        Brand (Optional)
+      </label>
+
+      <input
+        id="brand"
+        name="brand"
+        maxlength="80"
+        placeholder="e.g. Bosch, Milwaukee, DEWALT"
+        class="w-full rounded-lg border p-3"
+      />
+
+      <p class="mt-2 text-sm text-slate-500">
+        Customers can use this value to filter products in the Shop.
+      </p>
     </div>
 
     <div>
@@ -138,7 +160,7 @@ const { data: materials } = await supabaseAdmin
       id="price"
       type="number"
       name="price"
-      min="0"
+      min="0.01"
       step="0.01"
       required
       class="w-full rounded-lg border p-3"
@@ -161,12 +183,14 @@ const { data: materials } = await supabaseAdmin
       id="sale_price"
       type="number"
       name="sale_price"
-      min="0"
+      min="0.01"
       step="0.01"
       class="w-full rounded-lg border p-3"
     />
   </div>
 </div>
+
+    <ProductVariantsField />
 
     <div>
       <label

@@ -3,6 +3,8 @@ export interface Product {
 
   name: string;
 
+  brand?: string;
+
   slug: string;
 
   sku: string;
@@ -40,4 +42,8 @@ export interface ProductVariant {
   id: string;
   option_name: string;
   option_value: string;
+  price: number;
+  sku?: string;
+  active?: boolean;
+  sort_order?: number;
 }

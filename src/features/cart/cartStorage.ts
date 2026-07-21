@@ -1,6 +1,8 @@
 export type CartItem = {
   id: string;
   name: string;
+  variantId?: string;
+  variantName?: string;
   materialId: string;
   materialName: string;
   price: number;
@@ -40,7 +42,10 @@ export function addToCart(item: CartItem) {
   const cart = getCart();
 
   const existing = cart.find(
-    (i) => i.id === item.id && i.materialId === item.materialId,
+    (i) =>
+      i.id === item.id &&
+      i.materialId === item.materialId &&
+      (i.variantId ?? "") === (item.variantId ?? ""),
   );
 
   if (existing) {
@@ -52,9 +57,20 @@ export function addToCart(item: CartItem) {
   saveCart(cart);
 }
 
-export function removeFromCart(id: string, materialId: string) {
+export function removeFromCart(
+  id: string,
+  materialId: string,
+  variantId?: string,
+) {
   saveCart(
-    getCart().filter((i) => !(i.id === id && i.materialId === materialId)),
+    getCart().filter(
+      (i) =>
+        !(
+          i.id === id &&
+          i.materialId === materialId &&
+          (i.variantId ?? "") === (variantId ?? "")
+        ),
+    ),
   );
 }
 
@@ -62,10 +78,16 @@ export function updateQuantity(
   id: string,
   materialId: string,
   quantity: number,
+  variantId?: string,
 ) {
   const cart = getCart();
 
-  const item = cart.find((i) => i.id === id && i.materialId === materialId);
+  const item = cart.find(
+    (i) =>
+      i.id === id &&
+      i.materialId === materialId &&
+      (i.variantId ?? "") === (variantId ?? ""),
+  );
 
   if (item) {
     item.quantity = quantity;

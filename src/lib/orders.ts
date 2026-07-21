@@ -19,6 +19,8 @@ export interface CustomerInfo {
 export interface OrderItem {
   id: string;
   name: string;
+  variantId?: string;
+  variantName?: string;
   materialId?: string;
   materialName: string;
   quantity: number;
@@ -85,6 +87,8 @@ export async function createOrderItems(
     order_id: orderId,
     product_id: item.id,
     product_name: item.name,
+    variant_id: item.variantId ?? null,
+    variant_name: item.variantName ?? null,
     quantity: item.quantity,
     unit_price: item.price,
     total_price: item.price * item.quantity,

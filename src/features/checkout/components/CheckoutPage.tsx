@@ -132,7 +132,7 @@ export default function CheckoutPage() {
           <div className="mb-6 space-y-5">
             {cart.map((item) => (
               <div
-                key={`${item.id}-${item.materialId}`}
+                key={`${item.id}-${item.variantId ?? "base"}-${item.materialId}`}
                 className="flex gap-4 border-b pb-4"
               >
                 <div className="h-20 w-20 overflow-hidden rounded-lg bg-slate-100">
@@ -151,6 +151,11 @@ export default function CheckoutPage() {
 
                 <div className="flex-1">
                   <h3 className="font-semibold text-lg">{item.name}</h3>
+                  {item.variantName ? (
+                    <p className="text-sm text-slate-500">
+                      Variant: {item.variantName}
+                    </p>
+                  ) : null}
                   <p className="text-sm text-slate-500">{item.materialName}</p>
                   <p className="text-sm text-slate-500">Qty {item.quantity}</p>
                 </div>

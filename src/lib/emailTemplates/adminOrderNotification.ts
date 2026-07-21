@@ -15,6 +15,7 @@ type AdminOrderNotification = {
   created_at: string;
   order_items?: Array<{
     product_name: string;
+    variant_name?: string;
     material?: string;
     quantity: number;
     total_price: number;
@@ -59,6 +60,7 @@ export function adminOrderNotificationHtml(
         <tr>
           <td style="padding:10px;border-bottom:1px solid #e5e7eb;">
             <strong>${escapeHtml(item.product_name)}</strong><br>
+            ${item.variant_name ? `<span style="color:#374151;">Variant: ${escapeHtml(item.variant_name)}</span><br>` : ""}
             <span style="color:#6b7280;">${escapeHtml(item.material || "-")}</span>
           </td>
           <td style="padding:10px;text-align:center;border-bottom:1px solid #e5e7eb;">${escapeHtml(item.quantity)}</td>

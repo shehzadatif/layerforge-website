@@ -1,5 +1,6 @@
 ---
 import AdminLayout from "../../../layouts/AdminLayout.astro";
+import ProductVariantsField from "../../../components/admin/ProductVariantsField.astro";
 import { supabaseAdmin } from "../../../lib/supabaseAdmin";
 
 const { id } = Astro.params;
@@ -15,7 +16,8 @@ const { data: product, error: productError } =
     .select(`
       *,
       categories(*),
-      product_images(*)
+      product_images(*),
+      product_variants(*)
     `)
     .eq("id", id)
     .single();
@@ -83,6 +85,10 @@ const supabaseUrl =
 function getProductImageUrl(imagePath: string): string {
   return `${supabaseUrl}/storage/v1/object/public/product-images/${imagePath}`;
 }
+
+const productVariants = [...(product.product_variants ?? [])].sort(
+  (left, right) => Number(left.sort_order ?? 0) - Number(right.sort_order ?? 0),
+);
 ---
 
 <AdminLayout title="Edit Product" active="products">
@@ -154,6 +160,28 @@ function getProductImageUrl(imagePath: string): string {
             required
             class="w-full rounded-lg border p-3"
           />
+        </div>
+
+        <div>
+          <label
+            for="brand"
+            class="mb-2 block font-semibold"
+          >
+            Brand (Optional)
+          </label>
+
+          <input
+            id="brand"
+            name="brand"
+            maxlength="80"
+            value={product.brand ?? ""}
+            placeholder="e.g. Bosch, Milwaukee, DEWALT"
+            class="w-full rounded-lg border p-3"
+          />
+
+          <p class="mt-2 text-sm text-slate-500">
+            Customers can use this value to filter products in the Shop.
+          </p>
         </div>
 
         <div>
@@ -240,7 +268,7 @@ function getProductImageUrl(imagePath: string): string {
               id="price"
               type="number"
               name="price"
-              min="0"
+              min="0.01"
               step="0.01"
               value={product.price ?? ""}
               required
@@ -264,13 +292,15 @@ function getProductImageUrl(imagePath: string): string {
               id="sale_price"
               type="number"
               name="sale_price"
-              min="0"
+              min="0.01"
               step="0.01"
               value={product.sale_price ?? ""}
               class="w-full rounded-lg border p-3"
             />
           </div>
         </div>
+
+        <ProductVariantsField variants={productVariants} />
 
         <div>
           <label

@@ -1,4 +1,9 @@
 import type { APIRoute } from "astro";
+import {
+  parseProductVariants,
+  productVariantRow,
+  ProductVariantValidationError,
+} from "../../../lib/productVariants";
 import { supabaseAdmin } from "../../../lib/supabaseAdmin";
 
 export const prerender = false;
@@ -7,7 +12,8 @@ export const POST: APIRoute = async ({ request }) => {
   try {
     const formData = await request.formData();
 
-    const name = String(formData.get("name") ?? "");
+    const name = String(formData.get("name") ?? "").trim();
+    const brand = String(formData.get("brand") ?? "").trim();
     const category_id = String(
       formData.get("category_id") ?? "",
     );
@@ -39,6 +45,35 @@ export const POST: APIRoute = async ({ request }) => {
       .getAll("materials")
       .map(String);
 
+    const variants = parseProductVariants(formData);
+
+    if (!name || !category_id) {
+      return new Response("Product name and category are required.", {
+        status: 400,
+      });
+    }
+
+    if (brand.length > 80) {
+      return new Response("Brand must be 80 characters or fewer.", {
+        status: 400,
+      });
+    }
+
+    if (price === null || !Number.isFinite(price) || price <= 0) {
+      return new Response("Enter a valid base price greater than zero.", {
+        status: 400,
+      });
+    }
+
+    if (
+      sale_price !== null &&
+      (!Number.isFinite(sale_price) || sale_price <= 0)
+    ) {
+      return new Response("Enter a valid sale price greater than zero.", {
+        status: 400,
+      });
+    }
+
     const slug = name
       .toLowerCase()
       .trim()
@@ -50,6 +85,7 @@ export const POST: APIRoute = async ({ request }) => {
       .insert({
         name,
         slug,
+        brand: brand || null,
         category_id,
         short_description,
         description,
@@ -76,6 +112,25 @@ export const POST: APIRoute = async ({ request }) => {
           status: 500,
         },
       );
+    }
+
+    if (variants.length > 0) {
+      const { error: variantError } = await supabaseAdmin
+        .from("product_variants")
+        .insert(variants.map((variant) => productVariantRow(product.id, variant)));
+
+      if (variantError) {
+        await supabaseAdmin.from("products").delete().eq("id", product.id);
+
+        console.error("Unable to save product variants.", {
+          productId: product.id,
+          error: variantError,
+        });
+
+        return new Response(variantError.message, {
+          status: 500,
+        });
+      }
     }
 
     if (selectedMaterials.length > 0) {
@@ -109,6 +164,12 @@ export const POST: APIRoute = async ({ request }) => {
       },
     });
   } catch (error) {
+    if (error instanceof ProductVariantValidationError) {
+      return new Response(error.message, {
+        status: 400,
+      });
+    }
+
     console.error("Product creation failed.", {
       error,
     });

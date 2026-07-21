@@ -59,7 +59,7 @@ export default function CartPage() {
       <div className="space-y-6 lg:col-span-2">
         {cart.map((item) => (
           <div
-            key={`${item.id}-${item.materialId}`}
+            key={`${item.id}-${item.variantId ?? "base"}-${item.materialId}`}
             className="rounded-2xl bg-white p-6 shadow"
           >
             <div className="flex gap-6">
@@ -84,6 +84,12 @@ export default function CartPage() {
               <div className="flex flex-1 flex-col">
                 <h3 className="text-xl font-bold">{item.name}</h3>
 
+                {item.variantName ? (
+                  <p className="mt-1 text-slate-500">
+                    Variant: {item.variantName}
+                  </p>
+                ) : null}
+
                 <p className="mt-1 text-slate-500">
                   Material: {item.materialName}
                 </p>
@@ -106,6 +112,7 @@ export default function CartPage() {
                         item.id,
                         item.materialId,
                         Math.max(1, item.quantity - 1),
+                        item.variantId,
                       );
                       refreshCart();
                     }}
@@ -124,6 +131,7 @@ export default function CartPage() {
                         item.id,
                         item.materialId,
                         item.quantity + 1,
+                        item.variantId,
                       );
                       refreshCart();
                     }}
@@ -134,7 +142,11 @@ export default function CartPage() {
 
                   <button
                     onClick={() => {
-                      removeFromCart(item.id, item.materialId);
+                      removeFromCart(
+                        item.id,
+                        item.materialId,
+                        item.variantId,
+                      );
                       refreshCart();
                     }}
                     className="ml-auto text-sm font-medium text-red-600 hover:text-red-700"
