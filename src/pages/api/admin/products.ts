@@ -4,6 +4,12 @@ import {
   productVariantRow,
   ProductVariantValidationError,
 } from "../../../lib/productVariants";
+import {
+  getVariantImageFiles,
+  ProductVariantImageError,
+  removeProductVariantImages,
+  uploadProductVariantImage,
+} from "../../../lib/productVariantImages";
 import { supabaseAdmin } from "../../../lib/supabaseAdmin";
 
 export const prerender = false;
@@ -14,19 +20,11 @@ export const POST: APIRoute = async ({ request }) => {
 
     const name = String(formData.get("name") ?? "").trim();
     const brand = String(formData.get("brand") ?? "").trim();
-    const category_id = String(
-      formData.get("category_id") ?? "",
-    );
-    const short_description = String(
-      formData.get("short_description") ?? "",
-    );
-    const description = String(
-      formData.get("description") ?? "",
-    );
+    const category_id = String(formData.get("category_id") ?? "");
+    const short_description = String(formData.get("short_description") ?? "");
+    const description = String(formData.get("description") ?? "");
 
-    const price = formData.get("price")
-      ? Number(formData.get("price"))
-      : null;
+    const price = formData.get("price") ? Number(formData.get("price")) : null;
 
     const sale_price = formData.get("sale_price")
       ? Number(formData.get("sale_price"))
@@ -36,16 +34,12 @@ export const POST: APIRoute = async ({ request }) => {
 
     const featured = formData.get("featured") === "on";
 
-    const status =
-      formData.get("active") === "on"
-        ? "Active"
-        : "Inactive";
+    const status = formData.get("active") === "on" ? "Active" : "Inactive";
 
-    const selectedMaterials = formData
-      .getAll("materials")
-      .map(String);
+    const selectedMaterials = formData.getAll("materials").map(String);
 
     const variants = parseProductVariants(formData);
+    const variantImages = getVariantImageFiles(formData, variants.length);
 
     if (!name || !category_id) {
       return new Response("Product name and category are required.", {
@@ -115,11 +109,33 @@ export const POST: APIRoute = async ({ request }) => {
     }
 
     if (variants.length > 0) {
-      const { error: variantError } = await supabaseAdmin
-        .from("product_variants")
-        .insert(variants.map((variant) => productVariantRow(product.id, variant)));
+      const uploadedVariantImages: string[] = [];
 
-      if (variantError) {
+      try {
+        const variantRows = [];
+
+        for (let index = 0; index < variants.length; index += 1) {
+          const image = variantImages[index];
+          const imageUrl = image
+            ? await uploadProductVariantImage(product.id, image)
+            : null;
+
+          if (imageUrl) uploadedVariantImages.push(imageUrl);
+
+          variantRows.push(
+            productVariantRow(product.id, variants[index], imageUrl),
+          );
+        }
+
+        const { error: variantError } = await supabaseAdmin
+          .from("product_variants")
+          .insert(variantRows);
+
+        if (variantError) {
+          throw new Error(variantError.message);
+        }
+      } catch (variantError) {
+        await removeProductVariantImages(uploadedVariantImages);
         await supabaseAdmin.from("products").delete().eq("id", product.id);
 
         console.error("Unable to save product variants.", {
@@ -127,33 +143,32 @@ export const POST: APIRoute = async ({ request }) => {
           error: variantError,
         });
 
-        return new Response(variantError.message, {
-          status: 500,
-        });
+        return new Response(
+          variantError instanceof Error
+            ? variantError.message
+            : "Unable to save product variants.",
+          {
+            status: 500,
+          },
+        );
       }
     }
 
     if (selectedMaterials.length > 0) {
-      const rows = selectedMaterials.map(
-        (materialId) => ({
-          product_id: product.id,
-          material_id: materialId,
-        }),
-      );
+      const rows = selectedMaterials.map((materialId) => ({
+        product_id: product.id,
+        material_id: materialId,
+      }));
 
-      const { error: materialError } =
-        await supabaseAdmin
-          .from("product_materials")
-          .insert(rows);
+      const { error: materialError } = await supabaseAdmin
+        .from("product_materials")
+        .insert(rows);
 
       if (materialError) {
-        console.error(
-          "Unable to save product materials.",
-          {
-            productId: product.id,
-            error: materialError,
-          },
-        );
+        console.error("Unable to save product materials.", {
+          productId: product.id,
+          error: materialError,
+        });
       }
     }
 
@@ -164,7 +179,10 @@ export const POST: APIRoute = async ({ request }) => {
       },
     });
   } catch (error) {
-    if (error instanceof ProductVariantValidationError) {
+    if (
+      error instanceof ProductVariantValidationError ||
+      error instanceof ProductVariantImageError
+    ) {
       return new Response(error.message, {
         status: 400,
       });

@@ -23,7 +23,12 @@ export function parseProductVariants(
   const names = values(formData, "variant_name");
   const prices = values(formData, "variant_price");
   const skus = values(formData, "variant_sku");
-  const rowCount = Math.max(ids.length, names.length, prices.length, skus.length);
+  const rowCount = Math.max(
+    ids.length,
+    names.length,
+    prices.length,
+    skus.length,
+  );
 
   if (rowCount > MAX_VARIANTS) {
     throw new ProductVariantValidationError(
@@ -94,6 +99,7 @@ export function parseProductVariants(
 export function productVariantRow(
   productId: string,
   variant: ProductVariantInput,
+  imageUrl?: string | null,
 ) {
   return {
     product_id: productId,
@@ -103,5 +109,6 @@ export function productVariantRow(
     sku: variant.sku || null,
     active: true,
     sort_order: variant.sortOrder,
+    ...(imageUrl !== undefined ? { image_url: imageUrl } : {}),
   };
 }

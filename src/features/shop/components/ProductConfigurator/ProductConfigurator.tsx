@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { addToCart } from "../../../cart/cartStorage";
 import {
@@ -25,6 +25,7 @@ type ProductVariant = {
   sku?: string | null;
   active?: boolean | null;
   sort_order?: number | string | null;
+  image_url?: string | null;
 };
 
 type Product = {
@@ -69,6 +70,16 @@ export default function ProductConfigurator({ product, image }: Props) {
     (variant) => variant.id === selectedVariantId,
   );
 
+  useEffect(() => {
+    window.dispatchEvent(
+      new CustomEvent("product-variant-image-selected", {
+        detail: {
+          imageUrl: selectedVariant?.image_url ?? null,
+        },
+      }),
+    );
+  }, [selectedVariant?.image_url]);
+
   const productionDays = normalizeProductionDays(
     selectedMaterial?.materials.default_production_days,
   );
@@ -104,7 +115,7 @@ export default function ProductConfigurator({ product, image }: Props) {
       materialName: selectedMaterial.materials.name,
       quantity,
       price: Number(unitPrice),
-      image,
+      image: selectedVariant?.image_url || image,
       productionDays,
     });
 
@@ -138,7 +149,13 @@ export default function ProductConfigurator({ product, image }: Props) {
           <h2 className="mb-4 text-xl font-semibold">Variant</h2>
 
           <div className="space-y-3">
-            <label className="flex cursor-pointer items-center justify-between gap-4 rounded-xl border p-4 hover:border-yellow-400">
+            <label
+              className={`flex cursor-pointer items-center justify-between gap-4 rounded-xl border p-4 transition hover:border-yellow-400 ${
+                !selectedVariantId
+                  ? "border-yellow-400 bg-yellow-50"
+                  : "border-slate-200"
+              }`}
+            >
               <div className="flex items-center gap-3">
                 <input
                   type="radio"
@@ -151,18 +168,21 @@ export default function ProductConfigurator({ product, image }: Props) {
               </div>
 
               <span className="whitespace-nowrap text-slate-600">
-                CAD ${
-                  Number(product.sale_price) > 0
-                    ? Number(product.sale_price).toFixed(2)
-                    : Number(product.price).toFixed(2)
-                }
+                CAD $
+                {Number(product.sale_price) > 0
+                  ? Number(product.sale_price).toFixed(2)
+                  : Number(product.price).toFixed(2)}
               </span>
             </label>
 
             {variants.map((variant) => (
               <label
                 key={variant.id}
-                className="flex cursor-pointer items-center justify-between gap-4 rounded-xl border p-4 hover:border-yellow-400"
+                className={`flex cursor-pointer items-center justify-between gap-4 rounded-xl border p-4 transition hover:border-yellow-400 ${
+                  selectedVariantId === variant.id
+                    ? "border-yellow-400 bg-yellow-50"
+                    : "border-slate-200"
+                }`}
               >
                 <div className="flex items-center gap-3">
                   <input

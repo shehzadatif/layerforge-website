@@ -4,13 +4,24 @@ type Variant = {
   option_value?: string | null;
   price?: number | string | null;
   sku?: string | null;
+  image_url?: string | null;
 };
 
 interface Props {
   variants?: Variant[] | null;
+  imageBaseUrl?: string;
 }
 
 const variants = Astro.props.variants ?? [];
+const imageBaseUrl = Astro.props.imageBaseUrl ?? "";
+
+function getImageUrl(path?: string | null) {
+  if (!path) return "";
+
+  return path.startsWith("http://") || path.startsWith("https://")
+    ? path
+    : `${imageBaseUrl}${path}`;
+}
 ---
 
 <section
@@ -39,7 +50,7 @@ const variants = Astro.props.variants ?? [];
     {
       variants.map((variant) => (
         <div
-          class="grid gap-4 rounded-xl border bg-white p-4 md:grid-cols-[minmax(0,1fr)_10rem_minmax(0,0.8fr)_auto] md:items-end"
+          class="rounded-xl border bg-white p-4"
           data-variant-row
         >
           <input
@@ -48,49 +59,85 @@ const variants = Astro.props.variants ?? [];
             value={variant.id == null ? "" : String(variant.id)}
           />
 
-          <label class="block">
-            <span class="mb-2 block text-sm font-semibold">Variant Name</span>
-            <input
-              name="variant_name"
-              value={variant.option_value ?? ""}
-              placeholder="e.g. Battery Mount"
-              maxlength="120"
-              required
-              class="w-full rounded-lg border p-3"
-            />
-          </label>
+          <div class="grid gap-4 md:grid-cols-[minmax(0,1fr)_10rem_minmax(0,0.8fr)_auto] md:items-end">
+            <label class="block">
+              <span class="mb-2 block text-sm font-semibold">Variant Name</span>
+              <input
+                name="variant_name"
+                value={variant.option_value ?? ""}
+                placeholder="e.g. Battery Mount"
+                maxlength="120"
+                required
+                class="w-full rounded-lg border p-3"
+              />
+            </label>
 
-          <label class="block">
-            <span class="mb-2 block text-sm font-semibold">Price (CAD)</span>
-            <input
-              type="number"
-              name="variant_price"
-              value={variant.price ?? ""}
-              min="0.01"
-              step="0.01"
-              required
-              class="w-full rounded-lg border p-3"
-            />
-          </label>
+            <label class="block">
+              <span class="mb-2 block text-sm font-semibold">Price (CAD)</span>
+              <input
+                type="number"
+                name="variant_price"
+                value={variant.price ?? ""}
+                min="0.01"
+                step="0.01"
+                required
+                class="w-full rounded-lg border p-3"
+              />
+            </label>
 
-          <label class="block">
-            <span class="mb-2 block text-sm font-semibold">SKU (Optional)</span>
-            <input
-              name="variant_sku"
-              value={variant.sku ?? ""}
-              maxlength="80"
-              placeholder="LF-M18-BAT"
-              class="w-full rounded-lg border p-3"
-            />
-          </label>
+            <label class="block">
+              <span class="mb-2 block text-sm font-semibold">SKU (Optional)</span>
+              <input
+                name="variant_sku"
+                value={variant.sku ?? ""}
+                maxlength="80"
+                placeholder="LF-M18-BAT"
+                class="w-full rounded-lg border p-3"
+              />
+            </label>
 
-          <button
-            type="button"
-            class="rounded-lg border border-red-200 px-4 py-3 font-semibold text-red-700 hover:bg-red-50"
-            data-remove-variant
-          >
-            Remove
-          </button>
+            <button
+              type="button"
+              class="rounded-lg border border-red-200 px-4 py-3 font-semibold text-red-700 hover:bg-red-50"
+              data-remove-variant
+            >
+              Remove
+            </button>
+          </div>
+
+          <div class="mt-4 grid gap-4 border-t border-slate-100 pt-4 sm:grid-cols-[6rem_minmax(0,1fr)] sm:items-center">
+            <div
+              class="flex h-24 w-24 items-center justify-center overflow-hidden rounded-lg border bg-slate-50 text-center text-xs text-slate-400"
+              data-variant-image-preview
+            >
+              {variant.image_url ? (
+                <img
+                  src={getImageUrl(variant.image_url)}
+                  alt={`${variant.option_value ?? "Variant"} preview`}
+                  class="h-full w-full object-contain"
+                />
+              ) : (
+                <span>No image</span>
+              )}
+            </div>
+
+            <label class="block">
+              <span class="mb-2 block text-sm font-semibold">
+                Variant Image (Optional)
+              </span>
+              <input
+                type="file"
+                name="variant_image"
+                accept="image/jpeg,image/png,image/webp,image/gif"
+                class="block w-full rounded-lg border bg-white p-3 text-sm"
+                data-variant-image-input
+              />
+              <span class="mt-2 block text-xs leading-5 text-slate-500">
+                Uploading a new image replaces the current one. JPG, PNG, WebP,
+                or GIF up to 10 MB.
+              </span>
+            </label>
+          </div>
         </div>
       ))
     }
@@ -108,51 +155,78 @@ const variants = Astro.props.variants ?? [];
 
   <template data-variant-template>
     <div
-      class="grid gap-4 rounded-xl border bg-white p-4 md:grid-cols-[minmax(0,1fr)_10rem_minmax(0,0.8fr)_auto] md:items-end"
+      class="rounded-xl border bg-white p-4"
       data-variant-row
     >
       <input type="hidden" name="variant_id" value="" />
 
-      <label class="block">
-        <span class="mb-2 block text-sm font-semibold">Variant Name</span>
-        <input
-          name="variant_name"
-          placeholder="e.g. Battery Mount"
-          maxlength="120"
-          required
-          class="w-full rounded-lg border p-3"
-        />
-      </label>
+      <div class="grid gap-4 md:grid-cols-[minmax(0,1fr)_10rem_minmax(0,0.8fr)_auto] md:items-end">
+        <label class="block">
+          <span class="mb-2 block text-sm font-semibold">Variant Name</span>
+          <input
+            name="variant_name"
+            placeholder="e.g. Battery Mount"
+            maxlength="120"
+            required
+            class="w-full rounded-lg border p-3"
+          />
+        </label>
 
-      <label class="block">
-        <span class="mb-2 block text-sm font-semibold">Price (CAD)</span>
-        <input
-          type="number"
-          name="variant_price"
-          min="0.01"
-          step="0.01"
-          required
-          class="w-full rounded-lg border p-3"
-        />
-      </label>
+        <label class="block">
+          <span class="mb-2 block text-sm font-semibold">Price (CAD)</span>
+          <input
+            type="number"
+            name="variant_price"
+            min="0.01"
+            step="0.01"
+            required
+            class="w-full rounded-lg border p-3"
+          />
+        </label>
 
-      <label class="block">
-        <span class="mb-2 block text-sm font-semibold">SKU (Optional)</span>
-        <input
-          name="variant_sku"
-          maxlength="80"
-          placeholder="LF-M18-BAT"
-          class="w-full rounded-lg border p-3"
-        />
-      </label>
+        <label class="block">
+          <span class="mb-2 block text-sm font-semibold">SKU (Optional)</span>
+          <input
+            name="variant_sku"
+            maxlength="80"
+            placeholder="LF-M18-BAT"
+            class="w-full rounded-lg border p-3"
+          />
+        </label>
 
-      <button
-        type="button"
-        class="rounded-lg border border-red-200 px-4 py-3 font-semibold text-red-700 hover:bg-red-50"
-        data-remove-variant
-      >
-        Remove
-      </button>
+        <button
+          type="button"
+          class="rounded-lg border border-red-200 px-4 py-3 font-semibold text-red-700 hover:bg-red-50"
+          data-remove-variant
+        >
+          Remove
+        </button>
+      </div>
+
+      <div class="mt-4 grid gap-4 border-t border-slate-100 pt-4 sm:grid-cols-[6rem_minmax(0,1fr)] sm:items-center">
+        <div
+          class="flex h-24 w-24 items-center justify-center overflow-hidden rounded-lg border bg-slate-50 text-center text-xs text-slate-400"
+          data-variant-image-preview
+        >
+          <span>No image</span>
+        </div>
+
+        <label class="block">
+          <span class="mb-2 block text-sm font-semibold">
+            Variant Image (Optional)
+          </span>
+          <input
+            type="file"
+            name="variant_image"
+            accept="image/jpeg,image/png,image/webp,image/gif"
+            class="block w-full rounded-lg border bg-white p-3 text-sm"
+            data-variant-image-input
+          />
+          <span class="mt-2 block text-xs leading-5 text-slate-500">
+            JPG, PNG, WebP, or GIF up to 10 MB.
+          </span>
+        </label>
+      </div>
     </div>
   </template>
 </section>
@@ -190,7 +264,44 @@ const variants = Astro.props.variants ?? [];
         });
     };
 
-    list.querySelectorAll("[data-variant-row]").forEach(connectRemoveButton);
+    const connectImagePreview = (row: Element) => {
+      const input = row.querySelector<HTMLInputElement>(
+        "[data-variant-image-input]",
+      );
+      const preview = row.querySelector<HTMLElement>(
+        "[data-variant-image-preview]",
+      );
+
+      if (!input || !preview) return;
+
+      input.addEventListener("change", () => {
+        const previousPreviewUrl = preview.dataset.previewUrl;
+
+        if (previousPreviewUrl) {
+          URL.revokeObjectURL(previousPreviewUrl);
+          delete preview.dataset.previewUrl;
+        }
+
+        const file = input.files?.[0];
+
+        if (!file) return;
+
+        const previewUrl = URL.createObjectURL(file);
+        preview.dataset.previewUrl = previewUrl;
+        preview.replaceChildren();
+
+        const image = document.createElement("img");
+        image.src = previewUrl;
+        image.alt = "Selected variant image preview";
+        image.className = "h-full w-full object-contain";
+        preview.appendChild(image);
+      });
+    };
+
+    list.querySelectorAll("[data-variant-row]").forEach((row) => {
+      connectRemoveButton(row);
+      connectImagePreview(row);
+    });
 
     addButton.addEventListener("click", () => {
       const fragment = template.content.cloneNode(true) as DocumentFragment;
@@ -199,6 +310,7 @@ const variants = Astro.props.variants ?? [];
       if (!row) return;
 
       connectRemoveButton(row);
+      connectImagePreview(row);
       list.appendChild(fragment);
       updateEmptyState();
 

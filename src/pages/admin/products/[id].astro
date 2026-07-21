@@ -137,6 +137,7 @@ const productVariants = [...(product.product_variants ?? [])].sort(
       <form
         action="/api/admin/update-product"
         method="POST"
+        enctype="multipart/form-data"
         class="space-y-6"
       >
         <input
@@ -300,7 +301,10 @@ const productVariants = [...(product.product_variants ?? [])].sort(
           </div>
         </div>
 
-        <ProductVariantsField variants={productVariants} />
+        <ProductVariantsField
+          variants={productVariants}
+          imageBaseUrl={`${supabaseUrl}/storage/v1/object/public/product-images/`}
+        />
 
         <div>
           <label

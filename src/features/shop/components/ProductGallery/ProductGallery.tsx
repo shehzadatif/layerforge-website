@@ -1,15 +1,42 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 interface Props {
   images: string[];
   productName: string;
 }
 
-export default function ProductGallery({
-  images,
-  productName,
-}: Props) {
+export default function ProductGallery({ images, productName }: Props) {
   const [selected, setSelected] = useState(0);
+
+  useEffect(() => {
+    const handleVariantImage = (event: Event) => {
+      const { imageUrl } = (event as CustomEvent<{ imageUrl: string | null }>)
+        .detail;
+
+      if (!imageUrl) {
+        setSelected(0);
+        return;
+      }
+
+      const matchingIndex = images.indexOf(imageUrl);
+
+      if (matchingIndex >= 0) {
+        setSelected(matchingIndex);
+      }
+    };
+
+    window.addEventListener(
+      "product-variant-image-selected",
+      handleVariantImage,
+    );
+
+    return () => {
+      window.removeEventListener(
+        "product-variant-image-selected",
+        handleVariantImage,
+      );
+    };
+  }, [images]);
 
   if (images.length === 0) {
     return (
@@ -36,6 +63,8 @@ export default function ProductGallery({
               key={index}
               type="button"
               onClick={() => setSelected(index)}
+              aria-label={`Show ${productName} image ${index + 1}`}
+              aria-pressed={selected === index}
               className={`overflow-hidden rounded-xl border-2 transition ${
                 selected === index
                   ? "border-yellow-400"
@@ -45,7 +74,7 @@ export default function ProductGallery({
               <img
                 src={image}
                 alt={`${productName} ${index + 1}`}
-                className="h-20 w-20 object-cover"
+                className="h-20 w-20 bg-white object-contain"
               />
             </button>
           ))}

@@ -15,16 +15,15 @@ export const POST: APIRoute = async ({ request }) => {
         },
         {
           status: 400,
-        }
+        },
       );
     }
 
-    const { data: product, error: productLoadError } =
-      await supabaseAdmin
-        .from("products")
-        .select("id, name")
-        .eq("id", productId)
-        .single();
+    const { data: product, error: productLoadError } = await supabaseAdmin
+      .from("products")
+      .select("id, name")
+      .eq("id", productId)
+      .single();
 
     if (productLoadError || !product) {
       return Response.json(
@@ -34,77 +33,80 @@ export const POST: APIRoute = async ({ request }) => {
         },
         {
           status: 404,
-        }
+        },
       );
     }
 
-    const { data: images, error: imagesLoadError } =
-      await supabaseAdmin
-        .from("product_images")
-        .select("image_url")
-        .eq("product_id", productId);
+    const { data: images, error: imagesLoadError } = await supabaseAdmin
+      .from("product_images")
+      .select("image_url")
+      .eq("product_id", productId);
 
     if (imagesLoadError) {
       throw new Error(imagesLoadError.message);
     }
 
-    const storagePaths = (images ?? [])
-      .map((image) => image.image_url)
-      .filter(
-        (path): path is string =>
-          typeof path === "string" &&
-          path.length > 0
-      );
+    const { data: variants, error: variantsLoadError } = await supabaseAdmin
+      .from("product_variants")
+      .select("image_url")
+      .eq("product_id", productId);
+
+    if (variantsLoadError) {
+      throw new Error(variantsLoadError.message);
+    }
+
+    const storagePaths = [
+      ...(images ?? []).map((image) => image.image_url),
+      ...(variants ?? []).map((variant) => variant.image_url),
+    ].filter(
+      (path): path is string =>
+        typeof path === "string" &&
+        path.length > 0 &&
+        !path.startsWith("http://") &&
+        !path.startsWith("https://"),
+    );
 
     if (storagePaths.length > 0) {
-      const { error: storageError } =
-        await supabaseAdmin.storage
-          .from("product-images")
-          .remove(storagePaths);
+      const { error: storageError } = await supabaseAdmin.storage
+        .from("product-images")
+        .remove(storagePaths);
 
       if (storageError) {
-        console.error(
-          "Unable to remove product image files:",
-          storageError
-        );
+        console.error("Unable to remove product image files:", storageError);
       }
     }
 
-    const { error: materialsError } =
-      await supabaseAdmin
-        .from("product_materials")
-        .delete()
-        .eq("product_id", productId);
+    const { error: materialsError } = await supabaseAdmin
+      .from("product_materials")
+      .delete()
+      .eq("product_id", productId);
 
     if (materialsError) {
       throw new Error(materialsError.message);
     }
 
-    const { error: variantsError } =
-      await supabaseAdmin
-        .from("product_variants")
-        .delete()
-        .eq("product_id", productId);
+    const { error: variantsError } = await supabaseAdmin
+      .from("product_variants")
+      .delete()
+      .eq("product_id", productId);
 
     if (variantsError) {
       throw new Error(variantsError.message);
     }
 
-    const { error: imagesError } =
-      await supabaseAdmin
-        .from("product_images")
-        .delete()
-        .eq("product_id", productId);
+    const { error: imagesError } = await supabaseAdmin
+      .from("product_images")
+      .delete()
+      .eq("product_id", productId);
 
     if (imagesError) {
       throw new Error(imagesError.message);
     }
 
-    const { error: productError } =
-      await supabaseAdmin
-        .from("products")
-        .delete()
-        .eq("id", productId);
+    const { error: productError } = await supabaseAdmin
+      .from("products")
+      .delete()
+      .eq("id", productId);
 
     if (productError) {
       if (productError.code === "23503") {
@@ -116,7 +118,7 @@ export const POST: APIRoute = async ({ request }) => {
           },
           {
             status: 409,
-          }
+          },
         );
       }
 
@@ -127,22 +129,17 @@ export const POST: APIRoute = async ({ request }) => {
       success: true,
     });
   } catch (error) {
-    console.error(
-      "Unable to delete product:",
-      error
-    );
+    console.error("Unable to delete product:", error);
 
     return Response.json(
       {
         success: false,
         error:
-          error instanceof Error
-            ? error.message
-            : "Unable to delete product.",
+          error instanceof Error ? error.message : "Unable to delete product.",
       },
       {
         status: 500,
-      }
+      },
     );
   }
 };

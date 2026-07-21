@@ -33,14 +33,45 @@ if (!product) {
   return Astro.redirect("/shop");
 }
 
-const imageUrls = (product.product_images ?? [])
-  .sort((a, b) => a.sort_order - b.sort_order)
-  .map(
-    (image) =>
-      `${import.meta.env.PUBLIC_SUPABASE_URL}/storage/v1/object/public/product-images/${image.image_url}`
-  );
+const publicImageBase =
+  `${import.meta.env.PUBLIC_SUPABASE_URL}/storage/v1/object/public/product-images/`;
 
-const cover = imageUrls[0] ?? "";
+function getPublicImageUrl(imagePath: string): string {
+  return imagePath.startsWith("http://") || imagePath.startsWith("https://")
+    ? imagePath
+    : `${publicImageBase}${imagePath}`;
+}
+
+const productImageUrls = (product.product_images ?? [])
+  .sort((a, b) => a.sort_order - b.sort_order)
+  .map((image) => getPublicImageUrl(image.image_url));
+
+const storefrontVariants = [...(product.product_variants ?? [])]
+  .sort(
+    (left, right) =>
+      Number(left.sort_order ?? 0) - Number(right.sort_order ?? 0),
+  )
+  .map((variant) => ({
+    ...variant,
+    image_url: variant.image_url
+      ? getPublicImageUrl(variant.image_url)
+      : null,
+  }));
+
+const variantImageUrls = storefrontVariants
+  .map((variant) => variant.image_url)
+  .filter((imageUrl): imageUrl is string => Boolean(imageUrl));
+
+const galleryImageUrls = [
+  ...new Set([...productImageUrls, ...variantImageUrls]),
+];
+
+const cover = productImageUrls[0] ?? variantImageUrls[0] ?? "";
+
+const storefrontProduct = {
+  ...product,
+  product_variants: storefrontVariants,
+};
 ---
 
 <MainLayout title={product.name}>
@@ -55,7 +86,7 @@ const cover = imageUrls[0] ?? "";
 
       <ProductGallery
         client:load
-        images={imageUrls}
+        images={galleryImageUrls}
         productName={product.name}
       />
 
@@ -78,7 +109,7 @@ const cover = imageUrls[0] ?? "";
 
         <ProductConfiguratorWithProvider
           client:load
-          product={product}
+          product={storefrontProduct}
           image={cover}
         />
 
