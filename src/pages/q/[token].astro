@@ -221,7 +221,7 @@ const unitPrice = Number(
 
               <label class="mt-6 flex cursor-pointer items-start gap-3 rounded-xl border-2 border-yellow-400 bg-yellow-50 p-4 text-left text-sm leading-6 text-slate-800">
                 <input
-                  id="quote-refund-policy-accepted"
+                  id="quote-terms-accepted"
                   type="checkbox"
                   class="mt-1 h-5 w-5 shrink-0 accent-yellow-500"
                 />
@@ -229,9 +229,16 @@ const unitPrice = Number(
                   <strong class="block text-slate-950">
                     Final sale — paid orders are non-refundable
                   </strong>
-                  I understand that once payment is completed, this order is
-                  final and non-refundable, except where required by applicable
-                  law.
+                  I have reviewed and agree to Layer Forge's
+                  <a
+                    href="/terms"
+                    target="_blank"
+                    rel="noreferrer"
+                    class="font-semibold text-slate-950 underline decoration-yellow-500 decoration-2 underline-offset-2"
+                  >
+                    Terms &amp; Policies
+                  </a>, including that once payment is completed, this order is
+                  final and non-refundable except where required by applicable law.
                 </span>
               </label>
 
@@ -356,16 +363,16 @@ const unitPrice = Number(
     };
 
     window.proceedToPayment = async function () {
-      const refundPolicyCheckbox = document.getElementById(
-        "quote-refund-policy-accepted"
+      const termsCheckbox = document.getElementById(
+        "quote-terms-accepted"
       );
 
       if (
-        !(refundPolicyCheckbox instanceof HTMLInputElement) ||
-        !refundPolicyCheckbox.checked
+        !(termsCheckbox instanceof HTMLInputElement) ||
+        !termsCheckbox.checked
       ) {
-        alert("Please acknowledge the final-sale and non-refundable policy.");
-        refundPolicyCheckbox?.focus();
+        alert("Please review and accept the Terms & Policies.");
+        termsCheckbox?.focus();
         return;
       }
 
@@ -380,7 +387,7 @@ const unitPrice = Number(
             body: JSON.stringify({
               quoteId,
               approvalToken,
-              refundPolicyAccepted: true,
+              termsAccepted: true,
             }),
           }
         );

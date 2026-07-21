@@ -323,9 +323,9 @@ export const POST: APIRoute = async ({ request }) => {
       ? (body.items as RequestedCheckoutItem[])
       : [];
 
-    if (body?.refundPolicyAccepted !== true) {
+    if (body?.termsAccepted !== true) {
       throw new CheckoutRequestError(
-        "You must acknowledge the final-sale and non-refundable policy.",
+        "You must review and accept the Terms & Policies.",
       );
     }
 
@@ -440,6 +440,8 @@ export const POST: APIRoute = async ({ request }) => {
       billing_address_collection: "required",
       metadata: {
         orderId: order.id,
+        termsAccepted: "true",
+        termsVersion: "2026-07-20",
         refundPolicyAccepted: "true",
       },
       line_items: trustedItems.map((item) => ({

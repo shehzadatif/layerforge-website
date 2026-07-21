@@ -1,0 +1,349 @@
+---
+import MainLayout from "../layouts/MainLayout.astro";
+
+const lastUpdated = "July 20, 2026";
+
+const policyLinks = [
+  ["orders", "Orders & quotes"],
+  ["pricing", "Pricing & payment"],
+  ["production", "Production timing"],
+  ["shipping", "Shipping & pickup"],
+  ["refunds", "Refunds & cancellations"],
+  ["custom-work", "Custom work"],
+  ["privacy", "Privacy"],
+  ["contact", "Contact"],
+];
+---
+
+<MainLayout title="Terms & Policies | Layer Forge">
+  <section class="bg-slate-950 text-white">
+    <div class="mx-auto max-w-7xl px-6 py-20 sm:py-24">
+      <p class="text-sm font-bold uppercase tracking-[0.25em] text-yellow-400">
+        Customer information
+      </p>
+      <h1 class="mt-4 max-w-4xl text-5xl font-black tracking-tight sm:text-6xl">
+        Terms & Policies
+      </h1>
+      <p class="mt-6 max-w-3xl text-lg leading-8 text-slate-300">
+        Clear information about ordering, payment, production, delivery,
+        refunds, custom work, and how Layer Forge handles your information.
+      </p>
+      <p class="mt-6 text-sm text-slate-400">Last updated: {lastUpdated}</p>
+    </div>
+  </section>
+
+  <section class="bg-slate-50 py-16 sm:py-20">
+    <div class="mx-auto grid max-w-7xl gap-10 px-6 lg:grid-cols-[280px_minmax(0,1fr)]">
+      <aside class="lg:sticky lg:top-8 lg:self-start">
+        <div class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+          <h2 class="font-bold text-slate-950">On this page</h2>
+          <nav class="mt-4 flex flex-col gap-1" aria-label="Terms and policies sections">
+            {
+              policyLinks.map(([id, label]) => (
+                <a
+                  href={`#${id}`}
+                  class="rounded-lg px-3 py-2 text-sm text-slate-600 transition hover:bg-yellow-50 hover:text-slate-950"
+                >
+                  {label}
+                </a>
+              ))
+            }
+          </nav>
+        </div>
+      </aside>
+
+      <div class="min-w-0 space-y-8">
+        <div class="rounded-2xl border-2 border-yellow-400 bg-yellow-50 p-6 text-slate-800">
+          <h2 class="text-xl font-bold text-slate-950">Please review before ordering</h2>
+          <p class="mt-3 leading-7">
+            These terms apply to purchases made through layerforgecanada.com
+            and payments made from a Layer Forge quote. By placing an order,
+            you confirm that the order information is accurate and that you
+            accept the policies below. Nothing in these terms limits rights
+            that cannot legally be limited.
+          </p>
+        </div>
+
+        <section id="business" class="scroll-mt-8 rounded-2xl border border-slate-200 bg-white p-7 shadow-sm sm:p-9">
+          <h2 class="text-2xl font-bold text-slate-950">About Layer Forge</h2>
+          <div class="mt-4 space-y-3 leading-7 text-slate-600">
+            <p>
+              Layer Forge supplies custom manufacturing and personalized
+              products, including 3D printing, laser engraving, UV printing,
+              DTF, and DTG apparel printing.
+            </p>
+            <p>
+              <strong class="text-slate-900">Business location:</strong>
+              Surrey, British Columbia, Canada<br />
+              <strong class="text-slate-900">Email:</strong>
+              <a class="font-semibold text-slate-950 underline decoration-yellow-400 decoration-2 underline-offset-4" href="mailto:support@layerforgecanada.com">
+                support@layerforgecanada.com
+              </a>
+            </p>
+          </div>
+        </section>
+
+        <section id="orders" class="scroll-mt-8 rounded-2xl border border-slate-200 bg-white p-7 shadow-sm sm:p-9">
+          <h2 class="text-2xl font-bold text-slate-950">1. Orders & quotes</h2>
+          <div class="mt-4 space-y-4 leading-7 text-slate-600">
+            <p>
+              Shop orders become confirmed when payment is completed. Custom
+              quotes remain valid for the period shown on the quote and become
+              confirmed when the quote is accepted and paid.
+            </p>
+            <p>
+              Customers are responsible for reviewing product, material,
+              quantity, personalization, spelling, dimensions, delivery method,
+              and contact information before payment. Contact us promptly if an
+              order confirmation contains an error. Changes are not guaranteed
+              after payment and may require a revised price or schedule.
+            </p>
+            <p>
+              Layer Forge may decline an order before payment. If Layer Forge
+              cannot fulfil an order after accepting payment, we will contact
+              the customer and provide an appropriate remedy, including a
+              refund when required.
+            </p>
+          </div>
+        </section>
+
+        <section id="pricing" class="scroll-mt-8 rounded-2xl border border-slate-200 bg-white p-7 shadow-sm sm:p-9">
+          <h2 class="text-2xl font-bold text-slate-950">2. Pricing, taxes & payment</h2>
+          <div class="mt-4 space-y-4 leading-7 text-slate-600">
+            <p>
+              Prices are stated in Canadian dollars (CAD). Product price,
+              quantity, shipping or pickup charges, and applicable taxes are
+              shown before payment. Taxes are calculated using the address and
+              information supplied during checkout.
+            </p>
+            <p>
+              Online card payments are processed securely by Stripe. Layer
+              Forge does not receive or store complete payment-card numbers.
+              Payment must be successfully authorized before an order is
+              confirmed.
+            </p>
+          </div>
+        </section>
+
+        <section id="production" class="scroll-mt-8 rounded-2xl border border-slate-200 bg-white p-7 shadow-sm sm:p-9">
+          <h2 class="text-2xl font-bold text-slate-950">3. Production & supply timing</h2>
+          <div class="mt-4 space-y-4 leading-7 text-slate-600">
+            <p>
+              Production begins only after Layer Forge schedules the paid
+              order. Payment received does not mean production has already
+              started. The applicable production estimate or supply date will
+              be communicated in the product information, quote, order
+              confirmation, or written order communication.
+            </p>
+            <p>
+              Timing can be affected by design approval, material availability,
+              quantity, equipment requirements, rework needed for quality, and
+              delivery conditions. If timing materially changes, Layer Forge
+              will contact the customer using the information provided with the
+              order. Statutory cancellation rights remain unaffected.
+            </p>
+          </div>
+        </section>
+
+        <section id="shipping" class="scroll-mt-8 rounded-2xl border border-slate-200 bg-white p-7 shadow-sm sm:p-9">
+          <h2 class="text-2xl font-bold text-slate-950">4. Shipping & local pickup</h2>
+          <div class="mt-4 space-y-5 leading-7 text-slate-600">
+            <div>
+              <h3 class="font-bold text-slate-950">Shipping</h3>
+              <p class="mt-1">
+                Shipping is currently available only to Canadian addresses.
+                The shipping charge is based on the destination province and
+                is displayed before payment. Layer Forge selects an appropriate
+                carrier and transportation method for the destination and
+                order. Tracking information is provided when available.
+              </p>
+            </div>
+            <div>
+              <h3 class="font-bold text-slate-950">Address accuracy</h3>
+              <p class="mt-1">
+                Customers must provide a complete and accurate delivery
+                address. Additional costs caused by an incorrect or incomplete
+                address may be charged to the customer where permitted by law.
+              </p>
+            </div>
+            <div>
+              <h3 class="font-bold text-slate-950">Local pickup</h3>
+              <p class="mt-1">
+                Pickup orders do not include shipping. Wait for the “Ready for
+                Pickup” email before travelling to collect the order. Pickup
+                instructions and location details are provided directly to the
+                customer.
+              </p>
+            </div>
+            <p>
+              Inspect delivered or collected items promptly and contact us with
+              the order number and photographs if an item arrives damaged or
+              materially different from the confirmed order.
+            </p>
+          </div>
+        </section>
+
+        <section id="refunds" class="scroll-mt-8 rounded-2xl border-2 border-yellow-400 bg-white p-7 shadow-sm sm:p-9">
+          <p class="text-sm font-bold uppercase tracking-[0.18em] text-amber-600">Final sale policy</p>
+          <h2 class="mt-2 text-2xl font-bold text-slate-950">5. Refunds, returns & cancellations</h2>
+          <div class="mt-4 space-y-4 leading-7 text-slate-600">
+            <p class="font-semibold text-slate-950">
+              Once payment is completed, the order is final and
+              non-refundable, except where a refund or cancellation is required
+              by applicable law.
+            </p>
+            <p>
+              Layer Forge products are often manufactured, configured, or
+              personalized for a specific customer. We do not provide refunds
+              or exchanges for change of mind, incorrect customer-supplied
+              information, or preference differences that are within the
+              confirmed specifications.
+            </p>
+            <p>
+              This policy does not override statutory rights, including any
+              cancellation or refund rights that apply when an order is not
+              supplied as required, mandatory contract information was not
+              provided, or goods do not meet obligations that cannot legally be
+              excluded.
+            </p>
+            <p>
+              To report an issue or request a cancellation available under law,
+              email
+              <a class="font-semibold text-slate-950 underline decoration-yellow-400 decoration-2 underline-offset-4" href="mailto:support@layerforgecanada.com">
+                support@layerforgecanada.com
+              </a>
+              with the order number and relevant details. We may request
+              photographs or return of the goods where appropriate and legally
+              permitted.
+            </p>
+          </div>
+        </section>
+
+        <section id="custom-work" class="scroll-mt-8 rounded-2xl border border-slate-200 bg-white p-7 shadow-sm sm:p-9">
+          <h2 class="text-2xl font-bold text-slate-950">6. Custom work, files & product variation</h2>
+          <div class="mt-4 space-y-4 leading-7 text-slate-600">
+            <p>
+              Customers must have the right to use every design, logo, image,
+              model, trademark, name, and other file supplied to Layer Forge.
+              By submitting content, the customer authorizes Layer Forge to use
+              it only as reasonably necessary to review, quote, manufacture,
+              communicate about, and fulfil the order.
+            </p>
+            <p>
+              Layer Forge may decline content that appears unlawful, unsafe,
+              infringing, hateful, deceptive, or otherwise unsuitable for
+              production.
+            </p>
+            <p>
+              Digital previews and photographs may differ slightly from the
+              finished product. Minor variations in colour, texture, layer
+              lines, grain, placement, finish, and dimensions can occur because
+              of materials, screens, and manufacturing processes. Approved
+              proofs and written specifications control the order where
+              provided.
+            </p>
+            <p>
+              Unless Layer Forge expressly confirms otherwise in writing,
+              products are not certified for medical, food-contact, protective,
+              load-bearing, life-safety, or regulated applications. Customers
+              are responsible for confirming suitability for their intended
+              use.
+            </p>
+          </div>
+        </section>
+
+        <section id="privacy" class="scroll-mt-8 rounded-2xl border border-slate-200 bg-white p-7 shadow-sm sm:p-9">
+          <h2 class="text-2xl font-bold text-slate-950">7. Privacy policy</h2>
+          <div class="mt-4 space-y-5 leading-7 text-slate-600">
+            <div>
+              <h3 class="font-bold text-slate-950">Information we collect</h3>
+              <p class="mt-1">
+                We collect information needed to provide our services, such as
+                names, email addresses, phone numbers, billing and delivery
+                addresses, order details, customer messages, quote requests,
+                uploaded project files, and transaction references. Payment-card
+                details are handled by our payment processor.
+              </p>
+            </div>
+            <div>
+              <h3 class="font-bold text-slate-950">How we use information</h3>
+              <p class="mt-1">
+                We use personal information to prepare quotes, process and
+                fulfil orders, take payment, calculate shipping and tax,
+                provide updates and support, prevent misuse, keep business
+                records, and comply with legal obligations.
+              </p>
+            </div>
+            <div>
+              <h3 class="font-bold text-slate-950">Service providers</h3>
+              <p class="mt-1">
+                Information may be processed by trusted providers that support
+                payments, website hosting, databases, file storage, email, fraud
+                prevention, tax calculation, and delivery. We provide only the
+                information reasonably needed for those services. Layer Forge
+                does not sell personal information.
+              </p>
+            </div>
+            <div>
+              <h3 class="font-bold text-slate-950">Retention & security</h3>
+              <p class="mt-1">
+                We retain information for as long as reasonably needed for the
+                purposes above, warranty or dispute handling, and legal or tax
+                records. We use reasonable administrative and technical
+                safeguards, but no online system can be guaranteed completely
+                secure.
+              </p>
+            </div>
+            <div>
+              <h3 class="font-bold text-slate-950">Your choices</h3>
+              <p class="mt-1">
+                You may ask to access or correct your personal information or
+                ask a privacy question by contacting us. Some records must be
+                retained where required for legal, tax, security, or transaction
+                purposes.
+              </p>
+            </div>
+          </div>
+        </section>
+
+        <section id="general" class="scroll-mt-8 rounded-2xl border border-slate-200 bg-white p-7 shadow-sm sm:p-9">
+          <h2 class="text-2xl font-bold text-slate-950">8. General terms</h2>
+          <div class="mt-4 space-y-4 leading-7 text-slate-600">
+            <p>
+              To the extent permitted by law, Layer Forge is not responsible
+              for indirect, incidental, or consequential loss arising from use
+              of a product or delay outside our reasonable control. Nothing in
+              these terms excludes liability or consumer rights that cannot
+              legally be excluded.
+            </p>
+            <p>
+              These terms are governed by the laws of British Columbia and the
+              applicable laws of Canada. If part of these terms is found
+              unenforceable, the remaining terms continue to apply.
+            </p>
+            <p>
+              We may update these terms prospectively. The version presented
+              when an order is placed applies to that order unless a change is
+              required by law or agreed with the customer.
+            </p>
+          </div>
+        </section>
+
+        <section id="contact" class="scroll-mt-8 rounded-2xl bg-slate-950 p-7 text-white shadow-sm sm:p-9">
+          <p class="text-sm font-bold uppercase tracking-[0.18em] text-yellow-400">Questions or concerns?</p>
+          <h2 class="mt-2 text-2xl font-bold">Contact Layer Forge</h2>
+          <p class="mt-4 max-w-2xl leading-7 text-slate-300">
+            Include your quote or order number when contacting us about a
+            purchase, cancellation request, privacy question, or product issue.
+          </p>
+          <a
+            href="mailto:support@layerforgecanada.com"
+            class="mt-6 inline-flex rounded-xl bg-yellow-400 px-6 py-3 font-bold text-slate-950 transition hover:bg-yellow-300"
+          >
+            support@layerforgecanada.com
+          </a>
+        </section>
+      </div>
+    </div>
+  </section>
+</MainLayout>

@@ -8,7 +8,7 @@ import ShippingAddress from "./ShippingAddress";
 
 export default function CheckoutPage() {
   const cart = getCart();
-  const [refundPolicyAccepted, setRefundPolicyAccepted] = useState(false);
+  const [termsAccepted, setTermsAccepted] = useState(false);
 
   const { form, errors, isSubmitting, setIsSubmitting, updateField, validate } =
     useCheckout();
@@ -33,8 +33,8 @@ export default function CheckoutPage() {
       return;
     }
 
-    if (!refundPolicyAccepted) {
-      alert("Please acknowledge the final-sale and non-refundable policy.");
+    if (!termsAccepted) {
+      alert("Please review and accept the Terms & Policies.");
       return;
     }
 
@@ -53,7 +53,7 @@ export default function CheckoutPage() {
         body: JSON.stringify({
           items: cart,
           customer: form,
-          refundPolicyAccepted,
+          termsAccepted,
         }),
       });
 
@@ -202,21 +202,28 @@ export default function CheckoutPage() {
 
           <label className="mt-6 flex cursor-pointer items-start gap-3 rounded-xl border-2 border-yellow-400 bg-yellow-50 p-4 text-sm leading-6 text-slate-800">
             <input
-              id="refund-policy-accepted"
+              id="terms-accepted"
               type="checkbox"
               required
-              checked={refundPolicyAccepted}
-              onChange={(event) =>
-                setRefundPolicyAccepted(event.target.checked)
-              }
+              checked={termsAccepted}
+              onChange={(event) => setTermsAccepted(event.target.checked)}
               className="mt-1 h-5 w-5 shrink-0 accent-yellow-500"
             />
             <span>
               <strong className="block text-slate-950">
                 Final sale — paid orders are non-refundable
               </strong>
-              I understand that once payment is completed, this order is final
-              and non-refundable, except where required by applicable law.
+              I have reviewed and agree to Layer Forge&apos;s{" "}
+              <a
+                href="/terms"
+                target="_blank"
+                rel="noreferrer"
+                className="font-semibold text-slate-950 underline decoration-yellow-500 decoration-2 underline-offset-2"
+              >
+                Terms &amp; Policies
+              </a>
+              , including that once payment is completed, this order is final
+              and non-refundable except where required by applicable law.
             </span>
           </label>
 

@@ -21,11 +21,10 @@ export const POST: APIRoute = async ({ request }) => {
     const quoteId = String(body?.quoteId ?? "").trim();
     const approvalToken = String(body?.approvalToken ?? "").trim();
 
-    if (body?.refundPolicyAccepted !== true) {
+    if (body?.termsAccepted !== true) {
       return Response.json(
         {
-          error:
-            "You must acknowledge the final-sale and non-refundable policy.",
+          error: "You must review and accept the Terms & Policies.",
         },
         { status: 400 },
       );
@@ -184,6 +183,8 @@ export const POST: APIRoute = async ({ request }) => {
       metadata: {
         source: "quote",
         quoteId: quote.id,
+        termsAccepted: "true",
+        termsVersion: "2026-07-20",
         refundPolicyAccepted: "true",
       },
 

@@ -1,26 +1,70 @@
-Layer Forge
-Custom Manufacturing & Personalization
+---
+const year = new Date().getFullYear();
+---
 
-Services
-• 3D Printing
-• Laser Engraving
-• UV Printing
+<footer class="bg-slate-950 text-slate-300">
+  <div class="mx-auto grid max-w-7xl gap-12 px-6 py-14 sm:grid-cols-2 lg:grid-cols-4">
+    <div class="sm:col-span-2 lg:col-span-1">
+      <a href="/" aria-label="Layer Forge home">
+        <img
+          src="/brand/logos/layer-forge-horizontal-reverse-transparent.png"
+          alt="Layer Forge"
+          class="w-48"
+        />
+      </a>
+      <p class="mt-5 max-w-sm text-sm leading-6 text-slate-400">
+        Custom 3D printing, laser engraving, UV printing, and apparel
+        decoration from Surrey, British Columbia.
+      </p>
+    </div>
 
-Quick Links
-• Home
-• Services
-• Shop
-• Request Quote
-• Contact
+    <div>
+      <h2 class="text-sm font-bold uppercase tracking-[0.18em] text-white">
+        Services
+      </h2>
+      <nav class="mt-5 flex flex-col gap-3 text-sm" aria-label="Footer services">
+        <a class="transition hover:text-yellow-400" href="/3d-printing">3D Printing</a>
+        <a class="transition hover:text-yellow-400" href="/laser-engraving">Laser Engraving</a>
+        <a class="transition hover:text-yellow-400" href="/uv-printing">UV & Apparel Printing</a>
+        <a class="transition hover:text-yellow-400" href="/quote">Request a Quote</a>
+      </nav>
+    </div>
 
-Contact
-support@layerforgecanada.com
-Calgary, Alberta
+    <div>
+      <h2 class="text-sm font-bold uppercase tracking-[0.18em] text-white">
+        Company
+      </h2>
+      <nav class="mt-5 flex flex-col gap-3 text-sm" aria-label="Footer company links">
+        <a class="transition hover:text-yellow-400" href="/shop">Shop</a>
+        <a class="transition hover:text-yellow-400" href="/gallery">Gallery</a>
+        <a class="transition hover:text-yellow-400" href="/track">Track an Order</a>
+        <a class="transition hover:text-yellow-400" href="/contact">Contact</a>
+      </nav>
+    </div>
 
-Follow Us
-Facebook
-Instagram
-LinkedIn
+    <div>
+      <h2 class="text-sm font-bold uppercase tracking-[0.18em] text-white">
+        Support & Policies
+      </h2>
+      <nav class="mt-5 flex flex-col gap-3 text-sm" aria-label="Footer policy links">
+        <a class="transition hover:text-yellow-400" href="/terms">Terms & Policies</a>
+        <a class="transition hover:text-yellow-400" href="/terms#shipping">Shipping & Pickup</a>
+        <a class="transition hover:text-yellow-400" href="/terms#refunds">Refund Policy</a>
+        <a class="transition hover:text-yellow-400" href="/terms#privacy">Privacy Policy</a>
+      </nav>
+      <a
+        href="mailto:support@layerforgecanada.com"
+        class="mt-5 block break-all text-sm font-semibold text-yellow-400 transition hover:text-yellow-300"
+      >
+        support@layerforgecanada.com
+      </a>
+    </div>
+  </div>
 
-© 2026 Layer Forge
-Privacy Policy | Terms & Conditions
+  <div class="border-t border-white/10">
+    <div class="mx-auto flex max-w-7xl flex-col gap-3 px-6 py-6 text-xs text-slate-500 sm:flex-row sm:items-center sm:justify-between">
+      <p>© {year} Layer Forge. All rights reserved.</p>
+      <p>Surrey, British Columbia, Canada</p>
+    </div>
+  </div>
+</footer>

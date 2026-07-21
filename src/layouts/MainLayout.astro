@@ -2,6 +2,7 @@
 import "../styles/global.css";
 import Navbar from "../components/layout/Navbar.astro";
 import AppToaster from "../components/layout/AppToaster";
+import Footer from "../components/Footer.astro";
 
 interface Props {
   title?: string;
@@ -30,6 +31,8 @@ const {
     <main>
       <slot />
     </main>
+
+    <Footer />
 
   </body>
 </html>
