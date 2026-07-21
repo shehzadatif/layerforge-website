@@ -7,6 +7,8 @@ const errorMessages: Record<string, string> = {
   missing_credentials: "Enter both your email address and password.",
   auth_unavailable:
     "Authentication is temporarily unavailable. Please try again.",
+  session_expired:
+    "Your admin session expired after 2 hours of inactivity. Sign in again to continue.",
 };
 
 const errorMessage = errorCode ? errorMessages[errorCode] : undefined;
@@ -98,6 +100,16 @@ const errorMessage = errorCode ? errorMessages[errorCode] : undefined;
         </p>
       </section>
     </main>
+
+    <script is:inline>
+      try {
+        window.localStorage.removeItem(
+          "layer-forge-admin-last-activity",
+        );
+      } catch {
+        // Local storage may be unavailable in privacy mode.
+      }
+    </script>
   </body>
 </html>
 

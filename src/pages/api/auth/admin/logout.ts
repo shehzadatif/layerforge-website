@@ -1,8 +1,12 @@
 import type { APIRoute } from "astro";
 import { isSameOriginRequest } from "../../../../lib/isSameOriginRequest";
-    
 
-export const POST: APIRoute = async ({ locals, redirect }) => {
+export const POST: APIRoute = async ({
+  request,
+  locals,
+  redirect,
+  session,
+}) => {
   if (!isSameOriginRequest(request)) {
     return new Response(
       JSON.stringify({
@@ -45,6 +49,8 @@ export const POST: APIRoute = async ({ locals, redirect }) => {
       },
     );
   }
+
+  session.destroy();
 
   return redirect("/admin/login", 303);
 };

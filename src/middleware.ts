@@ -1,5 +1,10 @@
 import { defineMiddleware } from "astro:middleware";
 
+import {
+  ADMIN_ACTIVITY_SESSION_KEY,
+  getAdminActivityStatus,
+  shouldRefreshAdminActivity,
+} from "./lib/adminIdleSession";
 import { applySecurityHeaders } from "./lib/securityHeaders";
 import { createSupabaseServerClient } from "./lib/supabaseServer";
 
@@ -86,6 +91,7 @@ export const onRequest = defineMiddleware(
       request,
       cookies,
       locals,
+      session,
       url,
       redirect,
     },
@@ -284,6 +290,102 @@ export const onRequest = defineMiddleware(
 
     const hasAal2 =
       assuranceData.currentLevel === "aal2";
+
+    /*
+     * Keep a server-side record of authenticated admin activity.
+     * A missing record is initialized for existing sessions during
+     * rollout. Invalid, mismatched, or stale records fail closed.
+     */
+    if (hasAal2) {
+      const now = Date.now();
+      const activity =
+        await session.get(
+          ADMIN_ACTIVITY_SESSION_KEY,
+        );
+      const activityStatus =
+        getAdminActivityStatus(
+          activity,
+          locals.user.id,
+          now,
+        );
+
+      if (activityStatus === "expired") {
+        const { error: signOutError } =
+          await supabase.auth.signOut({
+            scope: "local",
+          });
+
+        if (signOutError) {
+          console.error(
+            "Unable to end an expired admin session.",
+            {
+              userId: locals.user.id,
+              error: signOutError,
+            },
+          );
+
+          session.set(
+            ADMIN_ACTIVITY_SESSION_KEY,
+            {
+              userId: locals.user.id,
+              lastActivityAt: 0,
+            },
+          );
+
+          if (adminApi) {
+            return jsonError(
+              503,
+              "ADMIN_LOGOUT_UNAVAILABLE",
+              "The expired session could not be closed. Please try again.",
+            );
+          }
+
+          return textError(
+            503,
+            "The expired session could not be closed. Please try again.",
+          );
+        }
+
+        session.destroy();
+
+        const expiredLoginPath =
+          `${ADMIN_LOGIN_PATH}?error=session_expired`;
+
+        if (adminApi) {
+          return jsonError(
+            401,
+            "ADMIN_SESSION_EXPIRED",
+            "The admin session expired due to inactivity.",
+            expiredLoginPath,
+          );
+        }
+
+        return redirect(
+          expiredLoginPath,
+          303,
+        );
+      }
+
+      if (
+        activityStatus === "missing" ||
+        (
+          activityStatus === "active" &&
+          activity !== undefined &&
+          shouldRefreshAdminActivity(
+            activity.lastActivityAt,
+            now,
+          )
+        )
+      ) {
+        session.set(
+          ADMIN_ACTIVITY_SESSION_KEY,
+          {
+            userId: locals.user.id,
+            lastActivityAt: now,
+          },
+        );
+      }
+    }
 
     /*
      * Protected admin API endpoints require both an

@@ -161,6 +161,10 @@ const user = Astro.locals.user;
             <p class="mt-1 text-xs font-medium text-green-400">
               MFA verified
             </p>
+
+            <p class="mt-2 text-xs leading-5 text-slate-400">
+              Automatic sign-out after 2 hours of inactivity.
+            </p>
           </div>
 
           <form method="POST" action="/api/auth/admin/logout">
@@ -178,5 +182,9 @@ const user = Astro.locals.user;
         <slot />
       </main>
     </div>
+
+    <script>
+      import "../scripts/adminIdleTimeout";
+    </script>
   </body>
 </html>
