@@ -79,6 +79,21 @@ function formatCurrency(value: number): string {
   return `$${Number(value).toFixed(2)}`;
 }
 
+function formatPhoneNumber(value: string): string {
+  const original = String(value ?? "").trim();
+  const digits = original.replace(/\D/g, "");
+
+  if (digits.length === 10) {
+    return `(${digits.slice(0, 3)}) ${digits.slice(3, 6)}-${digits.slice(6)}`;
+  }
+
+  if (digits.length === 11 && digits.startsWith("1")) {
+    return `+1 (${digits.slice(1, 4)}) ${digits.slice(4, 7)}-${digits.slice(7)}`;
+  }
+
+  return original;
+}
+
 function truncateText(
   text: string,
   font: PDFFont,
@@ -189,7 +204,10 @@ export async function generateInvoicePdf(
 
   if (order.phone) {
     y -= 16;
-    drawText(order.phone, LEFT_MARGIN);
+    drawText(
+      `Phone / Cell: ${formatPhoneNumber(order.phone)}`,
+      LEFT_MARGIN,
+    );
   }
 
   if (order.shipping_address) {
