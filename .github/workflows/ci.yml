@@ -1,0 +1,53 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test-and-build:
+    name: Test and build
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      PUBLIC_SUPABASE_URL: https://ci-placeholder.supabase.co
+      PUBLIC_SUPABASE_ANON_KEY: ci-placeholder-anon-key
+      SUPABASE_SERVICE_ROLE_KEY: ci-placeholder-service-role-key
+      STRIPE_SECRET_KEY: sk_test_ci_placeholder
+      STRIPE_WEBHOOK_SECRET: whsec_ci_placeholder
+      PUBLIC_STRIPE_PUBLISHABLE_KEY: pk_test_ci_placeholder
+      RESEND_API_KEY: re_ci_placeholder
+      FROM_EMAIL: Layer Forge <noreply@example.com>
+      ORDER_FROM_EMAIL: Layer Forge <orders@example.com>
+      PUBLIC_SITE_URL: https://example.com
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v7
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: 22.12.0
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Check launch-critical formatting
+        run: npm run format:check
+
+      - name: Run tests
+        run: npm test
+
+      - name: Build Cloudflare Worker
+        run: npm run build
