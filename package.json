@@ -1,7 +1,8 @@
 {
-  "name": "layerforge-temp",
+  "name": "layerforge-website",
   "type": "module",
-  "version": "0.0.1",
+  "version": "1.1.0",
+  "private": true,
   "engines": {
     "node": ">=22.12.0"
   },
@@ -10,7 +11,10 @@
     "build": "astro build",
     "preview": "astro preview",
     "astro": "astro",
-    "generate-types": "wrangler types"
+    "generate-types": "wrangler types",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "format:check": "prettier --check --end-of-line auto src/lib/paidOrderNotifications.ts src/lib/paidOrderNotifications.test.ts vitest.config.ts"
   },
   "dependencies": {
     "@astrojs/cloudflare": "^14.1.3",
@@ -44,6 +48,7 @@
   },
   "devDependencies": {
     "eslint": "^10.6.0",
-    "prettier": "^3.9.4"
+    "prettier": "^3.9.4",
+    "vitest": "^4.1.10"
   }
 }
