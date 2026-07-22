@@ -200,46 +200,6 @@ export async function convertPaidQuoteToOrder(
     throw new Error(`Unable to convert quote: ${updateQuoteError.message}`);
   }
 
-  const { data: completedOrder, error: completedOrderError } =
-    await supabaseAdmin
-      .from("orders")
-      .select(
-        `
-      *,
-      order_items(*)
-    `,
-      )
-      .eq("id", order.id)
-      .single();
-
-  if (completedOrderError || !completedOrder) {
-    throw new Error(
-      completedOrderError?.message ?? "Unable to load completed order.",
-    );
-  }
-
-  try {
-    await sendPaymentConfirmation(completedOrder as CompletedOrder);
-  } catch (emailError) {
-    /*
-     * Payment and order creation remain successful even
-     * if PDF generation or email delivery fails.
-     */
-    console.error("Unable to send payment confirmation email.", {
-      orderId: order.id,
-      error: emailError,
-    });
-  }
-
-  try {
-    await sendAdminOrderNotification(completedOrder as CompletedOrder);
-  } catch (emailError) {
-    console.error("Unable to send admin order notification email.", {
-      orderId: order.id,
-      error: emailError,
-    });
-  }
-
   return String(order.id);
 }
 
