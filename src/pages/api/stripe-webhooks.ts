@@ -2,14 +2,10 @@ import type { APIRoute } from "astro";
 import Stripe from "stripe";
 
 import { stripe } from "../../lib/stripe";
-import {
-  markOrderNotificationSent,
-  markOrderPaid,
-} from "../../lib/orders";
+import { getOrder, markOrderPaid } from "../../lib/orders";
+import { sendPaidOrderNotifications } from "../../lib/paidOrderNotifications";
 import {
   convertPaidQuoteToOrder,
-  sendAdminOrderNotification,
-  sendPaymentConfirmation,
   type CompletedOrder,
 } from "../../lib/quoteToOrder";
 
@@ -98,6 +94,13 @@ export const POST: APIRoute = async ({ request }) => {
             session,
           );
 
+          const completedOrder = await getOrder(createdOrderId);
+
+          await sendPaidOrderNotifications(
+            completedOrder as CompletedOrder,
+            "Quote",
+          );
+
           console.log(`Quote ${quoteId} converted to order ${createdOrderId}`);
 
           break;
@@ -133,52 +136,7 @@ export const POST: APIRoute = async ({ request }) => {
 
         console.log(`Order ${orderId} marked paid`);
 
-        let notificationFailed = false;
-
-        if (!order.payment_confirmation_sent_at) {
-          try {
-            await sendPaymentConfirmation(order as CompletedOrder);
-            await markOrderNotificationSent(orderId, "customer");
-          } catch (emailError) {
-            /*
-             * Payment remains successful if invoice generation
-             * or email delivery fails.
-             */
-            console.error("Unable to send Shop payment confirmation email.", {
-              orderId,
-              ...getErrorDetails(emailError),
-            });
-
-            notificationFailed = true;
-          }
-        } else {
-          console.log(`Order ${orderId} customer confirmation already sent`);
-        }
-
-        if (!order.admin_notification_sent_at) {
-          try {
-            await sendAdminOrderNotification(order as CompletedOrder);
-            await markOrderNotificationSent(orderId, "admin");
-          } catch (emailError) {
-            console.error(
-              "Unable to send Shop admin order notification email.",
-              {
-                orderId,
-                ...getErrorDetails(emailError),
-              },
-            );
-
-            notificationFailed = true;
-          }
-        } else {
-          console.log(`Order ${orderId} admin notification already sent`);
-        }
-
-        if (notificationFailed) {
-          throw new Error(
-            `One or more notifications for order ${orderId} could not be sent.`,
-          );
-        }
+        await sendPaidOrderNotifications(order as CompletedOrder, "Shop");
 
         if (!newlyPaid) {
           console.log(`Order ${orderId} was already marked paid`);

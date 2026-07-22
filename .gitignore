@@ -36,11 +36,13 @@ node_modules/
 .env.production
 
 # Local database backups
-*.sql
 backups/
+*.backup
+*.dump
 
 # Supabase CLI local state
-supabase/
+supabase/.branches/
+supabase/.temp/
 
 # Cloudflare Wrangler local state
 .wrangler/
