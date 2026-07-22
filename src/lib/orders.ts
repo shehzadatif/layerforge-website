@@ -178,6 +178,26 @@ export async function markOrderPaid(
   };
 }
 
+export async function markOrderNotificationSent(
+  orderId: string,
+  notification: "customer" | "admin",
+) {
+  const column =
+    notification === "customer"
+      ? "payment_confirmation_sent_at"
+      : "admin_notification_sent_at";
+
+  const { error } = await supabaseAdmin
+    .from("orders")
+    .update({
+      [column]: new Date().toISOString(),
+    })
+    .eq("id", orderId)
+    .is(column, null);
+
+  if (error) throw error;
+}
+
 /**
  * Get all orders
  */

@@ -2,7 +2,10 @@ import type { APIRoute } from "astro";
 import Stripe from "stripe";
 
 import { stripe } from "../../lib/stripe";
-import { markOrderPaid } from "../../lib/orders";
+import {
+  markOrderNotificationSent,
+  markOrderPaid,
+} from "../../lib/orders";
 import {
   convertPaidQuoteToOrder,
   sendAdminOrderNotification,
@@ -11,6 +14,14 @@ import {
 } from "../../lib/quoteToOrder";
 
 export const prerender = false;
+
+function getErrorDetails(error: unknown) {
+  return {
+    name: error instanceof Error ? error.name : "UnknownError",
+    message: error instanceof Error ? error.message : String(error),
+    stack: error instanceof Error ? error.stack : undefined,
+  };
+}
 
 export const POST: APIRoute = async ({ request }) => {
   const signature = request.headers.get("stripe-signature");
@@ -122,9 +133,12 @@ export const POST: APIRoute = async ({ request }) => {
 
         console.log(`Order ${orderId} marked paid`);
 
-        if (newlyPaid) {
+        let notificationFailed = false;
+
+        if (!order.payment_confirmation_sent_at) {
           try {
             await sendPaymentConfirmation(order as CompletedOrder);
+            await markOrderNotificationSent(orderId, "customer");
           } catch (emailError) {
             /*
              * Payment remains successful if invoice generation
@@ -132,25 +146,42 @@ export const POST: APIRoute = async ({ request }) => {
              */
             console.error("Unable to send Shop payment confirmation email.", {
               orderId,
-              error: emailError,
+              ...getErrorDetails(emailError),
             });
-          }
 
+            notificationFailed = true;
+          }
+        } else {
+          console.log(`Order ${orderId} customer confirmation already sent`);
+        }
+
+        if (!order.admin_notification_sent_at) {
           try {
             await sendAdminOrderNotification(order as CompletedOrder);
+            await markOrderNotificationSent(orderId, "admin");
           } catch (emailError) {
             console.error(
               "Unable to send Shop admin order notification email.",
               {
                 orderId,
-                error: emailError,
+                ...getErrorDetails(emailError),
               },
             );
+
+            notificationFailed = true;
           }
         } else {
-          console.log(
-            `Order ${orderId} was already paid; confirmation email skipped`,
+          console.log(`Order ${orderId} admin notification already sent`);
+        }
+
+        if (notificationFailed) {
+          throw new Error(
+            `One or more notifications for order ${orderId} could not be sent.`,
           );
+        }
+
+        if (!newlyPaid) {
+          console.log(`Order ${orderId} was already marked paid`);
         }
 
         break;
@@ -167,7 +198,7 @@ export const POST: APIRoute = async ({ request }) => {
     console.error("Stripe webhook processing error.", {
       eventId: event.id,
       eventType: event.type,
-      error,
+      ...getErrorDetails(error),
     });
 
     return Response.json(

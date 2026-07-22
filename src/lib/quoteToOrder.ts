@@ -31,6 +31,8 @@ export interface CompletedOrder {
   total: number;
   tracking_token: string;
   delivery_method?: string;
+  payment_confirmation_sent_at?: string | null;
+  admin_notification_sent_at?: string | null;
   order_items?: Array<{
     product_name: string;
     variant_name?: string;
@@ -272,18 +274,40 @@ export async function sendPaymentConfirmation(
     throw new Error("Order customer email is missing.");
   }
 
-  console.log("Generating invoice PDF.", {
-    orderId: order.id,
-    recipient: customerEmail,
-  });
-
-  const invoicePdf = await generateInvoicePdf(order);
-
-  if (!invoicePdf.length) {
-    throw new Error("Invoice PDF generation returned an empty document.");
-  }
-
   const orderNumber = `LF${String(order.order_number).padStart(6, "0")}`;
+
+  let invoiceBase64 = "";
+  let invoiceBytes = 0;
+
+  try {
+    console.log("Generating invoice PDF.", {
+      orderId: order.id,
+      recipient: customerEmail,
+    });
+
+    const invoicePdf = await generateInvoicePdf(order);
+
+    if (!invoicePdf.length) {
+      throw new Error("Invoice PDF generation returned an empty document.");
+    }
+
+    invoiceBytes = invoicePdf.length;
+    invoiceBase64 = Buffer.from(invoicePdf).toString("base64");
+  } catch (invoiceError) {
+    /*
+     * A PDF problem must not suppress the customer's payment confirmation.
+     * The email is sent without an attachment and the failure remains visible
+     * in Worker logs for follow-up.
+     */
+    console.error("Unable to attach the order invoice PDF.", {
+      orderId: order.id,
+      name: invoiceError instanceof Error ? invoiceError.name : "UnknownError",
+      message:
+        invoiceError instanceof Error
+          ? invoiceError.message
+          : String(invoiceError),
+    });
+  }
 
   const trackingUrl = `${siteUrl}/t/${encodeURIComponent(
     order.tracking_token,
@@ -295,17 +319,12 @@ export async function sendPaymentConfirmation(
     productionDays,
   );
 
-  /*
-   * Resend accepts Base64 attachment content. This avoids
-   * passing a raw Node Buffer as the attachment payload.
-   */
-  const invoiceBase64 = Buffer.from(invoicePdf).toString("base64");
-
   console.log("Sending payment confirmation.", {
     orderId: order.id,
     orderNumber,
     recipient: customerEmail,
-    invoiceBytes: invoicePdf.length,
+    invoiceBytes,
+    invoiceAttached: Boolean(invoiceBase64),
   });
 
   const resend = new Resend(apiKey);
@@ -325,12 +344,16 @@ export async function sendPaymentConfirmation(
       order.delivery_method,
     ),
 
-    attachments: [
-      {
-        filename: `Layer-Forge-Invoice-${orderNumber}.pdf`,
-        content: invoiceBase64,
-      },
-    ],
+    ...(invoiceBase64
+      ? {
+          attachments: [
+            {
+              filename: `Layer-Forge-Invoice-${orderNumber}.pdf`,
+              content: invoiceBase64,
+            },
+          ],
+        }
+      : {}),
   });
 
   if (error) {
