@@ -5,7 +5,7 @@
     "global_fetch_strictly_public",
     "nodejs_compat"
   ],
-  "name": "layerforge-temp",
+  "name": "layerforge-website",
   "main": "@astrojs/cloudflare/entrypoints/server",
   "assets": {
     "directory": "./dist",
