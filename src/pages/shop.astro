@@ -203,11 +203,19 @@ function normalizedFilterValue(value: unknown): string {
                 {product.short_description}
               </p>
 
-              <div class="mt-6 flex items-center justify-between gap-4">
+              <div class="mt-6 flex items-end justify-between gap-3">
 
-                <span class="whitespace-nowrap text-2xl font-bold">
-                  {hasVariants ? "From " : ""}CAD ${startingPrice.toFixed(2)}
-                </span>
+                <div class="min-w-0">
+                  {hasVariants && (
+                    <span class="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500">
+                      From
+                    </span>
+                  )}
+
+                  <span class="block whitespace-nowrap text-2xl font-bold leading-none">
+                    CAD ${startingPrice.toFixed(2)}
+                  </span>
+                </div>
 
                 <span class="shrink-0 rounded-lg bg-yellow-400 px-4 py-2 font-semibold text-slate-900">
                   View/Buy
