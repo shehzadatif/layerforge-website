@@ -138,17 +138,15 @@ const materialList = materials ?? [];
 
         <div>
           <label class="mb-2 block font-semibold">
-            Product
+            Catalog Product <span class="font-normal text-slate-500">(optional)</span>
           </label>
 
           <select
             id="productSelect"
-            name="product_name"
-            required
             class="w-full rounded-lg border px-4 py-3"
           >
             <option value="">
-              Select a product
+              No catalog product
             </option>
 
            {
@@ -163,31 +161,49 @@ const materialList = materials ?? [];
 }
 
           </select>
+
+          <p class="mt-2 text-sm text-slate-500">
+            Selecting a product prefills its name and price. Custom quote items do not need a catalog product.
+          </p>
         </div>
 
-   <div>
-  <label class="mb-2 block font-semibold">
-    Material
-  </label>
+        <div>
+          <label for="projectNameInput" class="mb-2 block font-semibold">
+            Project or Item Name
+          </label>
 
-  <select
-    name="material"
-    required
-    class="w-full rounded-lg border px-4 py-3"
-  >
-    <option value="">
-      Select a material
-    </option>
+          <input
+            id="projectNameInput"
+            name="product_name"
+            type="text"
+            required
+            placeholder="Example: Customer-supplied aluminum control panel"
+            class="w-full rounded-lg border px-4 py-3"
+          />
+        </div>
 
-    {
-      materialList.map((material: any) => (
-        <option value={material.name}>
-          {material.name}
-        </option>
-      ))
-    }
-  </select>
-</div>
+        <div>
+          <label for="materialInput" class="mb-2 block font-semibold">
+            Material <span class="font-normal text-slate-500">(optional)</span>
+          </label>
+
+          <input
+            id="materialInput"
+            name="material"
+            type="text"
+            list="materialOptions"
+            placeholder="Select or enter any material"
+            class="w-full rounded-lg border px-4 py-3"
+          />
+
+          <datalist id="materialOptions">
+            {
+              materialList.map((material: any) => (
+                <option value={material.name} />
+              ))
+            }
+          </datalist>
+        </div>
 
         <div>
           <label class="mb-2 block font-semibold">
@@ -295,6 +311,9 @@ const materialList = materials ?? [];
     const quantityInput =
       document.getElementById("quantityInput");
 
+    const projectNameInput =
+      document.getElementById("projectNameInput");
+
     const unitPriceInput =
       document.getElementById("unitPriceInput");
 
@@ -326,6 +345,10 @@ const materialList = materials ?? [];
 
         const price =
           Number(selectedOption.dataset.price ?? 0);
+
+        if (projectNameInput && selectedOption.value) {
+          projectNameInput.value = selectedOption.value;
+        }
 
         if (unitPriceInput) {
           unitPriceInput.value =
