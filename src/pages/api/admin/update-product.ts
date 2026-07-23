@@ -22,7 +22,7 @@ async function syncProductVariants(
 ) {
   const { data: existingVariants, error: loadError } = await supabaseAdmin
     .from("product_variants")
-    .select("id, image_url")
+    .select("id, image_url, sku")
     .eq("product_id", productId);
 
   if (loadError) {
@@ -32,7 +32,10 @@ async function syncProductVariants(
   const existingById = new Map(
     (existingVariants ?? []).map((variant) => [
       String(variant.id),
-      variant.image_url as string | null,
+      {
+        imageUrl: variant.image_url as string | null,
+        sku: String(variant.sku ?? ""),
+      },
     ]),
   );
   const existingIds = new Set(existingById.keys());
@@ -64,7 +67,10 @@ async function syncProductVariants(
           .update(
             productVariantRow(
               productId,
-              variant,
+              {
+                ...variant,
+                sku: existingById.get(variant.id)?.sku ?? "",
+              },
               uploadedImagePath ?? undefined,
             ),
           )
@@ -76,7 +82,9 @@ async function syncProductVariants(
         }
 
         if (uploadedImagePath) {
-          await removeProductVariantImages([existingById.get(variant.id)]);
+          await removeProductVariantImages([
+            existingById.get(variant.id)?.imageUrl,
+          ]);
         }
       } else {
         const { error } = await supabaseAdmin
@@ -110,7 +118,7 @@ async function syncProductVariants(
     }
 
     await removeProductVariantImages(
-      removedIds.map((id) => existingById.get(id)),
+      removedIds.map((id) => existingById.get(id)?.imageUrl),
     );
   }
 }
@@ -132,8 +140,6 @@ export const POST: APIRoute = async ({ request }) => {
     ).trim();
 
     const description = String(formData.get("description") ?? "").trim();
-
-    const sku = String(formData.get("sku") ?? "").trim();
 
     const priceValue = formData.get("price");
     const price =
@@ -196,7 +202,6 @@ export const POST: APIRoute = async ({ request }) => {
         description,
         price,
         sale_price: salePrice,
-        sku: sku || null,
         featured,
         status,
       })

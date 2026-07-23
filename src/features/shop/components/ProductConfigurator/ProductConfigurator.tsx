@@ -31,6 +31,7 @@ type ProductVariant = {
 type Product = {
   id: string;
   name: string;
+  sku?: string | null;
   description: string;
   price: number;
   sale_price?: number | null;
@@ -69,6 +70,7 @@ export default function ProductConfigurator({ product, image }: Props) {
   const selectedVariant = variants.find(
     (variant) => variant.id === selectedVariantId,
   );
+  const activeSku = selectedVariant?.sku || product.sku;
 
   useEffect(() => {
     window.dispatchEvent(
@@ -144,6 +146,18 @@ export default function ProductConfigurator({ product, image }: Props) {
 
   return (
     <div className="space-y-8">
+      {activeSku ? (
+        <div className="flex flex-wrap items-center gap-2 text-sm text-slate-500">
+          <span className="font-semibold uppercase tracking-wide">SKU</span>
+          <span
+            className="rounded-md bg-slate-100 px-2.5 py-1 font-mono text-slate-700"
+            aria-live="polite"
+          >
+            {activeSku}
+          </span>
+        </div>
+      ) : null}
+
       {variants.length > 0 ? (
         <div>
           <h2 className="mb-4 text-xl font-semibold">Variant</h2>
