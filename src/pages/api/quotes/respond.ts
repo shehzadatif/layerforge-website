@@ -33,7 +33,7 @@ async function sendQuoteResponseNotification(
     import.meta.env.FROM_EMAIL?.trim();
   const adminEmail =
     import.meta.env.QUOTE_TO_EMAIL?.trim() ||
-    "quote@layerforgecanada.com";
+    "quotes@layerforgecanada.com";
   const siteUrl = import.meta.env.PUBLIC_SITE_URL?.trim().replace(/\/+$/, "");
 
   if (!apiKey || !fromEmail || !siteUrl) {
