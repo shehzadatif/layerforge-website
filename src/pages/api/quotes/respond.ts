@@ -44,7 +44,7 @@ async function sendQuoteResponseNotification(
 
   const quoteNumber = escapeHtml(quote.quote_number || "Quote");
   const customerName = escapeHtml(
-    quote.customer_name || quote.name || "Customer",
+    quote.name || "Customer",
   );
   const customerEmail = escapeHtml(quote.email || "Not provided");
   const projectName = escapeHtml(
@@ -113,7 +113,7 @@ export const POST: APIRoute = async ({ request }) => {
     const { data: quote, error: quoteError } = await supabaseAdmin
       .from("quotes")
       .select(
-        "id, status, order_id, quote_number, customer_name, name, email, project_name, service",
+        "id, status, order_id, quote_number, name, email, project_name, service",
       )
       .eq("id", quoteId)
       .eq("approval_token", approvalToken)
