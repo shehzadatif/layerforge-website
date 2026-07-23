@@ -60,12 +60,35 @@ const estimatedReadyDate = formatEstimatedReadyDate(
 
     </div>
 
-    <a
-      href="/admin/orders"
-      class="rounded-xl bg-slate-900 px-5 py-3 text-center font-semibold text-white hover:bg-slate-700"
-    >
-      ← Back to Orders
-    </a>
+    <div class="flex flex-col gap-3 sm:flex-row">
+      {
+        order.payment_status === "Paid" && (
+          <>
+            <a
+              href={`/api/admin/orders/${order.id}/invoice`}
+              target="_blank"
+              rel="noopener noreferrer"
+              class="rounded-xl border border-slate-300 bg-white px-5 py-3 text-center font-semibold text-slate-800 hover:bg-slate-100"
+            >
+              View Invoice
+            </a>
+            <a
+              href={`/api/admin/orders/${order.id}/invoice?download=1`}
+              class="rounded-xl bg-yellow-400 px-5 py-3 text-center font-semibold text-slate-950 hover:bg-yellow-300"
+            >
+              Download Invoice
+            </a>
+          </>
+        )
+      }
+
+      <a
+        href="/admin/orders"
+        class="rounded-xl bg-slate-900 px-5 py-3 text-center font-semibold text-white hover:bg-slate-700"
+      >
+        ← Back to Orders
+      </a>
+    </div>
 
   </div>
 
