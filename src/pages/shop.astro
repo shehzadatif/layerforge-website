@@ -51,17 +51,79 @@ function normalizedFilterValue(value: unknown): string {
       </h1>
 
       <p class="mt-4 text-lg text-slate-600">
-        Browse our 3D printed products.
+        Explore products made and customized by Layer Forge.
       </p>
 
     </div>
 
-    <section
-      class="mb-10 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm"
-      aria-label="Filter products"
-      data-shop-filters
+    <aside
+      class="mb-10 overflow-hidden rounded-2xl border border-yellow-200 bg-gradient-to-r from-yellow-50 via-white to-slate-50 shadow-sm"
+      aria-labelledby="product-design-notice-title"
     >
-      <div class="grid gap-4 md:grid-cols-3">
+      <div class="flex flex-col gap-4 p-6 sm:flex-row sm:items-center sm:p-7">
+        <div
+          class="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-yellow-400 text-slate-950 shadow-sm"
+          aria-hidden="true"
+        >
+          <svg
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.8"
+            class="h-6 w-6"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              d="M12 3.75 4.5 8.1v7.8l7.5 4.35 7.5-4.35V8.1L12 3.75Z"
+            />
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              d="m4.8 8.25 7.2 4.2 7.2-4.2M12 12.45v7.5"
+            />
+          </svg>
+        </div>
+
+        <div>
+          <h2
+            id="product-design-notice-title"
+            class="text-lg font-bold tracking-tight text-slate-950 sm:text-xl"
+          >
+            Thoughtfully made. Continuously improved.
+          </h2>
+          <p class="mt-1.5 max-w-5xl text-sm leading-6 text-slate-600 sm:text-base">
+            Product appearance and design details may vary slightly from the
+            images shown as we refine our products for better fit, strength,
+            functionality, and print quality. These improvements do not change
+            the product’s intended use or listed compatibility.
+          </p>
+        </div>
+      </div>
+    </aside>
+
+    <div class="grid gap-8 lg:grid-cols-[17rem_minmax(0,1fr)] lg:items-start">
+      <section
+        class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm lg:sticky lg:top-28"
+        aria-labelledby="shop-filter-title"
+        data-shop-filters
+      >
+        <div class="mb-5 flex items-center justify-between gap-3">
+          <h2
+            id="shop-filter-title"
+            class="text-xl font-bold tracking-tight text-slate-950"
+          >
+            Filter products
+          </h2>
+          <span
+            class="rounded-full bg-yellow-100 px-2.5 py-1 text-xs font-bold text-slate-700"
+            aria-hidden="true"
+          >
+            Refine
+          </span>
+        </div>
+
+        <div class="space-y-5">
         <label class="block">
           <span class="mb-2 block text-sm font-semibold text-slate-700">
             Search
@@ -103,9 +165,9 @@ function normalizedFilterValue(value: unknown): string {
             ))}
           </select>
         </label>
-      </div>
+        </div>
 
-      <div class="mt-4 flex flex-wrap items-center justify-between gap-3">
+        <div class="mt-6 flex flex-wrap items-center justify-between gap-3 border-t border-slate-200 pt-4">
         <p
           class="text-sm text-slate-500"
           aria-live="polite"
@@ -121,10 +183,11 @@ function normalizedFilterValue(value: unknown): string {
         >
           Clear filters
         </button>
-      </div>
-    </section>
+        </div>
+      </section>
 
-    <div class="grid gap-8 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+      <div class="min-w-0">
+        <div class="grid gap-8 sm:grid-cols-2 xl:grid-cols-3">
 
       {productList.map((product) => {
 
@@ -231,17 +294,19 @@ function normalizedFilterValue(value: unknown): string {
 
       })}
 
-    </div>
+        </div>
 
-    <div
-      class="mt-10 rounded-2xl border border-dashed border-slate-300 bg-white p-12 text-center"
-      hidden
-      data-no-products
-    >
-      <h2 class="text-2xl font-bold text-slate-900">No matching products</h2>
-      <p class="mt-3 text-slate-500">
-        Try another brand, category, or search term.
-      </p>
+        <div
+          class="rounded-2xl border border-dashed border-slate-300 bg-white p-12 text-center"
+          hidden
+          data-no-products
+        >
+          <h2 class="text-2xl font-bold text-slate-900">No matching products</h2>
+          <p class="mt-3 text-slate-500">
+            Try another brand, category, or search term.
+          </p>
+        </div>
+      </div>
     </div>
 
   </div>
