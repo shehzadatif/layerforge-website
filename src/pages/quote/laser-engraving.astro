@@ -83,7 +83,7 @@ import { getPacificDateInputValue } from "../../lib/dateUtils";
       </section>
 
       <section class="space-y-6 border-t border-slate-200 pt-8">
-        <h2 class="text-2xl font-bold text-slate-900">Item Details</h2>
+        <h2 class="text-2xl font-bold text-slate-900">Item or Material Details</h2>
 
         <div class="space-y-6">
           <div>
@@ -91,33 +91,19 @@ import { getPacificDateInputValue } from "../../lib/dateUtils";
               for="itemType"
               class="block text-sm font-semibold text-slate-700"
             >
-              Item Type *
+              What would you like engraved?
             </label>
 
-            <select
+            <input
               id="itemType"
               name="itemType"
-              required
+              type="text"
+              placeholder="Example: customer-supplied tumbler, aluminum plate, wood sign..."
               class="mt-2 block w-full rounded-xl border border-slate-300 bg-white p-3 shadow-sm focus:border-yellow-400 focus:outline-none focus:ring-2 focus:ring-yellow-400"
-            >
-              <option value="">Select Item</option>
-              <option>Tumbler</option>
-              <option>Flask</option>
-              <option>Mug</option>
-              <option>Water Bottle</option>
-              <option>Cutting Board</option>
-              <option>Coaster</option>
-              <option>Plaque</option>
-              <option>Keychain</option>
-              <option>Knife</option>
-              <option>Wallet</option>
-              <option>Notebook</option>
-              <option>Sign</option>
-              <option>Other</option>
-            </select>
+            />
 
             <p class="mt-2 text-sm text-slate-500">
-              Select the item you would like engraved.
+              Optional. Describe the item or raw material if you already know it.
             </p>
           </div>
 
@@ -133,31 +119,14 @@ import { getPacificDateInputValue } from "../../lib/dateUtils";
 
               <div>
                 <span class="font-semibold text-slate-900">
-                  I will provide the selected item.
+                  I will provide the item or material.
                 </span>
 
                 <p class="mt-1 text-sm text-slate-600">
-                  Check this box if you already own the selected item and will bring or ship it to Layer Forge for engraving.
+                  Check this box if you will bring or ship the item or material to Layer Forge for engraving.
                 </p>
               </div>
             </label>
-          </div>
-
-          <div>
-            <label
-              for="customItem"
-              class="block text-sm font-semibold text-slate-700"
-            >
-              If you selected "Other", please specify
-            </label>
-
-            <input
-              id="customItem"
-              name="customItem"
-              type="text"
-              placeholder="Example: Baseball Bat, Axe, Guitar, Trophy..."
-              class="mt-2 block w-full rounded-xl border border-slate-300 bg-white p-3 shadow-sm focus:border-yellow-400 focus:outline-none focus:ring-2 focus:ring-yellow-400"
-            />
           </div>
 
           <div class="grid gap-6 md:grid-cols-2">

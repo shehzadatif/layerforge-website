@@ -17,6 +17,7 @@ export interface CompletedOrder {
   id: string;
   order_number: number;
   customer_name: string;
+  payer_name?: string;
   email: string;
   phone?: string;
   shipping_address?: string;
@@ -117,11 +118,13 @@ export async function convertPaidQuoteToOrder(
   const { data: order, error: orderError } = await supabaseAdmin
     .from("orders")
     .insert({
-      customer_name: customerDetails?.name ?? quote.name ?? "",
+      customer_name: quote.name ?? customerDetails?.name ?? "",
 
-      email: customerDetails?.email ?? quote.email ?? "",
+      payer_name: customerDetails?.name ?? null,
 
-      phone: customerDetails?.phone ?? quote.phone ?? "",
+      email: quote.email ?? customerDetails?.email ?? "",
+
+      phone: quote.phone ?? customerDetails?.phone ?? "",
 
       shipping_address: address?.line1 ?? "",
 

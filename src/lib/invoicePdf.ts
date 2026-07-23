@@ -14,6 +14,7 @@ import {
 type InvoiceOrder = {
   order_number: number;
   customer_name: string;
+  payer_name?: string;
   email: string;
   phone?: string;
   shipping_address?: string;
@@ -209,6 +210,19 @@ export async function generateInvoicePdf(
       `Phone / Cell: ${formatPhoneNumber(order.phone)}`,
       LEFT_MARGIN,
     );
+  }
+
+  const payerName = String(order.payer_name ?? "").trim();
+  const customerName = String(order.customer_name ?? "").trim();
+
+  if (
+    payerName &&
+    payerName.localeCompare(customerName, undefined, {
+      sensitivity: "base",
+    }) !== 0
+  ) {
+    y -= 16;
+    drawText(`Paid By: ${payerName}`, LEFT_MARGIN);
   }
 
   if (order.shipping_address) {

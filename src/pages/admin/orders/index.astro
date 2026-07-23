@@ -34,7 +34,7 @@ const orders = await getOrders();
 <th class="px-6 py-4 text-left">Status</th>
 <th class="px-6 py-4 text-right">Total</th>
 <th class="px-6 py-4 text-left">Date</th>
-<th class="px-6 py-4"></th>
+<th class="px-6 py-4 text-right">Actions</th>
 
       </tr>
 
@@ -141,15 +141,30 @@ const orders = await getOrders();
     {formatPacificDate(order.created_at)}
   </td>
 
-  <!-- View -->
+  <!-- Actions -->
   <td class="px-6 py-5 text-right">
 
-    <a
-      href={`/admin/orders/${order.id}`}
-      class="rounded-lg bg-yellow-400 px-4 py-2 font-semibold transition hover:bg-yellow-300"
-    >
-      View
-    </a>
+    <div class="flex justify-end gap-2">
+      {
+        order.payment_status === "Paid" && (
+          <a
+            href={`/api/admin/orders/${order.id}/invoice`}
+            target="_blank"
+            rel="noopener noreferrer"
+            class="rounded-lg border border-slate-300 bg-white px-4 py-2 font-semibold text-slate-700 transition hover:bg-slate-100"
+          >
+            Invoice
+          </a>
+        )
+      }
+
+      <a
+        href={`/admin/orders/${order.id}`}
+        class="rounded-lg bg-yellow-400 px-4 py-2 font-semibold transition hover:bg-yellow-300"
+      >
+        View
+      </a>
+    </div>
 
   </td>
 
