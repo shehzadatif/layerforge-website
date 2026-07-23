@@ -192,19 +192,12 @@ const { data: materials } = await supabaseAdmin
 
     <ProductVariantsField />
 
-    <div>
-      <label
-        for="sku"
-        class="mb-2 block font-semibold"
-      >
-        SKU
-      </label>
-
-      <input
-        id="sku"
-        name="sku"
-        class="w-full rounded-lg border p-3"
-      />
+    <div class="rounded-xl border border-slate-200 bg-slate-50 p-5">
+      <h2 class="font-semibold text-slate-900">Product SKU</h2>
+      <p class="mt-2 text-sm leading-6 text-slate-500">
+        A unique Layer Forge SKU will be generated automatically when this
+        product is saved.
+      </p>
     </div>
 
     <hr class="my-8" />

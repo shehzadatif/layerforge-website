@@ -30,8 +30,6 @@ export const POST: APIRoute = async ({ request }) => {
       ? Number(formData.get("sale_price"))
       : null;
 
-    const sku = String(formData.get("sku") ?? "");
-
     const featured = formData.get("featured") === "on";
 
     const status = formData.get("active") === "on" ? "Active" : "Inactive";
@@ -85,7 +83,6 @@ export const POST: APIRoute = async ({ request }) => {
         description,
         price,
         sale_price,
-        sku,
         featured,
         status,
       })
