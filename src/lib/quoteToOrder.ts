@@ -17,6 +17,7 @@ export interface CompletedOrder {
   id: string;
   order_number: number;
   customer_name: string;
+  payer_name?: string;
   email: string;
   phone?: string;
   shipping_address?: string;
@@ -118,6 +119,8 @@ export async function convertPaidQuoteToOrder(
     .from("orders")
     .insert({
       customer_name: quote.name ?? customerDetails?.name ?? "",
+
+      payer_name: customerDetails?.name ?? null,
 
       email: quote.email ?? customerDetails?.email ?? "",
 
