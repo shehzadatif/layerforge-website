@@ -117,11 +117,11 @@ export async function convertPaidQuoteToOrder(
   const { data: order, error: orderError } = await supabaseAdmin
     .from("orders")
     .insert({
-      customer_name: customerDetails?.name ?? quote.name ?? "",
+      customer_name: quote.name ?? customerDetails?.name ?? "",
 
-      email: customerDetails?.email ?? quote.email ?? "",
+      email: quote.email ?? customerDetails?.email ?? "",
 
-      phone: customerDetails?.phone ?? quote.phone ?? "",
+      phone: quote.phone ?? customerDetails?.phone ?? "",
 
       shipping_address: address?.line1 ?? "",
 
