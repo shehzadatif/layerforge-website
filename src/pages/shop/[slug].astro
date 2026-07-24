@@ -4,6 +4,7 @@ import ProductDescription from "../../components/products/ProductDescription.ast
 import { supabaseAdmin } from "../../lib/supabaseAdmin";
 import ProductGallery from "../../features/shop/components/ProductGallery/ProductGallery";
 import ProductConfiguratorWithProvider from "../../features/shop/components/ProductConfigurator/ProductConfiguratorWithProvider";
+import ProductVariantSelector from "../../features/shop/components/ProductConfigurator/ProductVariantSelector";
 
 export const prerender = false;
 
@@ -122,11 +123,18 @@ const categoryPath = [parentCategory?.name, product.categories?.name]
 
       <!-- Product Gallery -->
 
-      <ProductGallery
-        client:load
-        images={galleryImageUrls}
-        productName={product.name}
-      />
+      <div class="space-y-6">
+        <ProductGallery
+          client:load
+          images={galleryImageUrls}
+          productName={product.name}
+        />
+
+        <ProductVariantSelector
+          client:load
+          product={storefrontProduct}
+        />
+      </div>
 
       <!-- Product Information -->
 
