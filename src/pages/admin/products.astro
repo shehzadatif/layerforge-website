@@ -2,13 +2,24 @@
 import AdminLayout from "../../layouts/AdminLayout.astro";
 import { supabaseAdmin } from "../../lib/supabaseAdmin";
 
-const { data: products, error } = await supabaseAdmin
-  .from("products")
-  .select(`
-    *,
-    categories(name)
-  `)
-  .order("created_at", { ascending: false });
+const [productsResult, categoriesResult] = await Promise.all([
+  supabaseAdmin
+    .from("products")
+    .select(`
+      *,
+      categories(name, parent_id)
+    `)
+    .order("created_at", { ascending: false }),
+  supabaseAdmin.from("categories").select("id, name"),
+]);
+
+const products = productsResult.data ?? [];
+const categoryNameById = new Map(
+  (categoriesResult.data ?? []).map((category) => [
+    category.id,
+    category.name,
+  ]),
+);
 ---
 
 <AdminLayout
@@ -87,7 +98,16 @@ const { data: products, error } = await supabaseAdmin
 
 <td class="px-6 py-4">
 
-{product.categories?.name ?? "-"}
+{
+  [
+    product.categories?.parent_id
+      ? categoryNameById.get(product.categories.parent_id)
+      : null,
+    product.categories?.name,
+  ]
+    .filter(Boolean)
+    .join(" → ") || "-"
+}
 
 </td>
 

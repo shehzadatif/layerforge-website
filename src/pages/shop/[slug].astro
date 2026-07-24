@@ -13,7 +13,7 @@ const { data: product } = await supabaseAdmin
   .from("products")
   .select(`
     *,
-    categories(name),
+    categories(id, name, parent_id),
     product_images(*),
     product_variants(*),
     product_materials(
@@ -72,6 +72,22 @@ const storefrontProduct = {
   ...product,
   product_variants: storefrontVariants,
 };
+
+let parentCategory: { id: string; name: string } | null = null;
+
+if (product.categories?.parent_id) {
+  const parentCategoryResult = await supabaseAdmin
+    .from("categories")
+    .select("id, name")
+    .eq("id", product.categories.parent_id)
+    .maybeSingle();
+
+  parentCategory = parentCategoryResult.data;
+}
+
+const categoryPath = [parentCategory?.name, product.categories?.name]
+  .filter(Boolean)
+  .join(" → ");
 ---
 
 <MainLayout title={product.name}>
@@ -95,7 +111,7 @@ const storefrontProduct = {
       <div>
 
         <p class="mb-2 text-sm uppercase text-slate-500">
-          {product.categories?.name}
+          {categoryPath}
         </p>
 
         <h1 class="mb-6 text-5xl font-bold">
