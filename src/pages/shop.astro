@@ -151,46 +151,6 @@ function normalizedFilterValue(value: unknown): string {
       </div>
     </aside>
 
-    <section
-      class="mb-6 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:px-5"
-      aria-labelledby="shop-search-title"
-    >
-      <label for="primary-product-search" class="block">
-        <span
-          id="shop-search-title"
-          class="mb-1 block text-lg font-bold tracking-tight text-slate-950"
-        >
-          Search the Shop
-        </span>
-        <span class="mb-3 block text-sm text-slate-500">
-          Search by product name, brand, category, or description.
-        </span>
-
-        <div class="relative">
-          <svg
-            aria-hidden="true"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="1.8"
-            class="pointer-events-none absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400"
-          >
-            <circle cx="11" cy="11" r="7"></circle>
-            <path stroke-linecap="round" d="m16.5 16.5 4 4"></path>
-          </svg>
-
-          <input
-            id="primary-product-search"
-            type="search"
-            placeholder="What are you looking for?"
-            autocomplete="off"
-            class="w-full rounded-xl border border-slate-300 bg-white py-3 pl-12 pr-4 text-base focus:border-yellow-400 focus:outline-none focus:ring-2 focus:ring-yellow-200"
-            data-product-search
-          />
-        </div>
-      </label>
-    </section>
-
     <div class="grid gap-8 lg:grid-cols-[17rem_minmax(0,1fr)] lg:items-start">
       <section
         class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm lg:sticky lg:top-28"
@@ -422,9 +382,9 @@ function normalizedFilterValue(value: unknown): string {
   const filterRoot = document.querySelector<HTMLElement>("[data-shop-filters]");
 
   if (filterRoot) {
-    const searchInputs = [
-      ...document.querySelectorAll<HTMLInputElement>("[data-product-search]"),
-    ];
+    const searchInput = filterRoot.querySelector<HTMLInputElement>(
+      "[data-product-search]",
+    );
     const brandSelect = filterRoot.querySelector<HTMLSelectElement>(
       "[data-brand-filter]",
     );
@@ -440,7 +400,7 @@ function normalizedFilterValue(value: unknown): string {
 
     const applyFilters = () => {
       const query =
-        searchInputs[0]?.value.trim().toLocaleLowerCase("en-CA") ?? "";
+        searchInput?.value.trim().toLocaleLowerCase("en-CA") ?? "";
       const brand = brandSelect?.value ?? "";
       const category = categorySelect?.value ?? "";
       let visibleCount = 0;
@@ -467,23 +427,11 @@ function normalizedFilterValue(value: unknown): string {
       }
     };
 
-    for (const searchInput of searchInputs) {
-      searchInput.addEventListener("input", () => {
-        for (const otherSearchInput of searchInputs) {
-          if (otherSearchInput !== searchInput) {
-            otherSearchInput.value = searchInput.value;
-          }
-        }
-
-        applyFilters();
-      });
-    }
+    searchInput?.addEventListener("input", applyFilters);
     brandSelect?.addEventListener("change", applyFilters);
     categorySelect?.addEventListener("change", applyFilters);
     clearButton?.addEventListener("click", () => {
-      for (const searchInput of searchInputs) {
-        searchInput.value = "";
-      }
+      if (searchInput) searchInput.value = "";
       if (brandSelect) brandSelect.value = "";
       if (categorySelect) categorySelect.value = "";
       applyFilters();
