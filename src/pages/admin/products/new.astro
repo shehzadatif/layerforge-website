@@ -357,9 +357,9 @@ const { data: materials } = await supabaseAdmin
       emptyImageState instanceof HTMLElement
     ) {
       let selectedImages = new DataTransfer();
-      let previewUrls: string[] = [];
+      let previewUrls = [];
 
-      const imageKey = (file: File) =>
+      const imageKey = (file) =>
         `${file.name}:${file.size}:${file.lastModified}`;
 
       const renderImages = () => {
