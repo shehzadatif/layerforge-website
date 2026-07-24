@@ -134,6 +134,13 @@ const categoryPath = [parentCategory?.name, product.categories?.name]
           client:load
           product={storefrontProduct}
         />
+
+        <ProductConfiguratorWithProvider
+          client:load
+          product={storefrontProduct}
+          image={cover}
+        />
+
       </div>
 
       <!-- Product Information -->
@@ -153,11 +160,7 @@ const categoryPath = [parentCategory?.name, product.categories?.name]
           productName={product.name}
         />
 
-        <ProductConfiguratorWithProvider
-          client:load
-          product={storefrontProduct}
-          image={cover}
-        />
+
 
       </div>
 
