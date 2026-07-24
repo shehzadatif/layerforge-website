@@ -73,6 +73,28 @@ export default function ProductConfigurator({ product, image }: Props) {
   const activeSku = selectedVariant?.sku || product.sku;
 
   useEffect(() => {
+    const handleVariantSelection = (event: Event) => {
+      const { variantId } = (
+        event as CustomEvent<{ variantId: string | null }>
+      ).detail;
+
+      setSelectedVariantId(variantId ?? "");
+    };
+
+    window.addEventListener(
+      "product-variant-selected",
+      handleVariantSelection,
+    );
+
+    return () => {
+      window.removeEventListener(
+        "product-variant-selected",
+        handleVariantSelection,
+      );
+    };
+  }, []);
+
+  useEffect(() => {
     window.dispatchEvent(
       new CustomEvent("product-variant-image-selected", {
         detail: {
@@ -155,66 +177,6 @@ export default function ProductConfigurator({ product, image }: Props) {
           >
             {activeSku}
           </span>
-        </div>
-      ) : null}
-
-      {variants.length > 0 ? (
-        <div>
-          <h2 className="mb-4 text-xl font-semibold">Variant</h2>
-
-          <div className="space-y-3">
-            <label
-              className={`flex cursor-pointer items-center justify-between gap-4 rounded-xl border p-4 transition hover:border-yellow-400 ${
-                !selectedVariantId
-                  ? "border-yellow-400 bg-yellow-50"
-                  : "border-slate-200"
-              }`}
-            >
-              <div className="flex items-center gap-3">
-                <input
-                  type="radio"
-                  name="product-variant"
-                  checked={!selectedVariantId}
-                  onChange={() => setSelectedVariantId("")}
-                />
-
-                <span className="font-medium">Base model</span>
-              </div>
-
-              <span className="whitespace-nowrap text-slate-600">
-                CAD $
-                {Number(product.sale_price) > 0
-                  ? Number(product.sale_price).toFixed(2)
-                  : Number(product.price).toFixed(2)}
-              </span>
-            </label>
-
-            {variants.map((variant) => (
-              <label
-                key={variant.id}
-                className={`flex cursor-pointer items-center justify-between gap-4 rounded-xl border p-4 transition hover:border-yellow-400 ${
-                  selectedVariantId === variant.id
-                    ? "border-yellow-400 bg-yellow-50"
-                    : "border-slate-200"
-                }`}
-              >
-                <div className="flex items-center gap-3">
-                  <input
-                    type="radio"
-                    name="product-variant"
-                    checked={selectedVariantId === variant.id}
-                    onChange={() => setSelectedVariantId(variant.id)}
-                  />
-
-                  <span className="font-medium">{variant.option_value}</span>
-                </div>
-
-                <span className="whitespace-nowrap text-slate-600">
-                  CAD ${Number(variant.price).toFixed(2)}
-                </span>
-              </label>
-            ))}
-          </div>
         </div>
       ) : null}
 
