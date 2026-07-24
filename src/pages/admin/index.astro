@@ -2,6 +2,8 @@
 import AdminLayout from "../../layouts/AdminLayout.astro";
 import { supabaseAdmin } from "../../lib/supabaseAdmin";
 import StatCard from "../../components/admin/StatCard.astro";
+import { getWebsiteTrafficAnalytics } from "../../lib/cloudflareAnalytics";
+import { formatPacificDateTime } from "../../lib/dateUtils";
 
 const { data: quotes } = await supabaseAdmin
   .from("quotes")
@@ -27,6 +29,15 @@ const { count: completedQuotes } = await supabaseAdmin
   .from("quotes")
   .select("*", { count: "exact", head: true })
   .eq("status", "Completed");
+
+const traffic = await getWebsiteTrafficAnalytics();
+const numberFormatter = new Intl.NumberFormat("en-CA");
+const maxTrendValue = Math.max(
+  1,
+  ...traffic.trend.map((day) =>
+    Math.max(day.visits, day.pageViews),
+  ),
+);
 ---
 
 <AdminLayout title="Dashboard">
@@ -63,6 +74,232 @@ const { count: completedQuotes } = await supabaseAdmin
     />
 
 </div>
+
+<!-- Website Traffic -->
+
+<section class="mb-10 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+  <div class="flex flex-col gap-3 border-b border-slate-200 p-6 sm:flex-row sm:items-end sm:justify-between">
+    <div>
+      <p class="text-sm font-semibold uppercase tracking-[0.18em] text-yellow-600">
+        Website Analytics
+      </p>
+      <h2 class="mt-1 text-2xl font-bold text-slate-900">
+        Website Traffic
+      </h2>
+      <p class="mt-2 max-w-3xl text-sm text-slate-600">
+        Privacy-conscious, aggregated traffic for {traffic.hostname}. Visits are
+        Cloudflare visits and do not expose or store raw visitor IP addresses.
+      </p>
+    </div>
+    {
+      traffic.available && (
+        <p class="shrink-0 text-xs text-slate-500">
+          Updated {formatPacificDateTime(traffic.generatedAt)}
+        </p>
+      )
+    }
+  </div>
+
+  {
+    !traffic.available ? (
+      <div class="m-6 rounded-xl border border-yellow-300 bg-yellow-50 p-5">
+        <h3 class="font-bold text-slate-900">
+          {traffic.configured
+            ? "Traffic data is temporarily unavailable"
+            : "Connect Cloudflare Analytics"}
+        </h3>
+        <p class="mt-2 text-sm text-slate-700">{traffic.message}</p>
+        {!traffic.configured && (
+          <p class="mt-3 text-sm text-slate-600">
+            Required server-only settings:{" "}
+            <code>CLOUDFLARE_ZONE_ID</code> and{" "}
+            <code>CLOUDFLARE_ANALYTICS_API_TOKEN</code>.
+          </p>
+        )}
+      </div>
+    ) : (
+      <div class="p-6">
+        <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+          <StatCard
+            title="Visits Today"
+            value={numberFormatter.format(traffic.totals.visitsToday)}
+            color="text-yellow-600"
+          />
+          <StatCard
+            title="Visits — Last 7 Days"
+            value={numberFormatter.format(traffic.totals.visits7Days)}
+            color="text-blue-600"
+          />
+          <StatCard
+            title="Visits — Last 30 Days"
+            value={numberFormatter.format(traffic.totals.visits30Days)}
+            color="text-green-600"
+          />
+          <StatCard
+            title="Page Views — Last 30 Days"
+            value={
+              traffic.totals.pageViews30Days === null
+                ? "Unavailable"
+                : numberFormatter.format(traffic.totals.pageViews30Days)
+            }
+          />
+        </div>
+
+        <div class="mt-6 rounded-2xl border border-slate-200 p-5">
+          <div class="flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <h3 class="text-lg font-bold text-slate-900">
+                Recent Traffic Trend
+              </h3>
+              <p class="text-sm text-slate-500">Last 30 days</p>
+            </div>
+            <div class="flex items-center gap-4 text-xs text-slate-600">
+              <span class="flex items-center gap-2">
+                <span class="h-2.5 w-2.5 rounded-full bg-yellow-400"></span>
+                Visits
+              </span>
+              {
+                traffic.totals.pageViews30Days !== null && (
+                  <span class="flex items-center gap-2">
+                    <span class="h-2.5 w-2.5 rounded-full bg-slate-800"></span>
+                    Page views
+                  </span>
+                )
+              }
+            </div>
+          </div>
+
+          <div
+            class="mt-5 flex h-56 items-end gap-1 border-b border-slate-200"
+            role="img"
+            aria-label="Bar chart of visits and page views during the last 30 days"
+          >
+            {
+              traffic.trend.map((day, index) => (
+                <div
+                  class="group relative flex h-full min-w-0 flex-1 items-end justify-center gap-px"
+                  title={`${day.label}: ${numberFormatter.format(day.visits)} visits, ${numberFormatter.format(day.pageViews)} page views`}
+                >
+                  <div
+                    class="w-1/2 min-w-[2px] rounded-t bg-yellow-400 transition-colors group-hover:bg-yellow-500"
+                    style={`height: ${Math.max(2, (day.visits / maxTrendValue) * 100)}%`}
+                  />
+                  {traffic.totals.pageViews30Days !== null && (
+                    <div
+                      class="w-1/2 min-w-[2px] rounded-t bg-slate-800 transition-colors group-hover:bg-slate-950"
+                      style={`height: ${Math.max(2, (day.pageViews / maxTrendValue) * 100)}%`}
+                    />
+                  )}
+                  {(index === 0 ||
+                    index === traffic.trend.length - 1 ||
+                    index % 7 === 0) && (
+                    <span class="absolute -bottom-6 whitespace-nowrap text-[10px] text-slate-500">
+                      {day.label}
+                    </span>
+                  )}
+                </div>
+              ))
+            }
+          </div>
+          <div class="h-6"></div>
+        </div>
+
+        <div class="mt-6 grid gap-6 xl:grid-cols-3">
+          <div class="overflow-hidden rounded-2xl border border-slate-200">
+            <div class="border-b border-slate-200 bg-slate-50 px-5 py-4">
+              <h3 class="font-bold text-slate-900">Most-Viewed Pages</h3>
+              <p class="text-xs text-slate-500">Last 30 days</p>
+            </div>
+            <div class="divide-y divide-slate-100">
+              {
+                traffic.topPages.length > 0 ? (
+                  traffic.topPages.map((page) => (
+                    <div class="flex items-center justify-between gap-4 px-5 py-3 text-sm">
+                      <span class="min-w-0 truncate font-medium text-slate-800" title={page.label}>
+                        {page.label}
+                      </span>
+                      <span class="shrink-0 text-slate-500">
+                        {numberFormatter.format(page.pageViews ?? 0)}
+                      </span>
+                    </div>
+                  ))
+                ) : (
+                  <p class="px-5 py-6 text-sm text-slate-500">
+                    No page-view data is available yet.
+                  </p>
+                )
+              }
+            </div>
+          </div>
+
+          <div class="overflow-hidden rounded-2xl border border-slate-200">
+            <div class="border-b border-slate-200 bg-slate-50 px-5 py-4">
+              <h3 class="font-bold text-slate-900">Referring Websites</h3>
+              <p class="text-xs text-slate-500">Last 30 days</p>
+            </div>
+            <div class="divide-y divide-slate-100">
+              {
+                traffic.referrers.length > 0 ? (
+                  traffic.referrers.map((referrer) => (
+                    <div class="flex items-center justify-between gap-4 px-5 py-3 text-sm">
+                      <span class="min-w-0 truncate font-medium text-slate-800" title={referrer.label}>
+                        {referrer.label}
+                      </span>
+                      <span class="shrink-0 text-slate-500">
+                        {numberFormatter.format(referrer.visits ?? 0)}
+                      </span>
+                    </div>
+                  ))
+                ) : (
+                  <p class="px-5 py-6 text-sm text-slate-500">
+                    No referrer data is available yet.
+                  </p>
+                )
+              }
+            </div>
+          </div>
+
+          <div class="overflow-hidden rounded-2xl border border-slate-200">
+            <div class="border-b border-slate-200 bg-slate-50 px-5 py-4">
+              <h3 class="font-bold text-slate-900">Visitor Countries</h3>
+              <p class="text-xs text-slate-500">Last 30 days</p>
+            </div>
+            <div class="divide-y divide-slate-100">
+              {
+                traffic.countries.length > 0 ? (
+                  traffic.countries.map((country) => (
+                    <div class="flex items-center justify-between gap-4 px-5 py-3 text-sm">
+                      <span class="min-w-0 truncate font-medium text-slate-800">
+                        {country.label}
+                      </span>
+                      <span class="shrink-0 text-slate-500">
+                        {numberFormatter.format(country.visits ?? 0)}
+                      </span>
+                    </div>
+                  ))
+                ) : (
+                  <p class="px-5 py-6 text-sm text-slate-500">
+                    No country data is available yet.
+                  </p>
+                )
+              }
+            </div>
+          </div>
+        </div>
+
+        {
+          traffic.warnings.length > 0 && (
+            <div class="mt-6 rounded-xl border border-yellow-200 bg-yellow-50 px-5 py-4">
+              {traffic.warnings.map((warning) => (
+                <p class="text-sm text-slate-700">{warning}</p>
+              ))}
+            </div>
+          )
+        }
+      </div>
+    )
+  }
+</section>
 
 <!-- Recent Quotes -->
 

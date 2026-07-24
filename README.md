@@ -52,6 +52,19 @@ build in GitHub Actions.
 2. Insert the user into `profiles` with `role = 'admin'`.
 3. Log in and complete TOTP MFA enrollment.
 
+## Admin website analytics
+
+The Admin Dashboard can display aggregated Cloudflare traffic for the production
+hostname. Create a Cloudflare API token with read-only Zone Analytics access,
+then configure these server-only values:
+
+- `CLOUDFLARE_ZONE_ID`
+- `CLOUDFLARE_ANALYTICS_API_TOKEN`
+- `CLOUDFLARE_ANALYTICS_HOSTNAME` (optional when `PUBLIC_SITE_URL` is set)
+
+The dashboard uses Cloudflare visits and successful HTML page views. It does
+not retrieve, display, or store raw visitor IP addresses.
+
 ## License
 
 Private.
