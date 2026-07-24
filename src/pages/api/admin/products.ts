@@ -14,6 +14,61 @@ import { supabaseAdmin } from "../../../lib/supabaseAdmin";
 
 export const prerender = false;
 
+const MAX_IMAGE_SIZE_BYTES = 10 * 1024 * 1024;
+
+const ALLOWED_IMAGE_TYPES = new Set([
+  "image/jpeg",
+  "image/png",
+  "image/webp",
+  "image/gif",
+]);
+
+class ProductImageValidationError extends Error {}
+
+function getProductImages(formData: FormData): File[] {
+  return formData
+    .getAll("images")
+    .filter((value): value is File => value instanceof File && value.size > 0)
+    .map((image, index) => {
+      if (!ALLOWED_IMAGE_TYPES.has(image.type)) {
+        throw new ProductImageValidationError(
+          `Product image ${index + 1} must be a JPG, PNG, WebP, or GIF file.`,
+        );
+      }
+
+      if (image.size > MAX_IMAGE_SIZE_BYTES) {
+        throw new ProductImageValidationError(
+          `Product image ${index + 1} must be 10 MB or smaller.`,
+        );
+      }
+
+      return image;
+    });
+}
+
+function getFileExtension(file: File): string {
+  const extension = file.name
+    .split(".")
+    .pop()
+    ?.toLowerCase()
+    .replace(/[^a-z0-9]/g, "");
+
+  if (extension) return extension;
+
+  switch (file.type) {
+    case "image/jpeg":
+      return "jpg";
+    case "image/png":
+      return "png";
+    case "image/webp":
+      return "webp";
+    case "image/gif":
+      return "gif";
+    default:
+      return "bin";
+  }
+}
+
 export const POST: APIRoute = async ({ request }) => {
   try {
     const formData = await request.formData();
@@ -38,6 +93,7 @@ export const POST: APIRoute = async ({ request }) => {
 
     const variants = parseProductVariants(formData);
     const variantImages = getVariantImageFiles(formData, variants.length);
+    const productImages = getProductImages(formData);
 
     if (!name || !category_id) {
       return new Response("Product name and category are required.", {
@@ -105,9 +161,9 @@ export const POST: APIRoute = async ({ request }) => {
       );
     }
 
-    if (variants.length > 0) {
-      const uploadedVariantImages: string[] = [];
+    const uploadedVariantImages: string[] = [];
 
+    if (variants.length > 0) {
       try {
         const variantRows = [];
 
@@ -169,6 +225,60 @@ export const POST: APIRoute = async ({ request }) => {
       }
     }
 
+    const uploadedProductImages: string[] = [];
+
+    try {
+      for (let index = 0; index < productImages.length; index += 1) {
+        const image = productImages[index];
+        const extension = getFileExtension(image);
+        const storagePath = `${product.id}/${crypto.randomUUID()}.${extension}`;
+
+        const { error: uploadError } = await supabaseAdmin.storage
+          .from("product-images")
+          .upload(storagePath, await image.arrayBuffer(), {
+            contentType: image.type,
+            upsert: false,
+          });
+
+        if (uploadError) {
+          throw new Error(uploadError.message);
+        }
+
+        const { error: imageRecordError } = await supabaseAdmin
+          .from("product_images")
+          .insert({
+            product_id: product.id,
+            image_url: storagePath,
+            sort_order: index + 1,
+          });
+
+        if (imageRecordError) {
+          await supabaseAdmin.storage
+            .from("product-images")
+            .remove([storagePath]);
+
+          throw new Error(imageRecordError.message);
+        }
+
+        uploadedProductImages.push(storagePath);
+      }
+    } catch (imageError) {
+      await removeProductVariantImages([
+        ...uploadedVariantImages,
+        ...uploadedProductImages,
+      ]);
+      await supabaseAdmin.from("products").delete().eq("id", product.id);
+
+      console.error("Unable to save product images.", {
+        productId: product.id,
+        error: imageError,
+      });
+
+      return new Response("Unable to save product images.", {
+        status: 500,
+      });
+    }
+
     return new Response(null, {
       status: 303,
       headers: {
@@ -178,7 +288,8 @@ export const POST: APIRoute = async ({ request }) => {
   } catch (error) {
     if (
       error instanceof ProductVariantValidationError ||
-      error instanceof ProductVariantImageError
+      error instanceof ProductVariantImageError ||
+      error instanceof ProductImageValidationError
     ) {
       return new Response(error.message, {
         status: 400,

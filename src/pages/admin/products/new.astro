@@ -28,17 +28,37 @@ const { data: materials } = await supabaseAdmin
 ---
 
 <AdminLayout title="Add Product" active="products">
-  <div class="mb-8">
-    <h1 class="text-4xl font-bold">
-      Add Product
-    </h1>
+  <div class="mb-8 flex flex-wrap items-start justify-between gap-4">
+    <div>
+      <h1 class="text-4xl font-bold">
+        Add Product
+      </h1>
 
-    <p class="mt-2 text-slate-500">
-      Create a new product.
-    </p>
+      <p class="mt-2 text-slate-500">
+        Create a new product.
+      </p>
+    </div>
+
+    <div class="flex flex-wrap items-center gap-3">
+      <button
+        type="submit"
+        form="new-product-form"
+        class="rounded-lg bg-yellow-400 px-5 py-3 font-bold text-slate-950 transition hover:bg-yellow-300"
+      >
+        Save Product
+      </button>
+
+      <a
+        href="/admin/products"
+        class="rounded-lg bg-slate-900 px-5 py-3 text-white hover:bg-slate-700"
+      >
+        ← Back
+      </a>
+    </div>
   </div>
 
   <form
+    id="new-product-form"
     action="/api/admin/products"
     method="POST"
     enctype="multipart/form-data"
