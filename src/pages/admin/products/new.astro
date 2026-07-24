@@ -42,8 +42,10 @@ const { data: materials } = await supabaseAdmin
     action="/api/admin/products"
     method="POST"
     enctype="multipart/form-data"
-    class="space-y-6 rounded-2xl bg-white p-8 shadow"
+    class="rounded-2xl bg-white p-8 shadow"
   >
+    <div class="grid gap-8 xl:grid-cols-[minmax(0,1fr)_22rem] xl:items-start">
+      <div class="space-y-6">
     <div>
       <label
         for="name"
@@ -254,33 +256,6 @@ const { data: materials } = await supabaseAdmin
       </div>
     </div>
 
-    <div>
-      <label
-        for="images"
-        class="mb-3 block text-lg font-semibold"
-      >
-        Product Images
-      </label>
-
-      <input
-        id="images"
-        type="file"
-        name="images"
-        multiple
-        accept="image/*"
-        class="block w-full rounded-lg border p-3"
-      />
-
-      <p class="mt-2 text-sm text-slate-500">
-        Select one or more images.
-      </p>
-
-      <div
-        id="imagePreview"
-        class="mt-6 grid grid-cols-2 gap-4 md:grid-cols-4"
-      ></div>
-    </div>
-
     <div class="flex flex-wrap items-center gap-6">
       <label class="flex items-center gap-2">
         <input
@@ -308,6 +283,39 @@ const { data: materials } = await supabaseAdmin
     >
       Save Product
     </button>
+      </div>
+
+      <aside class="rounded-2xl border border-slate-200 bg-slate-50 p-5 xl:sticky xl:top-6">
+        <div class="mb-5">
+          <h2 class="text-xl font-bold text-slate-900">Product Images</h2>
+          <p class="mt-2 text-sm leading-6 text-slate-500">
+            Upload one or more product images. Selected images will appear below
+            before you save the product.
+          </p>
+        </div>
+
+        <label
+          for="images"
+          class="mb-2 block font-semibold text-slate-900"
+        >
+          Choose images
+        </label>
+
+        <input
+          id="images"
+          type="file"
+          name="images"
+          multiple
+          accept="image/*"
+          class="block w-full rounded-lg border border-slate-300 bg-white p-3 text-sm"
+        />
+
+        <div
+          id="imagePreview"
+          class="mt-5 grid grid-cols-2 gap-3"
+        ></div>
+      </aside>
+    </div>
   </form>
 
   <script>
