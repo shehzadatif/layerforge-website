@@ -34,7 +34,7 @@ if (productError || !product) {
 const { data: categories, error: categoriesError } =
   await supabaseAdmin
     .from("categories")
-    .select("*")
+    .select("id, name, parent_id")
     .order("name");
 
 if (categoriesError) {
@@ -42,6 +42,18 @@ if (categoriesError) {
     productId: product.id,
     error: categoriesError,
   });
+}
+
+const categoryList = categories ?? [];
+const parentCategories = categoryList.filter((category) => !category.parent_id);
+const childrenByParent = new Map<string, typeof categoryList>();
+
+for (const category of categoryList) {
+  if (!category.parent_id) continue;
+
+  const children = childrenByParent.get(category.parent_id) ?? [];
+  children.push(category);
+  childrenByParent.set(category.parent_id, children);
 }
 
 const { data: materials, error: materialsError } =
@@ -103,12 +115,22 @@ const productVariants = [...(product.product_variants ?? [])].sort(
       </p>
     </div>
 
-    <a
-      href="/admin/products"
-      class="rounded-lg bg-slate-900 px-5 py-3 text-white hover:bg-slate-700"
-    >
-      ← Back
-    </a>
+    <div class="flex flex-wrap items-center gap-3">
+      <button
+        type="submit"
+        form="product-information-form"
+        class="rounded-lg bg-yellow-400 px-5 py-3 font-bold text-slate-950 transition hover:bg-yellow-300"
+      >
+        Save Changes
+      </button>
+
+      <a
+        href="/admin/products"
+        class="rounded-lg bg-slate-900 px-5 py-3 text-white hover:bg-slate-700"
+      >
+        ← Back
+      </a>
+    </div>
   </div>
 
   {
@@ -135,6 +157,7 @@ const productVariants = [...(product.product_variants ?? [])].sort(
       </h2>
 
       <form
+        id="product-information-form"
         action="/api/admin/update-product"
         method="POST"
         enctype="multipart/form-data"
@@ -200,14 +223,22 @@ const productVariants = [...(product.product_variants ?? [])].sort(
             class="w-full rounded-lg border p-3"
           >
             {
-              categories?.map((category) => (
+              parentCategories.flatMap((parent) => [
                 <option
-                  value={category.id}
-                  selected={category.id === product.category_id}
+                  value={parent.id}
+                  selected={parent.id === product.category_id}
                 >
-                  {category.name}
-                </option>
-              ))
+                  {parent.name}
+                </option>,
+                ...(childrenByParent.get(parent.id) ?? []).map((child) => (
+                  <option
+                    value={child.id}
+                    selected={child.id === product.category_id}
+                  >
+                    {parent.name} → {child.name}
+                  </option>
+                )),
+              ])
             }
           </select>
         </div>

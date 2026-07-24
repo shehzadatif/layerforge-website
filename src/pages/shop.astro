@@ -2,22 +2,32 @@
 import MainLayout from "../layouts/MainLayout.astro";
 import { supabaseAdmin } from "../lib/supabaseAdmin";
 
-const { data: products, error } = await supabaseAdmin
-  .from("products")
-  .select(`
-    *,
-    categories(name),
-    product_images(*),
-    product_variants(id, price, active, sort_order)
-  `)
-  .eq("status", "Active")
-  .order("created_at", { ascending: false });
+const [productsResult, categoriesResult] = await Promise.all([
+  supabaseAdmin
+    .from("products")
+    .select(`
+      *,
+      categories(id, name, parent_id),
+      product_images(*),
+      product_variants(id, price, active, sort_order)
+    `)
+    .eq("status", "Active")
+    .order("created_at", { ascending: false }),
+  supabaseAdmin.from("categories").select("id, name, parent_id"),
+]);
 
-if (error) {
-  console.error(error);
+if (productsResult.error) {
+  console.error(productsResult.error);
 }
 
-const productList = products ?? [];
+if (categoriesResult.error) {
+  console.error(categoriesResult.error);
+}
+
+const productList = productsResult.data ?? [];
+const categoryById = new Map(
+  (categoriesResult.data ?? []).map((category) => [category.id, category]),
+);
 const brands = [
   ...new Set(
     productList
@@ -25,13 +35,54 @@ const brands = [
       .filter(Boolean),
   ),
 ].sort((left, right) => left.localeCompare(right, "en-CA"));
-const categories = [
-  ...new Set(
-    productList
-      .map((product) => String(product.categories?.name ?? "").trim())
-      .filter(Boolean),
-  ),
-].sort((left, right) => left.localeCompare(right, "en-CA"));
+type CategoryOption = {
+  id: string;
+  name: string;
+  children: { id: string; name: string }[];
+};
+
+const categoryMap = new Map<string, CategoryOption>();
+
+for (const product of productList) {
+  const category = product.categories;
+  if (!category) continue;
+
+  const parent = category.parent_id
+    ? categoryById.get(category.parent_id)
+    : null;
+
+  if (parent) {
+    const parentOption = categoryMap.get(parent.id) ?? {
+      id: parent.id,
+      name: parent.name,
+      children: [],
+    };
+
+    if (!parentOption.children.some((child) => child.id === category.id)) {
+      parentOption.children.push({
+        id: category.id,
+        name: category.name,
+      });
+    }
+
+    categoryMap.set(parent.id, parentOption);
+  } else {
+    categoryMap.set(category.id, {
+      id: category.id,
+      name: category.name,
+      children: categoryMap.get(category.id)?.children ?? [],
+    });
+  }
+}
+
+const categories = [...categoryMap.values()]
+  .map((category) => ({
+    ...category,
+    children: category.children.sort((left, right) =>
+      left.name.localeCompare(right.name, "en-CA"),
+    ),
+  }))
+  .sort((left, right) => left.name.localeCompare(right.name, "en-CA"));
 
 function normalizedFilterValue(value: unknown): string {
   return String(value ?? "").trim().toLocaleLowerCase("en-CA");
@@ -160,9 +211,16 @@ function normalizedFilterValue(value: unknown): string {
             data-category-filter
           >
             <option value="">All categories</option>
-            {categories.map((category) => (
-              <option value={normalizedFilterValue(category)}>{category}</option>
-            ))}
+            {
+              categories.flatMap((category) => [
+                <option value={category.id}>{category.name}</option>,
+                ...category.children.map((child) => (
+                  <option value={child.id}>
+                    &nbsp;&nbsp;{category.name} → {child.name}
+                  </option>
+                )),
+              ])
+            }
           </select>
         </label>
         </div>
@@ -193,7 +251,14 @@ function normalizedFilterValue(value: unknown): string {
 
         const cover = (product.product_images ?? [])
           .sort((a, b) => a.sort_order - b.sort_order)[0];
-        const category = product.categories?.name ?? "General";
+        const category = product.categories;
+        const parentCategory = category?.parent_id
+          ? categoryById.get(category.parent_id)
+          : null;
+        const categoryName = category?.name ?? "General";
+        const categoryPath = parentCategory
+          ? `${parentCategory.name} · ${categoryName}`
+          : categoryName;
         const brand = String(product.brand ?? "").trim();
         const regularPrice = Number(product.price ?? 0);
         const salePrice = Number(product.sale_price ?? 0);
@@ -219,13 +284,15 @@ function normalizedFilterValue(value: unknown): string {
             class="flex h-full flex-col overflow-hidden rounded-2xl bg-white shadow transition hover:-translate-y-1 hover:shadow-xl"
             data-product-card
             data-brand={normalizedFilterValue(brand)}
-            data-category={normalizedFilterValue(category)}
+            data-category={category?.id ?? ""}
+            data-parent-category={parentCategory?.id ?? ""}
             data-search={normalizedFilterValue(
               [
                 product.name,
                 product.short_description,
                 brand,
-                category,
+                categoryName,
+                parentCategory?.name,
               ].join(" "),
             )}
           >
@@ -259,7 +326,7 @@ function normalizedFilterValue(value: unknown): string {
               </h2>
 
               <p class="mt-2 text-sm text-slate-500">
-                {[brand, category].filter(Boolean).join(" · ")}
+                {[brand, categoryPath].filter(Boolean).join(" · ")}
               </p>
 
               <p class="mt-4 line-clamp-2 flex-1 text-slate-600">
@@ -343,7 +410,9 @@ function normalizedFilterValue(value: unknown): string {
         const matches =
           (!query || (card.dataset.search ?? "").includes(query)) &&
           (!brand || card.dataset.brand === brand) &&
-          (!category || card.dataset.category === category);
+          (!category ||
+            card.dataset.category === category ||
+            card.dataset.parentCategory === category);
 
         card.hidden = !matches;
 

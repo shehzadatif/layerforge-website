@@ -5,8 +5,20 @@ import { supabaseAdmin } from "../../../lib/supabaseAdmin";
 
 const { data: categories } = await supabaseAdmin
   .from("categories")
-  .select("*")
+  .select("id, name, parent_id")
   .order("name");
+
+const categoryList = categories ?? [];
+const parentCategories = categoryList.filter((category) => !category.parent_id);
+const childrenByParent = new Map<string, typeof categoryList>();
+
+for (const category of categoryList) {
+  if (!category.parent_id) continue;
+
+  const children = childrenByParent.get(category.parent_id) ?? [];
+  children.push(category);
+  childrenByParent.set(category.parent_id, children);
+}
 
 const { data: materials } = await supabaseAdmin
   .from("materials")
@@ -84,11 +96,14 @@ const { data: materials } = await supabaseAdmin
         class="w-full rounded-lg border p-3"
       >
         {
-          categories?.map((category) => (
-            <option value={category.id}>
-              {category.name}
-            </option>
-          ))
+          parentCategories.flatMap((parent) => [
+            <option value={parent.id}>{parent.name}</option>,
+            ...(childrenByParent.get(parent.id) ?? []).map((child) => (
+              <option value={child.id}>
+                {parent.name} → {child.name}
+              </option>
+            )),
+          ])
         }
       </select>
     </div>
