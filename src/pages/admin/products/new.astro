@@ -42,10 +42,11 @@ const { data: materials } = await supabaseAdmin
     action="/api/admin/products"
     method="POST"
     enctype="multipart/form-data"
-    class="rounded-2xl bg-white p-8 shadow"
   >
-    <div class="grid gap-8 xl:grid-cols-[minmax(0,1fr)_22rem] xl:items-start">
-      <div class="space-y-6">
+    <div class="grid gap-8 lg:grid-cols-2 lg:items-start">
+      <section class="rounded-2xl bg-white p-8 shadow">
+        <h2 class="mb-6 text-2xl font-bold">Product Information</h2>
+        <div class="space-y-6">
     <div>
       <label
         for="name"
@@ -283,11 +284,12 @@ const { data: materials } = await supabaseAdmin
     >
       Save Product
     </button>
-      </div>
+        </div>
+      </section>
 
-      <aside class="rounded-2xl border border-slate-200 bg-slate-50 p-5 xl:sticky xl:top-6">
+      <section class="rounded-2xl bg-white p-8 shadow">
         <div class="mb-5">
-          <h2 class="text-xl font-bold text-slate-900">Product Images</h2>
+          <h2 class="text-2xl font-bold text-slate-900">Product Images</h2>
           <p class="mt-2 text-sm leading-6 text-slate-500">
             Upload one or more product images. Selected images will appear below
             before you save the product.
@@ -314,7 +316,7 @@ const { data: materials } = await supabaseAdmin
           id="imagePreview"
           class="mt-5 grid grid-cols-2 gap-3"
         ></div>
-      </aside>
+      </section>
     </div>
   </form>
 
