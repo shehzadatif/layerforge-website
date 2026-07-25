@@ -199,9 +199,9 @@ export default function CheckoutPage() {
           </div>
 
           <div className="mb-3 flex justify-between gap-4">
-            <span>Taxes</span>
+            <span>PST (7%)</span>
             <span className="text-right text-slate-500">
-              Calculated at secure checkout
+              Calculated at secure checkout for BC orders
             </span>
           </div>
 
@@ -234,14 +234,14 @@ export default function CheckoutPage() {
           ) : null}
 
           <div className="flex justify-between text-2xl font-bold">
-            <span>Total before tax</span>
+            <span>Total before PST</span>
             <span>CAD ${totalBeforeTax.toFixed(2)}</span>
           </div>
 
           <p className="mt-4 text-sm leading-6 text-slate-500">
             {form.deliveryMethod === "pickup"
-              ? `Pickup is free in ${PICKUP_AREA_SHORT}. We'll email the exact address and instructions when your order is ready. Applicable taxes are calculated securely in Stripe Checkout.`
-              : "Shipping is based on the province selected in your delivery address. Applicable taxes are calculated securely in Stripe Checkout using that same address."}
+              ? `Pickup is free in ${PICKUP_AREA_SHORT}. We'll email the exact address and instructions when your order is ready. BC PST (7%) is calculated securely in Stripe Checkout.`
+              : "Shipping is based on the province selected in your delivery address. BC PST (7%) is calculated securely in Stripe Checkout for orders taxable in British Columbia."}
           </p>
 
           <label className="mt-6 flex cursor-pointer items-start gap-3 rounded-xl border-2 border-yellow-400 bg-yellow-50 p-4 text-sm leading-6 text-slate-800">
