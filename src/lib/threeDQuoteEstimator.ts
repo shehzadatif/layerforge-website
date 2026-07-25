@@ -1,4 +1,4 @@
-export const THREE_D_QUOTE_ESTIMATE_VERSION = "stl-browser-v2";
+export const THREE_D_QUOTE_ESTIMATE_VERSION = "stl-browser-v3";
 
 export type ThreeDPrintMaterial = "PLA" | "PETG" | "ABS" | "TPU";
 export type ThreeDPrintQuality = "draft" | "standard" | "fine";
@@ -36,54 +36,60 @@ export interface ThreeDQuoteEstimate {
   estimatedTotalHigh: number;
 }
 
-interface MaterialProfile {
+export interface ThreeDMaterialProfile {
   densityGramsPerCm3: number;
   sellingPricePerGram: number;
   throughputGramsPerHour: number;
 }
 
-const MATERIAL_PROFILES: Record<ThreeDPrintMaterial, MaterialProfile> = {
-  PLA: {
-    densityGramsPerCm3: 1.24,
-    sellingPricePerGram: 0.13,
-    throughputGramsPerHour: 8.5,
+export interface ThreeDQuoteEstimatorConfig {
+  materials: Record<ThreeDPrintMaterial, ThreeDMaterialProfile>;
+  qualityTimeMultipliers: Record<ThreeDPrintQuality, number>;
+  setupFee: number;
+  machineRatePerHour: number;
+  minimumOrderPrice: number;
+  effectiveShellThicknessCm: number;
+  supportAndWasteFactor: number;
+  lowRangeFactor: number;
+  highRangeFactor: number;
+}
+
+export const DEFAULT_THREE_D_QUOTE_ESTIMATOR_CONFIG: ThreeDQuoteEstimatorConfig = {
+  materials: {
+    PLA: {
+      densityGramsPerCm3: 1.24,
+      sellingPricePerGram: 0.13,
+      throughputGramsPerHour: 8.5,
+    },
+    PETG: {
+      densityGramsPerCm3: 1.27,
+      sellingPricePerGram: 0.15,
+      throughputGramsPerHour: 7.5,
+    },
+    ABS: {
+      densityGramsPerCm3: 1.04,
+      sellingPricePerGram: 0.16,
+      throughputGramsPerHour: 7,
+    },
+    TPU: {
+      densityGramsPerCm3: 1.21,
+      sellingPricePerGram: 0.23,
+      throughputGramsPerHour: 4.5,
+    },
   },
-  PETG: {
-    densityGramsPerCm3: 1.27,
-    sellingPricePerGram: 0.15,
-    throughputGramsPerHour: 7.5,
+  qualityTimeMultipliers: {
+    draft: 0.82,
+    standard: 1,
+    fine: 1.55,
   },
-  ABS: {
-    densityGramsPerCm3: 1.04,
-    sellingPricePerGram: 0.16,
-    throughputGramsPerHour: 7,
-  },
-  TPU: {
-    densityGramsPerCm3: 1.21,
-    sellingPricePerGram: 0.23,
-    throughputGramsPerHour: 4.5,
-  },
+  setupFee: 8,
+  machineRatePerHour: 3.5,
+  minimumOrderPrice: 18,
+  effectiveShellThicknessCm: 0.08,
+  supportAndWasteFactor: 1.1,
+  lowRangeFactor: 0.92,
+  highRangeFactor: 1.12,
 };
-
-const QUALITY_TIME_MULTIPLIERS: Record<ThreeDPrintQuality, number> = {
-  draft: 0.82,
-  standard: 1,
-  fine: 1.55,
-};
-
-const SETUP_FEE = 8;
-const MACHINE_RATE_PER_HOUR = 3.5;
-const MINIMUM_ORDER_PRICE = 18;
-const EFFECTIVE_SHELL_THICKNESS_CM = 0.08;
-const SUPPORT_AND_WASTE_FACTOR = 1.1;
-
-/*
- * Browser geometry is less precise than a real slicer, but the original
- * -16%/+28% band was too wide to be useful. Keep modestly more headroom above
- * the midpoint for orientation and supports while presenting a tighter range.
- */
-const LOW_RANGE_FACTOR = 0.92;
-const HIGH_RANGE_FACTOR = 1.12;
 
 function round(value: number, digits: number): number {
   const factor = 10 ** digits;
@@ -93,37 +99,72 @@ function round(value: number, digits: number): number {
 function normalizeMaterial(value: string): ThreeDPrintMaterial | null {
   const normalized = value.trim().toUpperCase();
 
-  return normalized in MATERIAL_PROFILES
+  return ["PLA", "PETG", "ABS", "TPU"].includes(normalized)
     ? (normalized as ThreeDPrintMaterial)
     : null;
 }
 
+function isPositiveFinite(value: number): boolean {
+  return Number.isFinite(value) && value > 0;
+}
+
+function isNonNegativeFinite(value: number): boolean {
+  return Number.isFinite(value) && value >= 0;
+}
+
 function isValidMetrics(metrics: ThreeDModelMetrics): boolean {
   return (
-    Number.isFinite(metrics.volumeCm3) &&
-    metrics.volumeCm3 > 0 &&
-    Number.isFinite(metrics.surfaceAreaCm2) &&
-    metrics.surfaceAreaCm2 > 0 &&
-    Number.isFinite(metrics.dimensionsMm.x) &&
-    metrics.dimensionsMm.x > 0 &&
-    Number.isFinite(metrics.dimensionsMm.y) &&
-    metrics.dimensionsMm.y > 0 &&
-    Number.isFinite(metrics.dimensionsMm.z) &&
-    metrics.dimensionsMm.z > 0 &&
+    isPositiveFinite(metrics.volumeCm3) &&
+    isPositiveFinite(metrics.surfaceAreaCm2) &&
+    isPositiveFinite(metrics.dimensionsMm.x) &&
+    isPositiveFinite(metrics.dimensionsMm.y) &&
+    isPositiveFinite(metrics.dimensionsMm.z) &&
     Number.isInteger(metrics.triangleCount) &&
     metrics.triangleCount > 0
   );
 }
 
+function isValidConfig(
+  config: ThreeDQuoteEstimatorConfig,
+  material: ThreeDPrintMaterial,
+  quality: ThreeDPrintQuality,
+): boolean {
+  const profile = config.materials[material];
+  const qualityMultiplier = config.qualityTimeMultipliers[quality];
+
+  return (
+    Boolean(profile) &&
+    isPositiveFinite(profile.densityGramsPerCm3) &&
+    isNonNegativeFinite(profile.sellingPricePerGram) &&
+    isPositiveFinite(profile.throughputGramsPerHour) &&
+    isPositiveFinite(qualityMultiplier) &&
+    isNonNegativeFinite(config.setupFee) &&
+    isNonNegativeFinite(config.machineRatePerHour) &&
+    isNonNegativeFinite(config.minimumOrderPrice) &&
+    isPositiveFinite(config.effectiveShellThicknessCm) &&
+    config.effectiveShellThicknessCm <= 1 &&
+    isPositiveFinite(config.supportAndWasteFactor) &&
+    config.supportAndWasteFactor >= 1 &&
+    config.supportAndWasteFactor <= 3 &&
+    isPositiveFinite(config.lowRangeFactor) &&
+    config.lowRangeFactor <= 1 &&
+    isPositiveFinite(config.highRangeFactor) &&
+    config.highRangeFactor >= 1 &&
+    config.highRangeFactor <= 3
+  );
+}
+
 export function estimateThreeDPrintQuote(
   input: ThreeDQuoteEstimateInput,
+  config: ThreeDQuoteEstimatorConfig = DEFAULT_THREE_D_QUOTE_ESTIMATOR_CONFIG,
 ): ThreeDQuoteEstimate | null {
   const material = normalizeMaterial(input.material);
 
   if (
     !material ||
     !isValidMetrics(input.metrics) ||
-    !(input.quality in QUALITY_TIME_MULTIPLIERS) ||
+    !["draft", "standard", "fine"].includes(input.quality) ||
+    !isValidConfig(config, material, input.quality) ||
     !Number.isFinite(input.infillPercent) ||
     input.infillPercent < 5 ||
     input.infillPercent > 100 ||
@@ -134,18 +175,18 @@ export function estimateThreeDPrintQuote(
     return null;
   }
 
-  const profile = MATERIAL_PROFILES[material];
+  const profile = config.materials[material];
   const infillFraction = input.infillPercent / 100;
 
   /*
    * STL volume represents a fully solid part. Approximate the printed material
    * as an outer shell plus the selected infill percentage of the remaining
-   * interior. The final range intentionally leaves room for orientation,
-   * supports, wall count, top/bottom layers, and slicer-specific behaviour.
+   * interior. Admin calibration settings tune the geometry approximation and
+   * price model without requiring a code deployment.
    */
   const shellVolumeCm3 = Math.min(
     input.metrics.volumeCm3 * 0.72,
-    input.metrics.surfaceAreaCm2 * EFFECTIVE_SHELL_THICKNESS_CM,
+    input.metrics.surfaceAreaCm2 * config.effectiveShellThicknessCm,
   );
   const interiorVolumeCm3 = Math.max(
     0,
@@ -156,21 +197,24 @@ export function estimateThreeDPrintQuote(
   const materialGramsPerUnit =
     printedVolumeCm3 *
     profile.densityGramsPerCm3 *
-    SUPPORT_AND_WASTE_FACTOR;
+    config.supportAndWasteFactor;
   const printHoursPerUnit = Math.max(
     0.5,
     (materialGramsPerUnit / profile.throughputGramsPerHour) *
-      QUALITY_TIME_MULTIPLIERS[input.quality],
+      config.qualityTimeMultipliers[input.quality],
   );
   const variableUnitPrice =
     materialGramsPerUnit * profile.sellingPricePerGram +
-    printHoursPerUnit * MACHINE_RATE_PER_HOUR;
+    printHoursPerUnit * config.machineRatePerHour;
   const midpoint = Math.max(
-    MINIMUM_ORDER_PRICE,
-    SETUP_FEE + variableUnitPrice * input.quantity,
+    config.minimumOrderPrice,
+    config.setupFee + variableUnitPrice * input.quantity,
   );
-  const low = Math.max(MINIMUM_ORDER_PRICE, midpoint * LOW_RANGE_FACTOR);
-  const high = Math.max(low, midpoint * HIGH_RANGE_FACTOR);
+  const low = Math.max(
+    config.minimumOrderPrice,
+    midpoint * config.lowRangeFactor,
+  );
+  const high = Math.max(low, midpoint * config.highRangeFactor);
 
   return {
     version: THREE_D_QUOTE_ESTIMATE_VERSION,
@@ -180,7 +224,10 @@ export function estimateThreeDPrintQuote(
     quantity: input.quantity,
     estimatedMaterialGramsPerUnit: round(materialGramsPerUnit, 1),
     estimatedPrintHoursPerUnit: round(printHoursPerUnit, 1),
-    estimatedUnitPrice: round((midpoint - SETUP_FEE) / input.quantity, 2),
+    estimatedUnitPrice: round(
+      Math.max(0, midpoint - config.setupFee) / input.quantity,
+      2,
+    ),
     estimatedTotalMidpoint: round(midpoint, 2),
     estimatedTotalLow: round(low, 2),
     estimatedTotalHigh: round(high, 2),
