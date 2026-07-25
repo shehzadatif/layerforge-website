@@ -18,7 +18,7 @@ const metrics: ThreeDModelMetrics = {
 };
 
 describe("estimateThreeDPrintQuote", () => {
-  it("returns a conservative range for a supported material", () => {
+  it("returns a focused preliminary range for a supported material", () => {
     const estimate = estimateThreeDPrintQuote({
       metrics,
       material: "PLA",
@@ -35,6 +35,18 @@ describe("estimateThreeDPrintQuote", () => {
       estimate?.estimatedTotalHigh ?? 0,
     );
     expect(estimate?.estimatedTotalMidpoint).toBeGreaterThanOrEqual(18);
+
+    const midpoint = estimate?.estimatedTotalMidpoint ?? 0;
+    const rangeWidth =
+      (estimate?.estimatedTotalHigh ?? 0) -
+      (estimate?.estimatedTotalLow ?? 0);
+
+    expect(estimate?.estimatedTotalLow).toBeCloseTo(
+      Math.max(18, midpoint * 0.92),
+      1,
+    );
+    expect(estimate?.estimatedTotalHigh).toBeCloseTo(midpoint * 1.12, 1);
+    expect(rangeWidth).toBeLessThanOrEqual(midpoint * 0.21);
   });
 
   it("increases the estimate for finer quality", () => {
