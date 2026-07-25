@@ -32,6 +32,8 @@ const { count: completedQuotes } = await supabaseAdmin
 
 const traffic = await getWebsiteTrafficAnalytics();
 const numberFormatter = new Intl.NumberFormat("en-CA");
+const trafficPeriodLabel =
+  traffic.periodDays === 1 ? "Last Day" : `Last ${traffic.periodDays} Days`;
 const maxTrendValue = Math.max(
   1,
   ...traffic.trend.map((day) =>
@@ -125,18 +127,20 @@ const maxTrendValue = Math.max(
             value={numberFormatter.format(traffic.totals.visitsToday)}
             color="text-yellow-600"
           />
+          {traffic.periodDays > 7 && (
+            <StatCard
+              title="Visits — Last 7 Days"
+              value={numberFormatter.format(traffic.totals.visits7Days)}
+              color="text-blue-600"
+            />
+          )}
           <StatCard
-            title="Visits — Last 7 Days"
-            value={numberFormatter.format(traffic.totals.visits7Days)}
-            color="text-blue-600"
-          />
-          <StatCard
-            title="Visits — Last 30 Days"
+            title={`Visits — ${trafficPeriodLabel}`}
             value={numberFormatter.format(traffic.totals.visits30Days)}
             color="text-green-600"
           />
           <StatCard
-            title="Page Views — Last 30 Days"
+            title={`Page Views — ${trafficPeriodLabel}`}
             value={
               traffic.totals.pageViews30Days === null
                 ? "Unavailable"
@@ -151,7 +155,7 @@ const maxTrendValue = Math.max(
               <h3 class="text-lg font-bold text-slate-900">
                 Recent Traffic Trend
               </h3>
-              <p class="text-sm text-slate-500">Last 30 days</p>
+              <p class="text-sm text-slate-500">{trafficPeriodLabel}</p>
             </div>
             <div class="flex items-center gap-4 text-xs text-slate-600">
               <span class="flex items-center gap-2">
@@ -172,7 +176,7 @@ const maxTrendValue = Math.max(
           <div
             class="mt-5 flex h-56 items-end gap-1 border-b border-slate-200"
             role="img"
-            aria-label="Bar chart of visits and page views during the last 30 days"
+            aria-label={`Bar chart of visits and page views during the ${trafficPeriodLabel.toLowerCase()}`}
           >
             {
               traffic.trend.map((day, index) => (
@@ -208,7 +212,7 @@ const maxTrendValue = Math.max(
           <div class="overflow-hidden rounded-2xl border border-slate-200">
             <div class="border-b border-slate-200 bg-slate-50 px-5 py-4">
               <h3 class="font-bold text-slate-900">Most-Viewed Pages</h3>
-              <p class="text-xs text-slate-500">Last 30 days</p>
+              <p class="text-xs text-slate-500">{trafficPeriodLabel}</p>
             </div>
             <div class="divide-y divide-slate-100">
               {
@@ -235,7 +239,7 @@ const maxTrendValue = Math.max(
           <div class="overflow-hidden rounded-2xl border border-slate-200">
             <div class="border-b border-slate-200 bg-slate-50 px-5 py-4">
               <h3 class="font-bold text-slate-900">Referring Websites</h3>
-              <p class="text-xs text-slate-500">Last 30 days</p>
+              <p class="text-xs text-slate-500">{trafficPeriodLabel}</p>
             </div>
             <div class="divide-y divide-slate-100">
               {
@@ -262,7 +266,7 @@ const maxTrendValue = Math.max(
           <div class="overflow-hidden rounded-2xl border border-slate-200">
             <div class="border-b border-slate-200 bg-slate-50 px-5 py-4">
               <h3 class="font-bold text-slate-900">Visitor Countries</h3>
-              <p class="text-xs text-slate-500">Last 30 days</p>
+              <p class="text-xs text-slate-500">{trafficPeriodLabel}</p>
             </div>
             <div class="divide-y divide-slate-100">
               {
