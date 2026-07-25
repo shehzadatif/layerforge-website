@@ -1,4 +1,4 @@
-export const THREE_D_QUOTE_ESTIMATE_VERSION = "stl-browser-v1";
+export const THREE_D_QUOTE_ESTIMATE_VERSION = "stl-browser-v2";
 
 export type ThreeDPrintMaterial = "PLA" | "PETG" | "ABS" | "TPU";
 export type ThreeDPrintQuality = "draft" | "standard" | "fine";
@@ -76,8 +76,14 @@ const MACHINE_RATE_PER_HOUR = 3.5;
 const MINIMUM_ORDER_PRICE = 18;
 const EFFECTIVE_SHELL_THICKNESS_CM = 0.08;
 const SUPPORT_AND_WASTE_FACTOR = 1.1;
-const LOW_RANGE_FACTOR = 0.84;
-const HIGH_RANGE_FACTOR = 1.28;
+
+/*
+ * Browser geometry is less precise than a real slicer, but the original
+ * -16%/+28% band was too wide to be useful. Keep modestly more headroom above
+ * the midpoint for orientation and supports while presenting a tighter range.
+ */
+const LOW_RANGE_FACTOR = 0.92;
+const HIGH_RANGE_FACTOR = 1.12;
 
 function round(value: number, digits: number): number {
   const factor = 10 ** digits;
