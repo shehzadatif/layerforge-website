@@ -2,9 +2,11 @@ import type { APIRoute } from "astro";
 import { Resend } from "resend";
 
 import { isPickupDeliveryMethod } from "../../../lib/deliveryMethod";
-import { pickupReadyHtml } from "../../../lib/emailTemplates/pickupReady";
 import { orderCompletedHtml } from "../../../lib/emailTemplates/orderCompleted";
+import { orderInProgressHtml } from "../../../lib/emailTemplates/orderInProgress";
+import { pickupReadyHtml } from "../../../lib/emailTemplates/pickupReady";
 import { ORDER_STATUS } from "../../../lib/orderStatus";
+import { getOrderStatusEmailKind } from "../../../lib/orderStatusEmail";
 import { supabaseAdmin } from "../../../lib/supabaseAdmin";
 
 export const prerender = false;
@@ -59,15 +61,17 @@ export const POST: APIRoute = async ({ request }) => {
     const orderNumber = `LF${String(order.order_number).padStart(6, "0")}`;
     const deliveryMethod = String(order.delivery_method ?? "").trim();
     const isPickupOrder = isPickupDeliveryMethod(deliveryMethod);
-    const shouldSendPickupReadyEmail =
-      status === ORDER_STATUS.READY && isPickupOrder;
+    const statusEmailKind = getOrderStatusEmailKind({
+      previousStatus,
+      requestedStatus: status,
+      isPickupOrder,
+    });
+    const shouldSendInProgressEmail = statusEmailKind === "in_progress";
+    const shouldSendPickupReadyEmail = statusEmailKind === "pickup_ready";
     const shouldResendPickupReadyEmail =
       shouldSendPickupReadyEmail && previousStatus === ORDER_STATUS.READY;
-    const shouldSendCompletionEmail =
-      status === ORDER_STATUS.COMPLETED &&
-      previousStatus !== ORDER_STATUS.COMPLETED;
-    const shouldSendStatusEmail =
-      shouldSendPickupReadyEmail || shouldSendCompletionEmail;
+    const shouldSendCompletionEmail = statusEmailKind === "completed";
+    const shouldSendStatusEmail = statusEmailKind !== null;
 
     logStatusEvent("log", "Order status update requested", {
       orderId,
@@ -76,6 +80,8 @@ export const POST: APIRoute = async ({ request }) => {
       requestedStatus: status,
       deliveryMethod,
       isPickupOrder,
+      statusEmailKind,
+      shouldSendInProgressEmail,
       shouldSendPickupReadyEmail,
       shouldResendPickupReadyEmail,
       shouldSendCompletionEmail,
@@ -175,23 +181,35 @@ export const POST: APIRoute = async ({ request }) => {
 
     if (shouldSendStatusEmail && emailDetails) {
       const resend = new Resend(emailDetails.apiKey);
-      const subject = shouldSendPickupReadyEmail
-        ? `Your order ${orderNumber} is ready for pickup`
-        : `Your order ${orderNumber} is complete`;
+      let subject: string;
+      let html: string;
 
-      const html = shouldSendPickupReadyEmail
-        ? pickupReadyHtml(
-            order.customer_name || "Customer",
-            orderNumber,
-            emailDetails.pickupAddress,
-            emailDetails.pickupPhone,
-            emailDetails.trackingUrl,
-          )
-        : orderCompletedHtml(
-            order.customer_name || "Customer",
-            orderNumber,
-            emailDetails.trackingUrl,
-          );
+      if (statusEmailKind === "in_progress") {
+        subject = `Your order ${orderNumber} is now in production`;
+        html = orderInProgressHtml(
+          order.customer_name || "Customer",
+          orderNumber,
+          emailDetails.trackingUrl,
+        );
+      } else if (statusEmailKind === "pickup_ready") {
+        subject = `Your order ${orderNumber} is ready for pickup`;
+        html = pickupReadyHtml(
+          order.customer_name || "Customer",
+          orderNumber,
+          emailDetails.pickupAddress,
+          emailDetails.pickupPhone,
+          emailDetails.trackingUrl,
+        );
+      } else if (statusEmailKind === "completed") {
+        subject = `Your order ${orderNumber} is complete`;
+        html = orderCompletedHtml(
+          order.customer_name || "Customer",
+          orderNumber,
+          emailDetails.trackingUrl,
+        );
+      } else {
+        throw new Error("Unable to determine the order status email type.");
+      }
 
       const { data: emailData, error: emailError } = await resend.emails.send({
         from: emailDetails.fromEmail,
@@ -213,6 +231,7 @@ export const POST: APIRoute = async ({ request }) => {
         orderNumber,
         requestedStatus: status,
         deliveryMethod,
+        statusEmailKind,
         pickupEmailResent: shouldResendPickupReadyEmail,
         resendEmailId,
       });
@@ -221,6 +240,7 @@ export const POST: APIRoute = async ({ request }) => {
     return Response.json({
       success: true,
       statusChanged: status !== previousStatus,
+      inProgressEmailSent: shouldSendInProgressEmail,
       pickupEmailSent: shouldSendPickupReadyEmail,
       pickupEmailResent: shouldResendPickupReadyEmail,
       completionEmailSent: shouldSendCompletionEmail,
