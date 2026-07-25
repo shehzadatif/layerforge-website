@@ -1,12 +1,12 @@
 import {
-  DEFAULT_THREE_D_QUOTE_PRICING,
-  grossMarginMultiplier,
-  normalizeThreeDQuotePricingConfig,
-  type ThreeDQuoteMaterial,
-  type ThreeDQuotePricingConfig,
-} from "./threeDQuotePricing";
+  DEFAULT_THREE_D_QUOTE_PUBLIC_PRICING,
+  normalizeThreeDQuotePublicPricingConfig,
+  type ThreeDQuotePublicPricingConfig,
+} from "./threeDQuotePublicPricing";
+import type { ThreeDQuoteMaterial } from "./threeDQuotePricing";
 
-export const THREE_D_QUOTE_ESTIMATE_VERSION = "stl-browser-v4-admin-margin";
+export const THREE_D_QUOTE_ESTIMATE_VERSION =
+  "stl-browser-v5-admin-private-margin";
 
 export type ThreeDPrintMaterial = ThreeDQuoteMaterial;
 export type ThreeDPrintQuality = "draft" | "standard" | "fine";
@@ -28,7 +28,7 @@ export interface ThreeDQuoteEstimateInput {
   quality: ThreeDPrintQuality;
   infillPercent: number;
   quantity: number;
-  pricing?: ThreeDQuotePricingConfig;
+  pricing?: ThreeDQuotePublicPricingConfig;
 }
 
 export interface ThreeDQuoteEstimate {
@@ -65,12 +65,13 @@ const QUALITY_TIME_MULTIPLIERS: Record<ThreeDPrintQuality, number> = {
 
 const EFFECTIVE_SHELL_THICKNESS_CM = 0.08;
 
-let activePricingConfig = DEFAULT_THREE_D_QUOTE_PRICING;
+let activePricingConfig = DEFAULT_THREE_D_QUOTE_PUBLIC_PRICING;
 
 /*
- * Load the public, read-only pricing configuration before this browser module
- * finishes initializing. Admin changes therefore affect new estimates without
- * requiring another code deployment. Server-side imports keep the defaults.
+ * Load a derived customer-rate configuration before this browser module
+ * finishes initializing. The endpoint never exposes Layer Forge's direct
+ * costs or target margin; it publishes only the rates needed to calculate the
+ * customer-facing estimate. Server-side imports retain safe defaults.
  */
 if (typeof window !== "undefined") {
   try {
@@ -80,7 +81,7 @@ if (typeof window !== "undefined") {
     });
 
     if (response.ok) {
-      activePricingConfig = normalizeThreeDQuotePricingConfig(
+      activePricingConfig = normalizeThreeDQuotePublicPricingConfig(
         await response.json(),
       );
     } else {
@@ -127,7 +128,7 @@ export function estimateThreeDPrintQuote(
 ): ThreeDQuoteEstimate | null {
   const material = normalizeMaterial(input.material);
   const pricing = input.pricing
-    ? normalizeThreeDQuotePricingConfig(input.pricing)
+    ? normalizeThreeDQuotePublicPricingConfig(input.pricing)
     : activePricingConfig;
 
   if (
@@ -165,16 +166,15 @@ export function estimateThreeDPrintQuote(
     (materialGramsPerUnit / pricingProfile.throughputGramsPerHour) *
       QUALITY_TIME_MULTIPLIERS[input.quality],
   );
-  const directMaterialCostPerUnit =
-    materialGramsPerUnit * pricingProfile.costPerGram;
-  const directMachineCostPerUnit =
-    printHoursPerUnit * pricing.machineCostPerHour;
-  const directOrderCost =
-    pricing.setupCost +
-    (directMaterialCostPerUnit + directMachineCostPerUnit) * input.quantity;
+  const customerMaterialPricePerUnit =
+    materialGramsPerUnit * pricingProfile.customerPricePerGram;
+  const customerMachinePricePerUnit =
+    printHoursPerUnit * pricing.machinePricePerHour;
   const midpoint = Math.max(
     pricing.minimumOrderPrice,
-    directOrderCost * grossMarginMultiplier(pricing.targetMarginPercent),
+    pricing.setupPrice +
+      (customerMaterialPricePerUnit + customerMachinePricePerUnit) *
+        input.quantity,
   );
   const low = Math.max(
     pricing.minimumOrderPrice,
