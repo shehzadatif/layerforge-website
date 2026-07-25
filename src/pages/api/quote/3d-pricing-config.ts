@@ -5,6 +5,7 @@ import {
   parseThreeDQuotePricingRows,
   THREE_D_QUOTE_PRICING_SETTING_KEYS,
 } from "../../../lib/threeDQuotePricing";
+import { toThreeDQuotePublicPricingConfig } from "../../../lib/threeDQuotePublicPricing";
 import { supabaseAdmin } from "../../../lib/supabaseAdmin";
 
 export const prerender = false;
@@ -23,11 +24,12 @@ export const GET: APIRoute = async () => {
     );
   }
 
-  const pricing = error
+  const privatePricing = error
     ? DEFAULT_THREE_D_QUOTE_PRICING
     : parseThreeDQuotePricingRows(data ?? []);
+  const publicPricing = toThreeDQuotePublicPricingConfig(privatePricing);
 
-  return Response.json(pricing, {
+  return Response.json(publicPricing, {
     headers: {
       "Cache-Control": "no-store",
       "X-Content-Type-Options": "nosniff",
