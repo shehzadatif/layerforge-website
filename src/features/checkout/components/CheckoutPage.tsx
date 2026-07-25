@@ -5,6 +5,7 @@ import { getCart } from "../../cart/cartStorage";
 import ContactForm from "./ContactForm";
 import DeliveryMethod from "./DeliveryMethod";
 import ShippingAddress from "./ShippingAddress";
+import { PICKUP_AREA, PICKUP_AREA_SHORT } from "../pickupDetails";
 import {
   formatEstimatedReadyDate,
   formatProductionDuration,
@@ -114,11 +115,17 @@ export default function CheckoutPage() {
         {form.deliveryMethod === "pickup" && (
           <div className="rounded-2xl bg-white p-8 shadow">
             <h2 className="mb-6 text-2xl font-bold">Pickup Information</h2>
-            <div className="rounded-xl bg-slate-100 p-6">
-              <p className="font-semibold">Layer Forge</p>
-              <p className="mt-2 text-slate-600">Surrey, British Columbia</p>
-              <p className="mt-4 text-slate-500">
-                We'll email you when your order is ready for pickup.
+            <div className="rounded-xl border border-yellow-200 bg-yellow-50 p-6">
+              <p className="text-sm font-semibold uppercase tracking-[0.14em] text-yellow-700">
+                Approximate pickup area
+              </p>
+              <p className="mt-2 text-xl font-bold text-slate-950">
+                {PICKUP_AREA}
+              </p>
+              <p className="mt-4 text-sm leading-6 text-slate-600">
+                Layer Forge is a home-based production studio. For privacy,
+                we&apos;ll email the exact pickup address and instructions when
+                your order is ready.
               </p>
             </div>
           </div>
@@ -198,11 +205,11 @@ export default function CheckoutPage() {
             </span>
           </div>
 
-          <div className="mb-3 flex justify-between">
+          <div className="mb-3 flex justify-between gap-4">
             <span>Delivery Method</span>
-            <span className="text-slate-500">
+            <span className="text-right text-slate-500">
               {form.deliveryMethod === "pickup"
-                ? "Local Pickup"
+                ? `Local Pickup — ${PICKUP_AREA_SHORT}`
                 : "Ship to Address"}
             </span>
           </div>
@@ -231,10 +238,10 @@ export default function CheckoutPage() {
             <span>CAD ${totalBeforeTax.toFixed(2)}</span>
           </div>
 
-          <p className="mt-4 text-sm text-slate-500 leading-6">
-            Shipping is based on the province selected in your delivery address.
-            Applicable taxes are calculated securely in Stripe Checkout using
-            that same address.
+          <p className="mt-4 text-sm leading-6 text-slate-500">
+            {form.deliveryMethod === "pickup"
+              ? `Pickup is free in ${PICKUP_AREA_SHORT}. We'll email the exact address and instructions when your order is ready. Applicable taxes are calculated securely in Stripe Checkout.`
+              : "Shipping is based on the province selected in your delivery address. Applicable taxes are calculated securely in Stripe Checkout using that same address."}
           </p>
 
           <label className="mt-6 flex cursor-pointer items-start gap-3 rounded-xl border-2 border-yellow-400 bg-yellow-50 p-4 text-sm leading-6 text-slate-800">
