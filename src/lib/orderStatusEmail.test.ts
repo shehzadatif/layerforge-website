@@ -50,7 +50,7 @@ describe("getOrderStatusEmailKind", () => {
     ).toBeNull();
   });
 
-  it("sends a shipped email only when a delivery order enters Shipped", () => {
+  it("keeps shipped emails retryable for delivery orders", () => {
     expect(
       getOrderStatusEmailKind({
         previousStatus: ORDER_STATUS.READY,
@@ -65,7 +65,7 @@ describe("getOrderStatusEmailKind", () => {
         requestedStatus: ORDER_STATUS.SHIPPED,
         isPickupOrder: false,
       }),
-    ).toBeNull();
+    ).toBe("shipped");
 
     expect(
       getOrderStatusEmailKind({
