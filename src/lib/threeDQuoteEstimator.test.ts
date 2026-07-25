@@ -5,6 +5,7 @@ import {
   THREE_D_QUOTE_ESTIMATE_VERSION,
   type ThreeDModelMetrics,
 } from "./threeDQuoteEstimator";
+import { DEFAULT_THREE_D_QUOTE_PRICING } from "./threeDQuotePricing";
 
 const metrics: ThreeDModelMetrics = {
   volumeCm3: 100,
@@ -16,6 +17,19 @@ const metrics: ThreeDModelMetrics = {
   },
   triangleCount: 1200,
 };
+
+function pricingWithMargin(targetMarginPercent: number) {
+  return {
+    ...DEFAULT_THREE_D_QUOTE_PRICING,
+    targetMarginPercent,
+    materials: {
+      PLA: { ...DEFAULT_THREE_D_QUOTE_PRICING.materials.PLA },
+      PETG: { ...DEFAULT_THREE_D_QUOTE_PRICING.materials.PETG },
+      ABS: { ...DEFAULT_THREE_D_QUOTE_PRICING.materials.ABS },
+      TPU: { ...DEFAULT_THREE_D_QUOTE_PRICING.materials.TPU },
+    },
+  };
+}
 
 describe("estimateThreeDPrintQuote", () => {
   it("returns a focused preliminary range for a supported material", () => {
@@ -91,6 +105,57 @@ describe("estimateThreeDPrintQuote", () => {
     );
     expect(batch?.estimatedUnitPrice).toBeLessThan(
       single?.estimatedTotalMidpoint ?? Number.POSITIVE_INFINITY,
+    );
+  });
+
+  it("uses the admin target margin to calculate customer pricing", () => {
+    const lowerMargin = estimateThreeDPrintQuote({
+      metrics,
+      material: "PLA",
+      quality: "standard",
+      infillPercent: 20,
+      quantity: 3,
+      pricing: pricingWithMargin(20),
+    });
+    const higherMargin = estimateThreeDPrintQuote({
+      metrics,
+      material: "PLA",
+      quality: "standard",
+      infillPercent: 20,
+      quantity: 3,
+      pricing: pricingWithMargin(60),
+    });
+
+    expect(higherMargin?.estimatedTotalMidpoint).toBeGreaterThan(
+      lowerMargin?.estimatedTotalMidpoint ?? 0,
+    );
+  });
+
+  it("uses the admin material cost basis", () => {
+    const normalPricing = pricingWithMargin(40);
+    const expensivePricing = pricingWithMargin(40);
+    expensivePricing.materials.PLA.costPerGram =
+      normalPricing.materials.PLA.costPerGram * 3;
+
+    const normal = estimateThreeDPrintQuote({
+      metrics,
+      material: "PLA",
+      quality: "standard",
+      infillPercent: 20,
+      quantity: 4,
+      pricing: normalPricing,
+    });
+    const expensive = estimateThreeDPrintQuote({
+      metrics,
+      material: "PLA",
+      quality: "standard",
+      infillPercent: 20,
+      quantity: 4,
+      pricing: expensivePricing,
+    });
+
+    expect(expensive?.estimatedTotalMidpoint).toBeGreaterThan(
+      normal?.estimatedTotalMidpoint ?? 0,
     );
   });
 
