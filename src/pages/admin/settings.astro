@@ -30,10 +30,7 @@ const resendConnected = Boolean(
   import.meta.env.RESEND_API_KEY
 );
 
-const supabaseConnected = Boolean(
-  import.meta.env.PUBLIC_SUPABASE_URL &&
-  import.meta.env.SUPABASE_SERVICE_ROLE_KEY
-);
+const supabaseConnected = !error;
 ---
 
 <AdminLayout title="Settings" active="settings">
