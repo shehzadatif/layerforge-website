@@ -451,13 +451,22 @@ export const POST: APIRoute = async ({ request }) => {
               orderId: order.id,
             },
           })
-        : null;
+        : await stripe.customers.create({
+    email: customer.email,
+    address: {
+      city: "Surrey",
+      state: "BC",
+      country: "CA",
+    },
+    metadata: {
+      orderId: order.id,
+      pickup: "true",
+    },
+  });
 
     const session = await stripe.checkout.sessions.create({
       mode: "payment",
-      ...(stripeCustomer
-        ? { customer: stripeCustomer.id }
-        : { customer_email: customer.email }),
+     customer: stripeCustomer.id,
       automatic_tax: {
         enabled: true,
       },
