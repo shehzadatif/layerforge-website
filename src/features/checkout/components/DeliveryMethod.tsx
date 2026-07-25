@@ -1,4 +1,5 @@
 import type { DeliveryMethod as DeliveryMethodType } from "../types";
+import { PICKUP_AREA } from "../pickupDetails";
 
 interface Props {
   deliveryMethod: DeliveryMethodType;
@@ -39,7 +40,7 @@ export default function DeliveryMethod({
           <div>
             <div className="font-semibold">Local Pickup</div>
             <div className="text-sm text-slate-500">
-              Approximate pickup area: Surrey, British Columbia
+              Approximate pickup area: {PICKUP_AREA}
             </div>
           </div>
         </label>
