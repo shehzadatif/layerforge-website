@@ -6,6 +6,7 @@ import {
   type ThreeDModelMetrics,
 } from "./threeDQuoteEstimator";
 import { DEFAULT_THREE_D_QUOTE_PRICING } from "./threeDQuotePricing";
+import { toThreeDQuotePublicPricingConfig } from "./threeDQuotePublicPricing";
 
 const metrics: ThreeDModelMetrics = {
   volumeCm3: 100,
@@ -18,7 +19,7 @@ const metrics: ThreeDModelMetrics = {
   triangleCount: 1200,
 };
 
-function pricingWithMargin(targetMarginPercent: number) {
+function privatePricingWithMargin(targetMarginPercent: number) {
   return {
     ...DEFAULT_THREE_D_QUOTE_PRICING,
     targetMarginPercent,
@@ -29,6 +30,12 @@ function pricingWithMargin(targetMarginPercent: number) {
       TPU: { ...DEFAULT_THREE_D_QUOTE_PRICING.materials.TPU },
     },
   };
+}
+
+function publicPricingWithMargin(targetMarginPercent: number) {
+  return toThreeDQuotePublicPricingConfig(
+    privatePricingWithMargin(targetMarginPercent),
+  );
 }
 
 describe("estimateThreeDPrintQuote", () => {
@@ -84,7 +91,7 @@ describe("estimateThreeDPrintQuote", () => {
     );
   });
 
-  it("applies setup cost once across multiple units", () => {
+  it("applies setup price once across multiple units", () => {
     const single = estimateThreeDPrintQuote({
       metrics,
       material: "ABS",
@@ -108,14 +115,14 @@ describe("estimateThreeDPrintQuote", () => {
     );
   });
 
-  it("uses the admin target margin to calculate customer pricing", () => {
+  it("uses the admin target margin through derived customer rates", () => {
     const lowerMargin = estimateThreeDPrintQuote({
       metrics,
       material: "PLA",
       quality: "standard",
       infillPercent: 20,
       quantity: 3,
-      pricing: pricingWithMargin(20),
+      pricing: publicPricingWithMargin(20),
     });
     const higherMargin = estimateThreeDPrintQuote({
       metrics,
@@ -123,7 +130,7 @@ describe("estimateThreeDPrintQuote", () => {
       quality: "standard",
       infillPercent: 20,
       quantity: 3,
-      pricing: pricingWithMargin(60),
+      pricing: publicPricingWithMargin(60),
     });
 
     expect(higherMargin?.estimatedTotalMidpoint).toBeGreaterThan(
@@ -131,11 +138,11 @@ describe("estimateThreeDPrintQuote", () => {
     );
   });
 
-  it("uses the admin material cost basis", () => {
-    const normalPricing = pricingWithMargin(40);
-    const expensivePricing = pricingWithMargin(40);
-    expensivePricing.materials.PLA.costPerGram =
-      normalPricing.materials.PLA.costPerGram * 3;
+  it("uses the admin material cost basis without exposing it to the estimator", () => {
+    const normalPrivatePricing = privatePricingWithMargin(40);
+    const expensivePrivatePricing = privatePricingWithMargin(40);
+    expensivePrivatePricing.materials.PLA.costPerGram =
+      normalPrivatePricing.materials.PLA.costPerGram * 3;
 
     const normal = estimateThreeDPrintQuote({
       metrics,
@@ -143,7 +150,7 @@ describe("estimateThreeDPrintQuote", () => {
       quality: "standard",
       infillPercent: 20,
       quantity: 4,
-      pricing: normalPricing,
+      pricing: toThreeDQuotePublicPricingConfig(normalPrivatePricing),
     });
     const expensive = estimateThreeDPrintQuote({
       metrics,
@@ -151,7 +158,7 @@ describe("estimateThreeDPrintQuote", () => {
       quality: "standard",
       infillPercent: 20,
       quantity: 4,
-      pricing: expensivePricing,
+      pricing: toThreeDQuotePublicPricingConfig(expensivePrivatePricing),
     });
 
     expect(expensive?.estimatedTotalMidpoint).toBeGreaterThan(
