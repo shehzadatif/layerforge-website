@@ -1,14 +1,23 @@
 import type { APIRoute } from "astro";
 import { Resend } from "resend";
 
-import { supabaseAdmin } from "../../../lib/supabaseAdmin";
-import { ORDER_STATUS } from "../../../lib/orderStatus";
+import { isPickupDeliveryMethod } from "../../../lib/deliveryMethod";
 import { pickupReadyHtml } from "../../../lib/emailTemplates/pickupReady";
 import { orderCompletedHtml } from "../../../lib/emailTemplates/orderCompleted";
+import { ORDER_STATUS } from "../../../lib/orderStatus";
+import { supabaseAdmin } from "../../../lib/supabaseAdmin";
 
 export const prerender = false;
 
 const validStatuses = new Set<string>(Object.values(ORDER_STATUS));
+
+function logStatusEvent(
+  level: "log" | "warn" | "error",
+  event: string,
+  details: Record<string, unknown>,
+) {
+  console[level](`${event}: ${JSON.stringify(details)}`);
+}
 
 export const POST: APIRoute = async ({ request }) => {
   let previousStatus = "";
@@ -47,17 +56,39 @@ export const POST: APIRoute = async ({ request }) => {
 
     previousStatus = String(order.order_status ?? "");
 
+    const orderNumber = `LF${String(order.order_number).padStart(6, "0")}`;
+    const deliveryMethod = String(order.delivery_method ?? "").trim();
+    const isPickupOrder = isPickupDeliveryMethod(deliveryMethod);
     const shouldSendPickupReadyEmail =
-      status === ORDER_STATUS.READY &&
-      previousStatus !== ORDER_STATUS.READY &&
-      String(order.delivery_method ?? "").toLowerCase() === "pickup";
-
+      status === ORDER_STATUS.READY && isPickupOrder;
+    const shouldResendPickupReadyEmail =
+      shouldSendPickupReadyEmail && previousStatus === ORDER_STATUS.READY;
     const shouldSendCompletionEmail =
       status === ORDER_STATUS.COMPLETED &&
       previousStatus !== ORDER_STATUS.COMPLETED;
-
     const shouldSendStatusEmail =
       shouldSendPickupReadyEmail || shouldSendCompletionEmail;
+
+    logStatusEvent("log", "Order status update requested", {
+      orderId,
+      orderNumber,
+      previousStatus,
+      requestedStatus: status,
+      deliveryMethod,
+      isPickupOrder,
+      shouldSendPickupReadyEmail,
+      shouldResendPickupReadyEmail,
+      shouldSendCompletionEmail,
+    });
+
+    if (status === ORDER_STATUS.READY && !isPickupOrder) {
+      logStatusEvent("warn", "Pickup-ready email skipped", {
+        orderId,
+        orderNumber,
+        deliveryMethod,
+        reason: "delivery_method_not_recognized_as_pickup",
+      });
+    }
 
     let emailDetails:
       | {
@@ -71,7 +102,6 @@ export const POST: APIRoute = async ({ request }) => {
 
     if (shouldSendStatusEmail) {
       const apiKey = import.meta.env.RESEND_API_KEY?.trim();
-
       const siteUrl = import.meta.env.PUBLIC_SITE_URL?.trim().replace(/\/+$/, "");
 
       const { data: settings, error: settingsError } = await supabaseAdmin
@@ -125,23 +155,25 @@ export const POST: APIRoute = async ({ request }) => {
       };
     }
 
-    const { error: updateError } = await supabaseAdmin
-      .from("orders")
-      .update({
-        order_status: status,
-        updated_at: new Date().toISOString(),
-      })
-      .eq("id", orderId);
+    if (status !== previousStatus) {
+      const { error: updateError } = await supabaseAdmin
+        .from("orders")
+        .update({
+          order_status: status,
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", orderId);
 
-    if (updateError) {
-      throw new Error(updateError.message);
+      if (updateError) {
+        throw new Error(updateError.message);
+      }
+
+      updatedOrderId = orderId;
     }
 
-    updatedOrderId = orderId;
+    let resendEmailId: string | null = null;
 
     if (shouldSendStatusEmail && emailDetails) {
-      const orderNumber = `LF${String(order.order_number).padStart(6, "0")}`;
-
       const resend = new Resend(emailDetails.apiKey);
       const subject = shouldSendPickupReadyEmail
         ? `Your order ${orderNumber} is ready for pickup`
@@ -161,7 +193,7 @@ export const POST: APIRoute = async ({ request }) => {
             emailDetails.trackingUrl,
           );
 
-      const { error: emailError } = await resend.emails.send({
+      const { data: emailData, error: emailError } = await resend.emails.send({
         from: emailDetails.fromEmail,
         to: order.email,
         subject,
@@ -174,18 +206,31 @@ export const POST: APIRoute = async ({ request }) => {
         );
       }
 
-      console.log("Order status email sent.", {
+      resendEmailId = emailData?.id ?? null;
+
+      logStatusEvent("log", "Order status email sent", {
         orderId,
         orderNumber,
-        status,
-        recipient: order.email,
+        requestedStatus: status,
+        deliveryMethod,
+        pickupEmailResent: shouldResendPickupReadyEmail,
+        resendEmailId,
       });
     }
 
     return Response.json({
       success: true,
+      statusChanged: status !== previousStatus,
       pickupEmailSent: shouldSendPickupReadyEmail,
+      pickupEmailResent: shouldResendPickupReadyEmail,
       completionEmailSent: shouldSendCompletionEmail,
+      resendEmailId,
+      ...(status === ORDER_STATUS.READY && !isPickupOrder
+        ? {
+            pickupEmailSkippedReason:
+              "The order delivery method is not recognized as local pickup.",
+          }
+        : {}),
     });
   } catch (error) {
     if (updatedOrderId && previousStatus) {
@@ -198,14 +243,19 @@ export const POST: APIRoute = async ({ request }) => {
         .eq("id", updatedOrderId);
 
       if (rollbackError) {
-        console.error(
-          "Unable to roll back order status after email failure:",
-          rollbackError,
-        );
+        logStatusEvent("error", "Unable to roll back order status", {
+          orderId: updatedOrderId,
+          previousStatus,
+          error: rollbackError.message,
+        });
       }
     }
 
-    console.error("Unable to update order status:", error);
+    logStatusEvent("error", "Unable to update order status", {
+      orderId: updatedOrderId || undefined,
+      previousStatus: previousStatus || undefined,
+      error: error instanceof Error ? error.message : String(error),
+    });
 
     return Response.json(
       {
