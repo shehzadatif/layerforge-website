@@ -74,6 +74,8 @@ export const POST: APIRoute = async ({ request }) => {
     const shouldResendPickupReadyEmail =
       shouldSendPickupReadyEmail && previousStatus === ORDER_STATUS.READY;
     const shouldSendShippedEmail = statusEmailKind === "shipped";
+    const shouldResendShippedEmail =
+      shouldSendShippedEmail && previousStatus === ORDER_STATUS.SHIPPED;
     const shouldSendCompletionEmail = statusEmailKind === "completed";
     const shouldSendStatusEmail = statusEmailKind !== null;
 
@@ -89,6 +91,7 @@ export const POST: APIRoute = async ({ request }) => {
       shouldSendPickupReadyEmail,
       shouldResendPickupReadyEmail,
       shouldSendShippedEmail,
+      shouldResendShippedEmail,
       shouldSendCompletionEmail,
     });
 
@@ -252,6 +255,7 @@ export const POST: APIRoute = async ({ request }) => {
         deliveryMethod,
         statusEmailKind,
         pickupEmailResent: shouldResendPickupReadyEmail,
+        shippedEmailResent: shouldResendShippedEmail,
         resendEmailId,
       });
     }
@@ -263,6 +267,7 @@ export const POST: APIRoute = async ({ request }) => {
       pickupEmailSent: shouldSendPickupReadyEmail,
       pickupEmailResent: shouldResendPickupReadyEmail,
       shippedEmailSent: shouldSendShippedEmail,
+      shippedEmailResent: shouldResendShippedEmail,
       completionEmailSent: shouldSendCompletionEmail,
       resendEmailId,
       ...(status === ORDER_STATUS.READY && !isPickupOrder
