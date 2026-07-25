@@ -29,11 +29,7 @@ export function getOrderStatusEmailKind({
     return "pickup_ready";
   }
 
-  if (
-    requestedStatus === ORDER_STATUS.SHIPPED &&
-    previousStatus !== ORDER_STATUS.SHIPPED &&
-    !isPickupOrder
-  ) {
+  if (requestedStatus === ORDER_STATUS.SHIPPED && !isPickupOrder) {
     return "shipped";
   }
 
