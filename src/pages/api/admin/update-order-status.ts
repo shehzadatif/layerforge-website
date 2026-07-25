@@ -8,9 +8,7 @@ import { orderCompletedHtml } from "../../../lib/emailTemplates/orderCompleted";
 
 export const prerender = false;
 
-const validStatuses = new Set<string>(
-  Object.values(ORDER_STATUS),
-);
+const validStatuses = new Set<string>(Object.values(ORDER_STATUS));
 
 export const POST: APIRoute = async ({ request }) => {
   let previousStatus = "";
@@ -31,12 +29,11 @@ export const POST: APIRoute = async ({ request }) => {
       );
     }
 
-    const { data: order, error: orderError } =
-      await supabaseAdmin
-        .from("orders")
-        .select("*")
-        .eq("id", orderId)
-        .single();
+    const { data: order, error: orderError } = await supabaseAdmin
+      .from("orders")
+      .select("*")
+      .eq("id", orderId)
+      .single();
 
     if (orderError || !order) {
       return Response.json(
@@ -53,43 +50,38 @@ export const POST: APIRoute = async ({ request }) => {
     const shouldSendPickupReadyEmail =
       status === ORDER_STATUS.READY &&
       previousStatus !== ORDER_STATUS.READY &&
-      String(order.delivery_method ?? "").toLowerCase() ===
-        "pickup";
+      String(order.delivery_method ?? "").toLowerCase() === "pickup";
 
     const shouldSendCompletionEmail =
       status === ORDER_STATUS.COMPLETED &&
       previousStatus !== ORDER_STATUS.COMPLETED;
 
     const shouldSendStatusEmail =
-      shouldSendPickupReadyEmail ||
-      shouldSendCompletionEmail;
+      shouldSendPickupReadyEmail || shouldSendCompletionEmail;
 
     let emailDetails:
       | {
           apiKey: string;
           fromEmail: string;
           pickupAddress: string;
+          pickupPhone: string;
           trackingUrl: string;
         }
       | undefined;
 
     if (shouldSendStatusEmail) {
-      const apiKey =
-        import.meta.env.RESEND_API_KEY?.trim();
+      const apiKey = import.meta.env.RESEND_API_KEY?.trim();
 
-      const siteUrl =
-        import.meta.env.PUBLIC_SITE_URL
-          ?.trim()
-          .replace(/\/+$/, "");
+      const siteUrl = import.meta.env.PUBLIC_SITE_URL?.trim().replace(/\/+$/, "");
 
-      const { data: settings, error: settingsError } =
-        await supabaseAdmin
-          .from("settings")
-          .select("setting_key, setting_value")
-          .in("setting_key", [
-            "company_address",
-            "order_from_email",
-          ]);
+      const { data: settings, error: settingsError } = await supabaseAdmin
+        .from("settings")
+        .select("setting_key, setting_value")
+        .in("setting_key", [
+          "company_address",
+          "company_phone",
+          "order_from_email",
+        ]);
 
       if (settingsError) {
         throw new Error(settingsError.message);
@@ -108,26 +100,28 @@ export const POST: APIRoute = async ({ request }) => {
         import.meta.env.FROM_EMAIL?.trim();
 
       if (!apiKey || !fromEmail || !siteUrl) {
-        throw new Error(
-          "Order email settings are incomplete.",
-        );
+        throw new Error("Order email settings are incomplete.");
       }
 
       if (!order.email) {
+        throw new Error("The order does not have a customer email address.");
+      }
+
+      const pickupAddress = settingsMap.get("company_address") ?? "";
+      const pickupPhone = settingsMap.get("company_phone") ?? "";
+
+      if (shouldSendPickupReadyEmail && (!pickupAddress || !pickupPhone)) {
         throw new Error(
-          "The order does not have a customer email address.",
+          "Add the exact pickup address and scheduling phone number in Admin Settings before marking this pickup order ready.",
         );
       }
 
       emailDetails = {
         apiKey,
         fromEmail,
-        pickupAddress:
-          settingsMap.get("company_address") ?? "",
-        trackingUrl:
-          `${siteUrl}/t/${encodeURIComponent(
-            order.tracking_token,
-          )}`,
+        pickupAddress,
+        pickupPhone,
+        trackingUrl: `${siteUrl}/t/${encodeURIComponent(order.tracking_token)}`,
       };
     }
 
@@ -146,8 +140,7 @@ export const POST: APIRoute = async ({ request }) => {
     updatedOrderId = orderId;
 
     if (shouldSendStatusEmail && emailDetails) {
-      const orderNumber =
-        `LF${String(order.order_number).padStart(6, "0")}`;
+      const orderNumber = `LF${String(order.order_number).padStart(6, "0")}`;
 
       const resend = new Resend(emailDetails.apiKey);
       const subject = shouldSendPickupReadyEmail
@@ -159,6 +152,7 @@ export const POST: APIRoute = async ({ request }) => {
             order.customer_name || "Customer",
             orderNumber,
             emailDetails.pickupAddress,
+            emailDetails.pickupPhone,
             emailDetails.trackingUrl,
           )
         : orderCompletedHtml(
@@ -167,13 +161,12 @@ export const POST: APIRoute = async ({ request }) => {
             emailDetails.trackingUrl,
           );
 
-      const { error: emailError } =
-        await resend.emails.send({
-          from: emailDetails.fromEmail,
-          to: order.email,
-          subject,
-          html,
-        });
+      const { error: emailError } = await resend.emails.send({
+        from: emailDetails.fromEmail,
+        to: order.email,
+        subject,
+        html,
+      });
 
       if (emailError) {
         throw new Error(
