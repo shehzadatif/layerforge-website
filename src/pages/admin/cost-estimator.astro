@@ -23,6 +23,7 @@ if (error) {
 
 const pricing = parseThreeDQuotePricingRows(data ?? []);
 const saved = Astro.url.searchParams.get("saved") === "1";
+const slicerSynced = Astro.url.searchParams.get("slicer-synced") === "1";
 const marginMultiplier = grossMarginMultiplier(pricing.targetMarginPercent);
 const sampleDirectCost = 10;
 const sampleCustomerPrice = sampleDirectCost * marginMultiplier;
@@ -66,6 +67,15 @@ const configuredSlicerMaterials = getConfiguredCloudSlicerMaterials(
     )
   }
 
+  {
+    slicerSynced && (
+      <div class="mb-8 rounded-xl border border-green-200 bg-green-50 px-5 py-4 font-medium text-green-800">
+        Cloud Slicer now uses the exported Bambu Lab P1S 0.4 mm machine
+        limits. Run the same STL again to compare its material and print time.
+      </div>
+    )
+  }
+
   <section class="mb-8 rounded-2xl border border-slate-200 bg-white p-6 shadow">
     <div class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
       <div>
@@ -101,6 +111,29 @@ const configuredSlicerMaterials = getConfiguredCloudSlicerMaterials(
         </div>
       </div>
     </div>
+    {
+      configuredSlicerMaterials.includes("PLA") && (
+        <form
+          action="/api/admin/synchronize-cloud-slicer-p1s"
+          method="POST"
+          class="mt-5 border-t border-slate-200 pt-5"
+        >
+          <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <p class="max-w-3xl text-sm leading-6 text-slate-500">
+              Synchronize the configured Cloud Slicer printer with the machine
+              limits exported from Layer Forge’s Bambu Lab P1S 0.4 mm preset:
+              500 mm/s X/Y feedrate and 20,000 mm/s² X/Y acceleration.
+            </p>
+            <button
+              type="submit"
+              class="shrink-0 rounded-xl bg-slate-950 px-5 py-3 font-semibold text-white transition hover:bg-slate-800"
+            >
+              Synchronize P1S Profile
+            </button>
+          </div>
+        </form>
+      )
+    }
   </section>
 
   <form
