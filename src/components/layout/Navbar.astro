@@ -23,6 +23,7 @@ const services = [
     href: "/uv-printing",
     label: "UV & Apparel",
     description: "UV, DTF, and DTG printing",
+    comingSoon: true,
   },
 ];
 
@@ -73,8 +74,15 @@ const linkClass = (href: string) =>
             {
               services.map((service) => (
                 <a href={service.href} class="block rounded-xl px-4 py-3 transition hover:bg-white/10">
-                  <span class={`block font-semibold ${isActive(service.href) ? "text-yellow-400" : "text-white"}`}>
-                    {service.label}
+                  <span class="flex items-center justify-between gap-3">
+                    <span class={`block font-semibold ${isActive(service.href) ? "text-yellow-400" : "text-white"}`}>
+                      {service.label}
+                    </span>
+                    {service.comingSoon && (
+                      <span class="rounded-full bg-yellow-400 px-2 py-0.5 text-[10px] font-black uppercase tracking-wide text-slate-950">
+                        Coming Soon
+                      </span>
+                    )}
                   </span>
                   <span class="mt-1 block text-sm text-slate-400">{service.description}</span>
                 </a>
@@ -128,8 +136,15 @@ const linkClass = (href: string) =>
       {
         services.map((service) => (
           <a href={service.href} class={`block rounded-xl px-4 py-3 transition hover:bg-white/10 ${isActive(service.href) ? "bg-white/10" : ""}`}>
-            <span class={`block font-semibold ${isActive(service.href) ? "text-yellow-400" : "text-white"}`}>
-              {service.label}
+            <span class="flex items-center justify-between gap-3">
+              <span class={`block font-semibold ${isActive(service.href) ? "text-yellow-400" : "text-white"}`}>
+                {service.label}
+              </span>
+              {service.comingSoon && (
+                <span class="rounded-full bg-yellow-400 px-2 py-0.5 text-[10px] font-black uppercase tracking-wide text-slate-950">
+                  Coming Soon
+                </span>
+              )}
             </span>
             <span class="mt-1 block text-sm text-slate-400">{service.description}</span>
           </a>
