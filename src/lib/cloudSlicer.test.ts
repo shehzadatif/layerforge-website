@@ -2,6 +2,8 @@ import { describe, expect, it, vi } from "vitest";
 
 import {
   buildCloudSlicerQuotePayload,
+  CloudSlicerApiError,
+  cloudSlicerQueueErrorMessage,
   cleanupCloudSlicerJob,
   createCloudSlicerUploadSession,
   getConfiguredCloudSlicerMaterials,
@@ -86,6 +88,22 @@ describe("Cloud Slicer Bambu Studio payload", () => {
 });
 
 describe("Cloud Slicer API client", () => {
+  it("maps queue failures to actionable customer-safe messages", () => {
+    expect(
+      cloudSlicerQueueErrorMessage(
+        new CloudSlicerApiError("Provider response", 404),
+      ),
+    ).toMatch(/could not find.*P1S.*PLA/i);
+    expect(
+      cloudSlicerQueueErrorMessage(
+        new CloudSlicerApiError("Provider response", 401),
+      ),
+    ).toMatch(/API token/i);
+    expect(cloudSlicerQueueErrorMessage(new Error("network"))).toMatch(
+      /could not be queued/i,
+    );
+  });
+
   it("creates an anonymous direct-upload session without exposing the token", async () => {
     const fetcher = vi.fn<typeof fetch>(async () =>
       Response.json({

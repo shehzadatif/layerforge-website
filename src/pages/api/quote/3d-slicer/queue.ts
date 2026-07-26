@@ -1,6 +1,7 @@
 import type { APIRoute } from "astro";
 
 import {
+  cloudSlicerQueueErrorMessage,
   cleanupCloudSlicerJob,
   queueCloudSlicerQuote,
   resolveCloudSlicerConfiguration,
@@ -112,7 +113,7 @@ export const POST: APIRoute = async ({ request }) => {
     return Response.json(
       {
         success: false,
-        error: "The model could not be queued for Bambu Studio refinement.",
+        error: cloudSlicerQueueErrorMessage(error),
       },
       { status: 502 },
     );

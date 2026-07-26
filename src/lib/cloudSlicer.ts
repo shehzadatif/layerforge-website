@@ -67,6 +67,30 @@ export class CloudSlicerApiError extends Error {
   }
 }
 
+export function cloudSlicerQueueErrorMessage(error: unknown): string {
+  if (!(error instanceof CloudSlicerApiError)) {
+    return "The model could not be queued for Bambu Studio refinement.";
+  }
+
+  switch (error.status) {
+    case 400:
+    case 422:
+      return "Cloud Slicer rejected the configured P1S, PLA, or print settings.";
+    case 401:
+    case 403:
+      return "Cloud Slicer rejected the configured API token.";
+    case 404:
+      return "Cloud Slicer could not find the configured P1S or PLA profile.";
+    case 429:
+      return "The Cloud Slicer account has reached its current rate or usage limit.";
+    case 500:
+    case 503:
+      return "Cloud Slicer is temporarily unable to process this model.";
+    default:
+      return "The model could not be queued for Bambu Studio refinement.";
+  }
+}
+
 function configuredValue(value: string | undefined): string {
   return value?.trim() ?? "";
 }
