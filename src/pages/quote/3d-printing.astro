@@ -349,9 +349,9 @@ const slicerPricingConfigured = configuredSlicerMaterials.length > 0;
                       Bambu Studio pricing
                     </h3>
                     <p class="mt-1 text-sm leading-6 text-slate-700">
-                      Eligible STL files are automatically sliced for a Bambu Lab
-                      P1S with a 0.4 mm nozzle and automatic supports. The price
-                      updates when slicing finishes.
+                      Eligible STL files are automatically sliced with Layer
+                      Forge production settings and automatic supports. The
+                      price updates when slicing finishes.
                     </p>
                     <p
                       id="slicerStatus"
@@ -762,7 +762,7 @@ const slicerPricingConfigured = configuredSlicerMaterials.length > 0;
         return {
           ready: false,
           message:
-            "This model exceeds the P1S 256 mm build volume. Split the model or submit it for manual review.",
+            "This model exceeds the online printer build volume. Split the model or submit it for manual review.",
         };
       }
 
@@ -904,7 +904,7 @@ const slicerPricingConfigured = configuredSlicerMaterials.length > 0;
 
       if (estimateMessage) {
         estimateMessage.textContent = bambuPricingExpected
-          ? "Slicing the model with the P1S production profile before showing its price."
+          ? "Slicing the model with Layer Forge production settings before showing its price."
           : `Estimated total for ${estimate.quantity} item${estimate.quantity === 1 ? "" : "s"}, before tax and delivery.`;
       }
       setEstimateSource(
@@ -948,7 +948,7 @@ const slicerPricingConfigured = configuredSlicerMaterials.length > 0;
           estimateWarning.classList.remove("hidden");
         } else if (largestDimension > P1S_BUILD_VOLUME_MM) {
           estimateWarning.textContent =
-            "This model exceeds the P1S 256 mm build volume on at least one axis. Bambu Studio pricing is unavailable unless the model is split.";
+            "This model exceeds the online printer build volume on at least one axis. Automatic pricing is unavailable unless the model is split.";
           estimateWarning.classList.remove("hidden");
         } else {
           estimateWarning.classList.add("hidden");
@@ -1167,7 +1167,7 @@ const slicerPricingConfigured = configuredSlicerMaterials.length > 0;
           `${estimate.estimatedPrintHoursPerUnit.toFixed(1)} h`;
       }
 
-      setEstimateSource("Bambu Studio · P1S");
+      setEstimateSource("Bambu Studio");
       setHiddenValue("estimateVersion", estimate.version);
       setHiddenValue("estimateLow", estimate.estimatedTotalLow.toFixed(2));
       setHiddenValue("estimateHigh", estimate.estimatedTotalHigh.toFixed(2));
@@ -1285,9 +1285,7 @@ const slicerPricingConfigured = configuredSlicerMaterials.length > 0;
           return;
         }
 
-        setSlicerStatus(
-          "Bambu Studio is slicing for the P1S with automatic supports.",
-        );
+        setSlicerStatus("Bambu Studio is slicing with automatic supports.");
         const queueResponse = await fetch("/api/quote/3d-slicer/queue", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
