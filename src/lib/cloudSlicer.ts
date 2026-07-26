@@ -62,9 +62,23 @@ export class CloudSlicerApiError extends Error {
   constructor(
     message: string,
     readonly status?: number,
+    readonly providerDetail?: string,
   ) {
     super(message);
   }
+}
+
+function safeCloudSlicerProviderDetail(value: unknown): string {
+  if (typeof value !== "string") {
+    return "";
+  }
+
+  return value
+    .replace(/\b[a-f0-9]{24,}\b/gi, "[redacted-id]")
+    .replace(/\bBearer\s+\S+/gi, "Bearer [redacted]")
+    .replace(/\s+/g, " ")
+    .trim()
+    .slice(0, 240);
 }
 
 export function cloudSlicerQueueErrorMessage(error: unknown): string {
@@ -72,15 +86,21 @@ export function cloudSlicerQueueErrorMessage(error: unknown): string {
     return "The model could not be queued for Bambu Studio refinement.";
   }
 
+  const providerDetail = safeCloudSlicerProviderDetail(error.providerDetail);
+
   switch (error.status) {
     case 400:
     case 422:
-      return "Cloud Slicer rejected the configured P1S, PLA, or print settings.";
+      return providerDetail
+        ? `Cloud Slicer rejected the queue request: ${providerDetail}`
+        : "Cloud Slicer rejected the configured printer, material, or print settings.";
     case 401:
     case 403:
       return "Cloud Slicer rejected the configured API token.";
     case 404:
-      return "Cloud Slicer could not find the configured P1S or PLA profile.";
+      return providerDetail
+        ? `Cloud Slicer could not find a required resource: ${providerDetail}`
+        : "Cloud Slicer could not find the uploaded file or configured printer/material profile.";
     case 429:
       return "The Cloud Slicer account has reached its current rate or usage limit.";
     case 500:
@@ -214,9 +234,24 @@ async function fetchCloudSlicerJson(
     });
 
     if (!response.ok) {
+      const responseBody = (await response.text().catch(() => "")).trim();
+      let providerDetail = "";
+
+      if (responseBody) {
+        try {
+          const parsed = JSON.parse(responseBody) as Record<string, unknown>;
+          providerDetail = safeCloudSlicerProviderDetail(
+            parsed.detail ?? parsed.message ?? parsed.error,
+          );
+        } catch {
+          providerDetail = safeCloudSlicerProviderDetail(responseBody);
+        }
+      }
+
       throw new CloudSlicerApiError(
         `Cloud Slicer request failed with HTTP ${response.status}.`,
         response.status,
+        providerDetail,
       );
     }
 
