@@ -1,407 +1,1541 @@
 ---
 import MainLayout from "../../layouts/MainLayout.astro";
+import { getConfiguredCloudSlicerMaterials } from "../../lib/cloudSlicer";
+import { getCloudSlicerServerEnvironment } from "../../lib/cloudSlicerServer";
 import { getPacificDateInputValue } from "../../lib/dateUtils";
+import {
+  resolveTurnstileSiteKey,
+  TURNSTILE_ESTIMATE_ACTION,
+  TURNSTILE_QUOTE_ACTION,
+} from "../../lib/turnstile";
+import { getTurnstileServerEnvironment } from "../../lib/turnstileServer";
+
+const turnstileEnvironment = getTurnstileServerEnvironment();
+const turnstileSiteKey = resolveTurnstileSiteKey(
+  turnstileEnvironment.publicSiteKey,
+  turnstileEnvironment.nodeEnvironment,
+);
+const configuredSlicerMaterials = getConfiguredCloudSlicerMaterials(
+  getCloudSlicerServerEnvironment(),
+);
+const slicerPricingConfigured = configuredSlicerMaterials.length > 0;
 ---
 
 <MainLayout title="3D Printing Quote">
+  <section class="bg-slate-50 py-16">
+    <div class="mx-auto max-w-4xl px-6">
+      <div class="rounded-2xl bg-white p-8 shadow-lg">
+        <h1 class="mb-2 text-4xl font-bold text-slate-900">
+          3D Printing Quote
+        </h1>
 
-<section class="bg-slate-50 py-16">
+        <p class="mb-10 text-slate-600">
+          Upload your model for an instant preliminary estimate, then submit it
+          for Layer Forge review and final pricing.
+        </p>
 
-  <div class="mx-auto max-w-3xl px-6">
+        <form
+          id="quoteForm"
+          enctype="multipart/form-data"
+          class="space-y-8"
+        >
+          <input type="hidden" name="service" value="3D Printing" />
+          <input type="hidden" name="estimateVersion" />
+          <input type="hidden" name="estimateLow" />
+          <input type="hidden" name="estimateHigh" />
+          <input type="hidden" name="estimateMidpoint" />
+          <input type="hidden" name="estimateMaterialGrams" />
+          <input type="hidden" name="estimatePrintHours" />
+          <input type="hidden" name="modelVolumeCm3" />
+          <input type="hidden" name="modelSurfaceAreaCm2" />
+          <input type="hidden" name="modelDimensionsMm" />
+          <input type="hidden" name="modelTriangleCount" />
 
-    <div class="rounded-2xl bg-white p-8 shadow-lg">
-
-      <h1 class="mb-2 text-4xl font-bold text-slate-900">
-        3D Printing Quote
-      </h1>
-
-      <p class="mb-10 text-slate-600">
-        Upload your 3D model and tell us about your project. We'll review your
-        file and send you a personalized quote.
-      </p>
-
-<form
-  id="quoteForm"
-  enctype="multipart/form-data"
-  class="space-y-8"
->
-
-<input
-  type="hidden"
-  name="service"
-  value="3D Printing"
-/>
-
-       <!-- 3D Model Upload -->
-<div>
-
-  <label
-    for="file"
-    class="block text-sm font-semibold text-slate-700"
-  >
-    3D Model File *
-  </label>
-
-  <label
-    for="file"
-    class="mt-2 flex cursor-pointer items-center justify-center rounded-xl border-2 border-dashed border-slate-300 bg-slate-50 px-6 py-10 text-center transition hover:border-yellow-400 hover:bg-yellow-50"
-  >
-
-    <div>
-
-      <svg
-        xmlns="http://www.w3.org/2000/svg"
-        class="mx-auto mb-3 h-10 w-10 text-slate-400"
-        fill="none"
-        viewBox="0 0 24 24"
-        stroke="currentColor"
-        stroke-width="2"
-      >
-        <path
-          stroke-linecap="round"
-          stroke-linejoin="round"
-          d="M7 16V4m0 0L3 8m4-4l4 4M17 8v12m0 0l-4-4m4 4l4-4"
-        />
-      </svg>
-
-      <p class="font-semibold text-slate-700">
-        Click here to upload your 3D model
-      </p>
-
-      <p class="mt-1 text-sm text-slate-500">
-        Supported formats: STL, 3MF, OBJ, STEP, STP
-      </p>
-
-      <p class="mt-1 text-xs text-slate-400">
-        Maximum file size: 50 MB
-      </p>
-
-    </div>
-
-  </label>
-
-  <input
-    id="file"
-    name="file"
-    type="file"
-    accept=".stl,.3mf,.obj,.step,.stp"
-    class="hidden"
-  />
-
-</div>
-
-<!-- Project Name -->
-<div>
-
-  <label
-    for="projectName"
-    class="block text-sm font-semibold text-slate-700"
-  >
-    Project Name *
-  </label>
-
-  <input
-    id="projectName"
-    name="projectName"
-    type="text"
-    required
-    placeholder="Example: RC Car Chassis"
-    class="mt-2 block w-full rounded-xl border border-slate-300 bg-white p-3 shadow-sm focus:border-yellow-400 focus:outline-none focus:ring-2 focus:ring-yellow-400"
-  />
-
-</div>
-
-        <!-- Material -->
-        <div>
-          <label
-            for="material"
-            class="block text-sm font-semibold text-slate-700"
+          <div
+            class="absolute -left-[10000px] h-px w-px overflow-hidden"
+            aria-hidden="true"
           >
-            Material *
-          </label>
+            <label for="website">Website</label>
+            <input
+              id="website"
+              name="website"
+              type="text"
+              tabindex="-1"
+              autocomplete="off"
+            />
+          </div>
 
-          <select
-            id="material"
-            name="material"
-            required
-            class="mt-2 block w-full rounded-xl border border-slate-300 bg-white p-3 shadow-sm focus:border-yellow-400 focus:outline-none focus:ring-2 focus:ring-yellow-400"
+          <section class="space-y-6" aria-labelledby="model-heading">
+            <div>
+              <h2 id="model-heading" class="text-2xl font-bold text-slate-900">
+                Model and print options
+              </h2>
+              <p class="mt-2 text-sm leading-6 text-slate-500">
+                Instant analysis currently supports STL files. You can still
+                submit 3MF, OBJ, STEP, or STP files for manual review.
+              </p>
+            </div>
+
+            <div>
+              <label
+                for="file"
+                class="block text-sm font-semibold text-slate-700"
+              >
+                3D Model File *
+              </label>
+
+              <label
+                for="file"
+                class="mt-2 flex cursor-pointer items-center justify-center rounded-xl border-2 border-dashed border-slate-300 bg-slate-50 px-6 py-10 text-center transition hover:border-yellow-400 hover:bg-yellow-50"
+              >
+                <div>
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    class="mx-auto mb-3 h-10 w-10 text-slate-400"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    aria-hidden="true"
+                  >
+                    <path
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      d="M7 16V4m0 0L3 8m4-4l4 4M17 8v12m0 0l-4-4m4 4l4-4"
+                    />
+                  </svg>
+
+                  <p class="font-semibold text-slate-700">
+                    Click here to upload your 3D model
+                  </p>
+                  <p class="mt-1 text-sm text-slate-500">
+                    Supported formats: STL, 3MF, OBJ, STEP, STP
+                  </p>
+                  <p class="mt-1 text-xs text-slate-400">
+                    Maximum submission size: 50 MB · Instant STL analysis: 25 MB
+                  </p>
+                  <p
+                    id="fileStatus"
+                    class="mt-3 text-sm font-semibold text-slate-700"
+                    aria-live="polite"
+                  ></p>
+                </div>
+              </label>
+
+              <input
+                id="file"
+                name="file"
+                type="file"
+                accept=".stl,.3mf,.obj,.step,.stp"
+                required
+                class="hidden"
+              />
+            </div>
+
+            <div class="grid gap-6 md:grid-cols-2">
+              <div>
+                <label
+                  for="modelUnits"
+                  class="block text-sm font-semibold text-slate-700"
+                >
+                  Model units
+                </label>
+                <select
+                  id="modelUnits"
+                  name="modelUnits"
+                  class="mt-2 block w-full rounded-xl border border-slate-300 bg-white p-3 shadow-sm focus:border-yellow-400 focus:outline-none focus:ring-2 focus:ring-yellow-400"
+                >
+                  <option value="mm" selected>Millimetres</option>
+                  <option value="in">Inches</option>
+                </select>
+                <p class="mt-2 text-sm text-slate-500">
+                  STL files do not store units, so confirm the units used by your
+                  design software.
+                </p>
+              </div>
+
+              <div>
+                <label
+                  for="projectName"
+                  class="block text-sm font-semibold text-slate-700"
+                >
+                  Project Name *
+                </label>
+                <input
+                  id="projectName"
+                  name="projectName"
+                  type="text"
+                  required
+                  maxlength="160"
+                  placeholder="Example: RC Car Chassis"
+                  class="mt-2 block w-full rounded-xl border border-slate-300 bg-white p-3 shadow-sm focus:border-yellow-400 focus:outline-none focus:ring-2 focus:ring-yellow-400"
+                />
+              </div>
+
+              <div>
+                <label
+                  for="material"
+                  class="block text-sm font-semibold text-slate-700"
+                >
+                  Material *
+                </label>
+                <select
+                  id="material"
+                  name="material"
+                  required
+                  class="mt-2 block w-full rounded-xl border border-slate-300 bg-white p-3 shadow-sm focus:border-yellow-400 focus:outline-none focus:ring-2 focus:ring-yellow-400"
+                >
+                  <option value="">Select Material</option>
+                  <option value="PLA">PLA</option>
+                  <option value="PETG">PETG</option>
+                  <option value="ABS">ABS</option>
+                  <option value="TPU">TPU</option>
+                </select>
+              </div>
+
+              <div>
+                <label
+                  for="color"
+                  class="block text-sm font-semibold text-slate-700"
+                >
+                  Color *
+                </label>
+                <select
+                  id="color"
+                  name="color"
+                  required
+                  class="mt-2 block w-full rounded-xl border border-slate-300 bg-white p-3 shadow-sm focus:border-yellow-400 focus:outline-none focus:ring-2 focus:ring-yellow-400"
+                >
+                  <option value="">Select a color</option>
+                  <option>Black</option>
+                  <option>White</option>
+                  <option>Blue</option>
+                  <option>Red</option>
+                  <option>Yellow</option>
+                  <option>Grey</option>
+                  <option>Green</option>
+                </select>
+              </div>
+
+              <div>
+                <label
+                  for="quantity"
+                  class="block text-sm font-semibold text-slate-700"
+                >
+                  Quantity *
+                </label>
+                <input
+                  id="quantity"
+                  name="quantity"
+                  type="number"
+                  value="1"
+                  min="1"
+                  max="10000"
+                  required
+                  class="mt-2 block w-full rounded-xl border border-slate-300 bg-white p-3 shadow-sm focus:border-yellow-400 focus:outline-none focus:ring-2 focus:ring-yellow-400"
+                />
+              </div>
+
+              <div>
+                <label
+                  for="quality"
+                  class="block text-sm font-semibold text-slate-700"
+                >
+                  Print quality
+                </label>
+                <select
+                  id="quality"
+                  name="quality"
+                  class="mt-2 block w-full rounded-xl border border-slate-300 bg-white p-3 shadow-sm focus:border-yellow-400 focus:outline-none focus:ring-2 focus:ring-yellow-400"
+                >
+                  <option value="draft">Draft · approximately 0.28 mm</option>
+                  <option value="standard" selected>
+                    Standard · approximately 0.20 mm
+                  </option>
+                  <option value="fine">Fine · approximately 0.12 mm</option>
+                </select>
+              </div>
+
+              <div>
+                <label
+                  for="infill"
+                  class="block text-sm font-semibold text-slate-700"
+                >
+                  Infill
+                </label>
+                <select
+                  id="infill"
+                  name="infill"
+                  class="mt-2 block w-full rounded-xl border border-slate-300 bg-white p-3 shadow-sm focus:border-yellow-400 focus:outline-none focus:ring-2 focus:ring-yellow-400"
+                >
+                  <option value="10">10%</option>
+                  <option value="15" selected>15% · Bambu Standard</option>
+                  <option value="20">20%</option>
+                  <option value="30">30%</option>
+                  <option value="50">50%</option>
+                  <option value="100">100%</option>
+                </select>
+                <p class="mt-2 text-sm text-slate-500">
+                  Bambu Studio Standard uses 15% infill. Increase it when the
+                  part needs additional internal strength.
+                </p>
+              </div>
+            </div>
+          </section>
+
+          <section
+            id="estimatePanel"
+            class="rounded-2xl border border-yellow-300 bg-yellow-50 p-6"
+            aria-labelledby="estimate-heading"
           >
-            <option value="">Select Material</option>
-            <option>PLA</option>
-            <option>PETG</option>
-            <option>ABS</option>
-            <option>TPU</option>
-          </select>
-        </div>
-
-        <!-- Color -->
-        <div>
-          <label
-            for="color"
-            class="block text-sm font-semibold text-slate-700"
-          >
-            Color
-          </label>
-
-          <select
-            id="color"
-            name="color"
-            class="mt-2 block w-full rounded-xl border border-slate-300 bg-white p-3 shadow-sm focus:border-yellow-400 focus:outline-none focus:ring-2 focus:ring-yellow-400"
-          >
-            <option value="">Select a color</option>
-            <option>Black</option>
-            <option>White</option>
-            <option>Blue</option>
-            <option>Red</option>
-            <option>Yellow</option>
-            <option>Grey</option>
-            <option>Green</option>
-          </select>
-        </div>
-
-        <!-- Quantity -->
-        <div>
-          <label
-            for="quantity"
-            class="block text-sm font-semibold text-slate-700"
-          >
-            Quantity *
-          </label>
-
-          <input
-            id="quantity"
-            name="quantity"
-            type="number"
-            value="1"
-            min="1"
-            required
-            class="mt-2 block w-full rounded-xl border border-slate-300 bg-white p-3 shadow-sm focus:border-yellow-400 focus:outline-none focus:ring-2 focus:ring-yellow-400"
-          />
-        </div>
-
-        <!-- Infill -->
-        <div>
-          <label
-            for="infill"
-            class="block text-sm font-semibold text-slate-700"
-          >
-            Infill
-          </label>
-
-          <select
-            id="infill"
-            name="infill"
-            class="mt-2 block w-full rounded-xl border border-slate-300 bg-white p-3 shadow-sm focus:border-yellow-400 focus:outline-none focus:ring-2 focus:ring-yellow-400"
-          >
-            <option>10%</option>
-            <option selected>20%</option>
-            <option>30%</option>
-          </select>
-
-          <p class="mt-2 text-sm text-slate-500">
-            Most functional parts print well between 20% and 30% infill.
-          </p>
-        </div>
-
-        <!-- Completion Date -->
-        <div>
-          <label
-            for="dueDate"
-            class="block text-sm font-semibold text-slate-700"
-          >
-            Desired Completion Date
-          </label>
-
-          <input
-            id="dueDate"
-            name="dueDate"
-            type="date"
-            min={getPacificDateInputValue(3)}
-            class="mt-2 block w-full rounded-xl border border-slate-300 bg-white p-3 shadow-sm focus:border-yellow-400 focus:outline-none focus:ring-2 focus:ring-yellow-400"
-          />
-
-          <p class="mt-2 text-sm text-slate-500">
-            Please allow at least 3 days for production. Rush orders may be accommodated upon request.
-          </p>
-
-          <div class="mt-3 rounded-lg border border-amber-200 bg-amber-50 p-3">
-            <p class="text-sm text-amber-800">
-              <strong>Important:</strong>
-              The selected date is the estimated manufacturing completion date
-              only. It does <strong>not</strong> include shipping, local delivery,
-              or pickup time.
+            <div class="flex flex-wrap items-center gap-3">
+              <p class="text-sm font-bold uppercase tracking-[0.16em] text-yellow-700">
+                Preliminary estimate
+              </p>
+              <span
+                id="estimateSource"
+                class="hidden rounded-full bg-white px-3 py-1 text-xs font-bold text-slate-600"
+              ></span>
+            </div>
+            <h2
+              id="estimate-heading"
+              class="mt-2 text-3xl font-bold text-slate-950"
+            >
+              <span id="estimatePrice">Upload an STL to calculate</span>
+            </h2>
+            <p
+              id="estimateMessage"
+              class="mt-3 text-sm leading-6 text-slate-700"
+              aria-live="polite"
+            >
+              Choose your material and print options after uploading the model.
             </p>
+
+            <dl
+              id="estimateDetails"
+              class="mt-5 hidden grid-cols-2 gap-4 text-sm md:grid-cols-4"
+            >
+              <div class="rounded-xl bg-white p-4">
+                <dt class="text-slate-500">Dimensions</dt>
+                <dd id="estimateDimensions" class="mt-1 font-bold text-slate-950"></dd>
+              </div>
+              <div class="rounded-xl bg-white p-4">
+                <dt class="text-slate-500">Material / unit</dt>
+                <dd id="estimateWeight" class="mt-1 font-bold text-slate-950"></dd>
+              </div>
+              <div class="rounded-xl bg-white p-4">
+                <dt class="text-slate-500">Print time / unit</dt>
+                <dd id="estimateHours" class="mt-1 font-bold text-slate-950"></dd>
+              </div>
+              <div class="rounded-xl bg-white p-4">
+                <dt class="text-slate-500">Quantity</dt>
+                <dd id="estimateQuantity" class="mt-1 font-bold text-slate-950"></dd>
+              </div>
+            </dl>
+
+            <p
+              id="estimateWarning"
+              class="mt-4 hidden rounded-xl border border-amber-300 bg-white p-4 text-sm font-medium text-amber-800"
+            ></p>
+
+            {
+              slicerPricingConfigured && (
+                <div class="mt-5 border-t border-yellow-300 pt-5">
+                  <div
+                    id="slicerPricingPanel"
+                    data-configured-materials={configuredSlicerMaterials.join(",")}
+                  >
+                    <h3 class="font-bold text-slate-950">
+                      Bambu Studio pricing
+                    </h3>
+                    <p class="mt-1 text-sm leading-6 text-slate-700">
+                      Eligible STL files are automatically sliced with Layer
+                      Forge production settings and automatic supports. The
+                      price updates when slicing finishes.
+                    </p>
+                    <p
+                      id="slicerStatus"
+                      class="mt-2 text-sm font-semibold text-slate-700"
+                      aria-live="polite"
+                    >
+                      Upload an STL and select a supported material to calculate
+                      Bambu Studio pricing.
+                    </p>
+                  </div>
+
+                  {
+                    turnstileSiteKey ? (
+                      <div class="mt-4 max-w-sm rounded-xl bg-white p-3">
+                        <div
+                          id="slicerTurnstile"
+                          class="cf-turnstile"
+                          data-sitekey={turnstileSiteKey}
+                          data-action={TURNSTILE_ESTIMATE_ACTION}
+                          data-response-field-name="slicer-turnstile-response"
+                          data-callback="onSlicerTurnstileSuccess"
+                          data-theme="light"
+                          data-size="flexible"
+                        ></div>
+                      </div>
+                    ) : (
+                      <p class="mt-3 rounded-xl border border-red-200 bg-red-50 p-3 text-sm font-semibold text-red-700">
+                        Bambu Studio pricing is temporarily unavailable because
+                        its security check is not configured.
+                      </p>
+                    )
+                  }
+
+                  <p class="mt-3 text-xs leading-5 text-slate-600">
+                    Pricing sends a temporary copy of the STL to the slicer.
+                    Layer Forge requests immediate deletion of the uploaded model,
+                    generated G-code, and provider quote after the result is
+                    retrieved or the job is cancelled.
+                  </p>
+                </div>
+              )
+            }
+
+            <p class="mt-5 text-xs leading-5 text-slate-600">
+              This range is an estimate only and assumes a printable, closed STL
+              with the selected units. Final pricing may change after orientation,
+              wall thickness, tolerances, and manufacturability are reviewed.
+              Bambu Studio pricing uses the uploaded orientation and includes
+              automatic supports. If slicing is unavailable, the displayed
+              instant geometry price is only a fallback. Taxes and delivery are
+              additional.
+            </p>
+          </section>
+
+          <div>
+            <label
+              for="dueDate"
+              class="block text-sm font-semibold text-slate-700"
+            >
+              Desired Completion Date
+            </label>
+            <input
+              id="dueDate"
+              name="dueDate"
+              type="date"
+              min={getPacificDateInputValue(3)}
+              class="mt-2 block w-full rounded-xl border border-slate-300 bg-white p-3 shadow-sm focus:border-yellow-400 focus:outline-none focus:ring-2 focus:ring-yellow-400"
+            />
+            <p class="mt-2 text-sm text-slate-500">
+              Please allow at least 3 days for production. Rush orders may be
+              accommodated upon request.
+            </p>
+            <div class="mt-3 rounded-lg border border-amber-200 bg-amber-50 p-3">
+              <p class="text-sm text-amber-800">
+                <strong>Important:</strong> The selected date is the estimated
+                manufacturing completion date only. It does not include shipping,
+                local delivery, or pickup time.
+              </p>
+            </div>
           </div>
-        </div>
 
-        <!-- Delivery -->
-        <div>
-          <label
-            for="deliveryMethod"
-            class="block text-sm font-semibold text-slate-700"
-          >
-            Delivery Method
-          </label>
-
-          <select
-            id="deliveryMethod"
-            name="deliveryMethod"
-            class="mt-2 block w-full rounded-xl border border-slate-300 bg-white p-3 shadow-sm focus:border-yellow-400 focus:outline-none focus:ring-2 focus:ring-yellow-400"
-          >
-            <option value="">Select Delivery Method</option>
-            <option>Pickup</option>
-            <option>Local Delivery</option>
-            <option>Shipping</option>
-          </select>
-        </div>
-
-        <!-- Customer Information -->
-        <div class="border-t border-slate-200 pt-8">
-
-          <h2 class="mb-6 text-2xl font-bold text-slate-900">
-            Customer Information
-          </h2>
-
-          <div class="grid gap-6 md:grid-cols-2">
-
-            <div>
-              <label for="name" class="block text-sm font-semibold text-slate-700">
-                Full Name *
-              </label>
-
-              <input
-                id="name"
-                name="name"
-                type="text"
-                required
-                class="mt-2 block w-full rounded-xl border border-slate-300 bg-white p-3 shadow-sm focus:border-yellow-400 focus:outline-none focus:ring-2 focus:ring-yellow-400"
-              />
-            </div>
-
-            <div>
-              <label for="email" class="block text-sm font-semibold text-slate-700">
-                Email Address *
-              </label>
-
-              <input
-                id="email"
-                name="email"
-                type="email"
-                required
-                class="mt-2 block w-full rounded-xl border border-slate-300 bg-white p-3 shadow-sm focus:border-yellow-400 focus:outline-none focus:ring-2 focus:ring-yellow-400"
-              />
-            </div>
-
-            <div>
-              <label for="phone" class="block text-sm font-semibold text-slate-700">
-                Phone Number
-              </label>
-
-              <input
-                id="phone"
-                name="phone"
-                type="tel"
-                class="mt-2 block w-full rounded-xl border border-slate-300 bg-white p-3 shadow-sm focus:border-yellow-400 focus:outline-none focus:ring-2 focus:ring-yellow-400"
-              />
-            </div>
-
-            <div>
-              <label for="company" class="block text-sm font-semibold text-slate-700">
-                Company
-              </label>
-
-              <input
-                id="company"
-                name="company"
-                type="text"
-                class="mt-2 block w-full rounded-xl border border-slate-300 bg-white p-3 shadow-sm focus:border-yellow-400 focus:outline-none focus:ring-2 focus:ring-yellow-400"
-              />
-            </div>
-
+          <div>
+            <label
+              for="deliveryMethod"
+              class="block text-sm font-semibold text-slate-700"
+            >
+              Delivery Method
+            </label>
+            <select
+              id="deliveryMethod"
+              name="deliveryMethod"
+              class="mt-2 block w-full rounded-xl border border-slate-300 bg-white p-3 shadow-sm focus:border-yellow-400 focus:outline-none focus:ring-2 focus:ring-yellow-400"
+            >
+              <option value="">Select Delivery Method</option>
+              <option>Pickup</option>
+              <option>Local Delivery</option>
+              <option>Shipping</option>
+            </select>
           </div>
 
-        </div>
+          <section class="border-t border-slate-200 pt-8" aria-labelledby="customer-heading">
+            <h2 id="customer-heading" class="mb-6 text-2xl font-bold text-slate-900">
+              Customer Information
+            </h2>
 
-        <!-- Notes -->
-        <div>
-          <label
-            for="notes"
-            class="block text-sm font-semibold text-slate-700"
-          >
-            Project Notes
-          </label>
+            <div class="grid gap-6 md:grid-cols-2">
+              <div>
+                <label for="name" class="block text-sm font-semibold text-slate-700">
+                  Full Name *
+                </label>
+                <input
+                  id="name"
+                  name="name"
+                  type="text"
+                  required
+                  maxlength="120"
+                  class="mt-2 block w-full rounded-xl border border-slate-300 bg-white p-3 shadow-sm focus:border-yellow-400 focus:outline-none focus:ring-2 focus:ring-yellow-400"
+                />
+              </div>
 
-          <textarea
-            id="notes"
-            name="notes"
-            rows="6"
-            placeholder="Tell us anything about your project..."
-            class="mt-2 block w-full rounded-xl border border-slate-300 bg-white p-3 shadow-sm focus:border-yellow-400 focus:outline-none focus:ring-2 focus:ring-yellow-400"
-          ></textarea>
-        </div>
+              <div>
+                <label for="email" class="block text-sm font-semibold text-slate-700">
+                  Email Address *
+                </label>
+                <input
+                  id="email"
+                  name="email"
+                  type="email"
+                  required
+                  maxlength="254"
+                  class="mt-2 block w-full rounded-xl border border-slate-300 bg-white p-3 shadow-sm focus:border-yellow-400 focus:outline-none focus:ring-2 focus:ring-yellow-400"
+                />
+              </div>
 
-        <!-- Submit -->
-        <div class="flex justify-center pt-6">
+              <div>
+                <label for="phone" class="block text-sm font-semibold text-slate-700">
+                  Phone Number
+                </label>
+                <input
+                  id="phone"
+                  name="phone"
+                  type="tel"
+                  maxlength="40"
+                  class="mt-2 block w-full rounded-xl border border-slate-300 bg-white p-3 shadow-sm focus:border-yellow-400 focus:outline-none focus:ring-2 focus:ring-yellow-400"
+                />
+              </div>
 
-          <button
-            type="submit"
-            class="rounded-xl bg-yellow-400 px-12 py-4 text-lg font-semibold text-slate-900 shadow transition hover:bg-yellow-300"
-          >
-            Request Quote
-          </button>
+              <div>
+                <label for="company" class="block text-sm font-semibold text-slate-700">
+                  Company
+                </label>
+                <input
+                  id="company"
+                  name="company"
+                  type="text"
+                  maxlength="160"
+                  class="mt-2 block w-full rounded-xl border border-slate-300 bg-white p-3 shadow-sm focus:border-yellow-400 focus:outline-none focus:ring-2 focus:ring-yellow-400"
+                />
+              </div>
+            </div>
+          </section>
 
-        </div>
+          <div>
+            <label
+              for="notes"
+              class="block text-sm font-semibold text-slate-700"
+            >
+              Project Notes
+            </label>
+            <textarea
+              id="notes"
+              name="notes"
+              rows="6"
+              maxlength="5000"
+              placeholder="Tell us about tolerances, strength, fit, finish, or other requirements..."
+              class="mt-2 block w-full rounded-xl border border-slate-300 bg-white p-3 shadow-sm focus:border-yellow-400 focus:outline-none focus:ring-2 focus:ring-yellow-400"
+            ></textarea>
+          </div>
 
-      </form>
+          {
+            turnstileSiteKey ? (
+              <div class="rounded-xl border border-slate-200 bg-slate-50 p-4">
+                <div
+                  id="quoteTurnstile"
+                  class="cf-turnstile"
+                  data-sitekey={turnstileSiteKey}
+                  data-action={TURNSTILE_QUOTE_ACTION}
+                  data-theme="light"
+                  data-size="flexible"
+                ></div>
+                <p class="mt-2 text-xs text-slate-500">
+                  Protected by Cloudflare Turnstile to prevent automated file-upload abuse.
+                </p>
+              </div>
+            ) : (
+              <div class="rounded-xl border border-red-200 bg-red-50 p-4 text-sm font-medium text-red-700">
+                Quote submissions are temporarily unavailable because bot protection is not configured.
+              </div>
+            )
+          }
 
+          <div class="flex justify-center pt-2">
+            <button
+              type="submit"
+              disabled={!turnstileSiteKey}
+              class="rounded-xl bg-yellow-400 px-12 py-4 text-lg font-semibold text-slate-900 shadow transition hover:bg-yellow-300 disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              Request Quote
+            </button>
+          </div>
+        </form>
+      </div>
     </div>
+  </section>
 
-  </div>
-
-</section>
-<script is:inline>
-const form = document.getElementById("quoteForm");
-
-form?.addEventListener("submit", async (e) => {
-  e.preventDefault();
-
-  const submitButton = form.querySelector("button[type='submit']");
-  const originalText = submitButton.innerText;
-
-  submitButton.disabled = true;
-  submitButton.innerText = "Submitting...";
-
-  try {
-
-    const formData = new FormData(form);
-
-    const response = await fetch("/api/quote", {
-      method: "POST",
-      body: formData,
-    });
-
-    const result = await response.json();
-
-    if (result.success) {
-      window.location.href = result.redirect;
-      return;
-    }
-
-    alert(result.error || "Unable to submit your quote.");
-
-  } catch (err) {
-
-    console.error(err);
-
-    alert("Unexpected server error.");
-
-  } finally {
-
-    submitButton.disabled = false;
-    submitButton.innerText = originalText;
-
+  {
+    turnstileSiteKey && (
+      <>
+        <script is:inline>
+          window.onSlicerTurnstileSuccess = function (token) {
+            window.__layerForgeSlicerTurnstileToken = token;
+            window.dispatchEvent(new Event("layerforge:slicer-turnstile-success"));
+          };
+        </script>
+        <script
+          is:inline
+          src="https://challenges.cloudflare.com/turnstile/v0/api.js"
+          async
+          defer
+        ></script>
+      </>
+    )
   }
 
-});
-</script>
+  <script>
+    import { Mesh, type BufferGeometry } from "three";
+    import { STLExporter } from "three/examples/jsm/exporters/STLExporter.js";
+    import { STLLoader } from "three/examples/jsm/loaders/STLLoader.js";
+
+    import { analyzeThreeDGeometry } from "../../lib/threeDModelAnalysis";
+    import {
+      estimateThreeDPrintQuote,
+      type ThreeDQuoteEstimate,
+      type ThreeDModelMetrics,
+      type ThreeDPrintQuality,
+    } from "../../lib/threeDQuoteEstimator";
+
+    const MAX_INSTANT_ANALYSIS_SIZE = 25 * 1024 * 1024;
+    const P1S_BUILD_VOLUME_MM = 256;
+    const SLICER_POLL_INTERVAL_MS = 2_000;
+    const SLICER_TIMEOUT_MS = 3 * 60 * 1_000;
+    const currency = new Intl.NumberFormat("en-CA", {
+      style: "currency",
+      currency: "CAD",
+    });
+
+    const form = document.getElementById("quoteForm");
+    const fileInput = document.getElementById("file");
+    const fileStatus = document.getElementById("fileStatus");
+    const modelUnits = document.getElementById("modelUnits");
+    const material = document.getElementById("material");
+    const quality = document.getElementById("quality");
+    const infill = document.getElementById("infill");
+    const quantity = document.getElementById("quantity");
+    const estimatePrice = document.getElementById("estimatePrice");
+    const estimateMessage = document.getElementById("estimateMessage");
+    const estimateDetails = document.getElementById("estimateDetails");
+    const estimateDimensions = document.getElementById("estimateDimensions");
+    const estimateWeight = document.getElementById("estimateWeight");
+    const estimateHours = document.getElementById("estimateHours");
+    const estimateQuantity = document.getElementById("estimateQuantity");
+    const estimateWarning = document.getElementById("estimateWarning");
+    const estimateSource = document.getElementById("estimateSource");
+    const slicerPricingPanel = document.getElementById("slicerPricingPanel");
+    const slicerStatus = document.getElementById("slicerStatus");
+
+    let loadedGeometry: BufferGeometry | null = null;
+    let currentMetrics: ThreeDModelMetrics | null = null;
+    let currentBrowserEstimate: ThreeDQuoteEstimate | null = null;
+    let activeSlicerJobToken = "";
+    let slicerRequestSequence = 0;
+    let slicerAutoStartTimer = 0;
+    let slicerAutoRetryBlocked = false;
+    let slicerSecurityWaitStartedAt = 0;
+
+    function setHiddenValue(name: string, value: string) {
+      if (!(form instanceof HTMLFormElement)) {
+        return;
+      }
+
+      const field = form.elements.namedItem(name);
+
+      if (field instanceof HTMLInputElement) {
+        field.value = value;
+      }
+    }
+
+    function clearEstimateFields() {
+      for (const name of [
+        "estimateVersion",
+        "estimateLow",
+        "estimateHigh",
+        "estimateMidpoint",
+        "estimateMaterialGrams",
+        "estimatePrintHours",
+        "modelVolumeCm3",
+        "modelSurfaceAreaCm2",
+        "modelDimensionsMm",
+        "modelTriangleCount",
+      ]) {
+        setHiddenValue(name, "");
+      }
+    }
+
+    function setEstimateSource(label: string) {
+      if (!estimateSource) {
+        return;
+      }
+
+      estimateSource.textContent = label;
+      estimateSource.classList.toggle("hidden", !label);
+    }
+
+    function setSlicerStatus(message: string, isError = false) {
+      if (!slicerStatus) {
+        return;
+      }
+
+      slicerStatus.textContent = message;
+      slicerStatus.classList.toggle("text-red-700", isError);
+      slicerStatus.classList.toggle("text-slate-700", !isError);
+    }
+
+    function configuredSlicerMaterials(): string[] {
+      if (!(slicerPricingPanel instanceof HTMLElement)) {
+        return [];
+      }
+
+      return (slicerPricingPanel.dataset.configuredMaterials ?? "")
+        .split(",")
+        .map((value) => value.trim())
+        .filter(Boolean);
+    }
+
+    function slicerReadiness():
+      | { ready: true }
+      | { ready: false; message: string } {
+      const selectedMaterial =
+        material instanceof HTMLSelectElement ? material.value : "";
+      const file =
+        fileInput instanceof HTMLInputElement ? fileInput.files?.[0] : null;
+
+      if (!slicerPricingPanel) {
+        return { ready: false, message: "" };
+      }
+
+      if (!file) {
+        return {
+          ready: false,
+          message:
+            "Upload an STL and select a supported material to calculate Bambu Studio pricing.",
+        };
+      }
+
+      if (!file.name.toLowerCase().endsWith(".stl")) {
+        return {
+          ready: false,
+          message: "Bambu Studio pricing currently supports STL files.",
+        };
+      }
+
+      if (file.size > MAX_INSTANT_ANALYSIS_SIZE) {
+        return {
+          ready: false,
+          message:
+            "This STL exceeds the 25 MB automatic-pricing limit. It can still be submitted for manual review.",
+        };
+      }
+
+      if (!selectedMaterial) {
+        return {
+          ready: false,
+          message: "Select a material to start Bambu Studio pricing.",
+        };
+      }
+
+      if (!configuredSlicerMaterials().includes(selectedMaterial)) {
+        return {
+          ready: false,
+          message: `Bambu Studio pricing is not configured for ${selectedMaterial}. The instant geometry price is a fallback.`,
+        };
+      }
+
+      if (!currentMetrics || !currentBrowserEstimate) {
+        return {
+          ready: false,
+          message: "Analyzing the STL before Bambu Studio pricing starts…",
+        };
+      }
+
+      if (
+        Math.max(
+          currentMetrics.dimensionsMm.x,
+          currentMetrics.dimensionsMm.y,
+          currentMetrics.dimensionsMm.z,
+        ) > P1S_BUILD_VOLUME_MM
+      ) {
+        return {
+          ready: false,
+          message:
+            "This model exceeds the online printer build volume. Split the model or submit it for manual review.",
+        };
+      }
+
+      return { ready: true };
+    }
+
+    function scheduleAutomaticSlicerPricing() {
+      window.clearTimeout(slicerAutoStartTimer);
+      const readiness = slicerReadiness();
+
+      if (!readiness.ready) {
+        if (readiness.message) {
+          setSlicerStatus(readiness.message);
+        }
+        return;
+      }
+
+      if (activeSlicerJobToken || slicerAutoRetryBlocked) {
+        return;
+      }
+
+      if (!slicerTurnstileToken()) {
+        if (!slicerSecurityWaitStartedAt) {
+          slicerSecurityWaitStartedAt = Date.now();
+        }
+
+        if (Date.now() - slicerSecurityWaitStartedAt > 60_000) {
+          setSlicerStatus(
+            "The Bambu Studio security check did not finish. Reload the page to try again.",
+            true,
+          );
+          showBrowserFallbackEstimate();
+          return;
+        }
+
+        setSlicerStatus(
+          "Completing the security check before Bambu Studio pricing starts…",
+        );
+        slicerAutoStartTimer = window.setTimeout(() => {
+          scheduleAutomaticSlicerPricing();
+        }, 500);
+        return;
+      }
+
+      slicerSecurityWaitStartedAt = 0;
+      slicerAutoStartTimer = window.setTimeout(() => {
+        void calculateBambuStudioPrice();
+      }, 500);
+    }
+
+    function showEstimateState(price: string, message: string) {
+      currentBrowserEstimate = null;
+
+      if (estimatePrice) {
+        estimatePrice.textContent = price;
+      }
+
+      if (estimateMessage) {
+        estimateMessage.textContent = message;
+      }
+
+      estimateDetails?.classList.add("hidden");
+      estimateDetails?.classList.remove("grid");
+      estimateWarning?.classList.add("hidden");
+      setEstimateSource("");
+      clearEstimateFields();
+      scheduleAutomaticSlicerPricing();
+    }
+
+    function unitScale(): number {
+      return modelUnits instanceof HTMLSelectElement && modelUnits.value === "in"
+        ? 25.4
+        : 1;
+    }
+
+    function recalculateMetrics() {
+      if (!loadedGeometry) {
+        currentMetrics = null;
+        return;
+      }
+
+      currentMetrics = analyzeThreeDGeometry(loadedGeometry, unitScale());
+    }
+
+    function renderEstimate() {
+      if (
+        !currentMetrics ||
+        !(material instanceof HTMLSelectElement) ||
+        !(quality instanceof HTMLSelectElement) ||
+        !(infill instanceof HTMLSelectElement) ||
+        !(quantity instanceof HTMLInputElement)
+      ) {
+        return;
+      }
+
+      if (!material.value) {
+        showEstimateState(
+          "Select a material",
+          "The uploaded STL is ready. Choose a material to calculate the range.",
+        );
+        return;
+      }
+
+      const estimate = estimateThreeDPrintQuote({
+        metrics: currentMetrics,
+        material: material.value,
+        quality: quality.value as ThreeDPrintQuality,
+        infillPercent: Number(infill.value),
+        quantity: Number(quantity.value),
+      });
+
+      if (!estimate) {
+        showEstimateState(
+          "Manual review required",
+          "We could not calculate a reliable estimate from the selected options.",
+        );
+        return;
+      }
+
+      currentBrowserEstimate = estimate;
+      const dimensions = currentMetrics.dimensionsMm;
+      const file =
+        fileInput instanceof HTMLInputElement ? fileInput.files?.[0] : null;
+      const bambuPricingExpected =
+        Boolean(slicerPricingPanel) &&
+        Boolean(file?.name.toLowerCase().endsWith(".stl")) &&
+        Boolean(file && file.size <= MAX_INSTANT_ANALYSIS_SIZE) &&
+        configuredSlicerMaterials().includes(material.value) &&
+        Math.max(dimensions.x, dimensions.y, dimensions.z) <=
+          P1S_BUILD_VOLUME_MM;
+
+      if (estimatePrice) {
+        estimatePrice.textContent = bambuPricingExpected
+          ? "Calculating with Bambu Studio…"
+          : `${currency.format(estimate.estimatedTotalLow)}–${currency.format(
+              estimate.estimatedTotalHigh,
+            )}`;
+      }
+
+      if (estimateMessage) {
+        estimateMessage.textContent = bambuPricingExpected
+          ? "Slicing the model with Layer Forge production settings before showing its price."
+          : `Estimated total for ${estimate.quantity} item${estimate.quantity === 1 ? "" : "s"}, before tax and delivery.`;
+      }
+      setEstimateSource(
+        bambuPricingExpected ? "Bambu Studio pending" : "Instant fallback",
+      );
+
+      if (estimateDimensions) {
+        estimateDimensions.textContent =
+          `${dimensions.x.toFixed(1)} × ${dimensions.y.toFixed(1)} × ${dimensions.z.toFixed(1)} mm`;
+      }
+
+      if (estimateWeight) {
+        estimateWeight.textContent = bambuPricingExpected
+          ? "Calculating…"
+          : `${estimate.estimatedMaterialGramsPerUnit.toFixed(1)} g`;
+      }
+
+      if (estimateHours) {
+        estimateHours.textContent = bambuPricingExpected
+          ? "Calculating…"
+          : "Available after slicing";
+      }
+
+      if (estimateQuantity) {
+        estimateQuantity.textContent = String(estimate.quantity);
+      }
+
+      estimateDetails?.classList.remove("hidden");
+      estimateDetails?.classList.add("grid");
+
+      const largestDimension = Math.max(
+        dimensions.x,
+        dimensions.y,
+        dimensions.z,
+      );
+
+      if (estimateWarning) {
+        if (largestDimension > 300) {
+          estimateWarning.textContent =
+            "This model exceeds 300 mm on at least one axis and may require splitting or a larger-format printer. Manual review is required.";
+          estimateWarning.classList.remove("hidden");
+        } else if (largestDimension > P1S_BUILD_VOLUME_MM) {
+          estimateWarning.textContent =
+            "This model exceeds the online printer build volume on at least one axis. Automatic pricing is unavailable unless the model is split.";
+          estimateWarning.classList.remove("hidden");
+        } else {
+          estimateWarning.classList.add("hidden");
+        }
+      }
+
+      setHiddenValue("estimateVersion", estimate.version);
+      setHiddenValue("estimateLow", estimate.estimatedTotalLow.toFixed(2));
+      setHiddenValue("estimateHigh", estimate.estimatedTotalHigh.toFixed(2));
+      setHiddenValue(
+        "estimateMidpoint",
+        estimate.estimatedTotalMidpoint.toFixed(2),
+      );
+      setHiddenValue(
+        "estimateMaterialGrams",
+        estimate.estimatedMaterialGramsPerUnit.toFixed(1),
+      );
+      setHiddenValue(
+        "estimatePrintHours",
+        estimate.estimatedPrintHoursPerUnit.toFixed(1),
+      );
+      setHiddenValue("modelVolumeCm3", currentMetrics.volumeCm3.toFixed(3));
+      setHiddenValue(
+        "modelSurfaceAreaCm2",
+        currentMetrics.surfaceAreaCm2.toFixed(3),
+      );
+      setHiddenValue(
+        "modelDimensionsMm",
+        `${dimensions.x.toFixed(2)}x${dimensions.y.toFixed(2)}x${dimensions.z.toFixed(2)}`,
+      );
+      setHiddenValue(
+        "modelTriangleCount",
+        String(currentMetrics.triangleCount),
+      );
+      scheduleAutomaticSlicerPricing();
+    }
+
+    function showBrowserFallbackEstimate() {
+      if (!currentBrowserEstimate) {
+        return;
+      }
+
+      if (estimatePrice) {
+        estimatePrice.textContent =
+          `${currency.format(currentBrowserEstimate.estimatedTotalLow)}–` +
+          currency.format(currentBrowserEstimate.estimatedTotalHigh);
+      }
+
+      if (estimateMessage) {
+        estimateMessage.textContent =
+          `Temporary fallback for ${currentBrowserEstimate.quantity} item${currentBrowserEstimate.quantity === 1 ? "" : "s"}, before tax and delivery. Final production time requires Bambu Studio.`;
+      }
+
+      if (estimateWeight) {
+        estimateWeight.textContent =
+          `${currentBrowserEstimate.estimatedMaterialGramsPerUnit.toFixed(1)} g estimated`;
+      }
+
+      if (estimateHours) {
+        estimateHours.textContent = "Unavailable";
+      }
+
+      setEstimateSource("Instant fallback");
+    }
+
+    function resetSlicerTurnstile() {
+      const turnstileWindow = window as typeof window & {
+        turnstile?: { reset: (widget?: string) => void };
+        __layerForgeSlicerTurnstileToken?: string;
+      };
+      turnstileWindow.__layerForgeSlicerTurnstileToken = "";
+      turnstileWindow.turnstile?.reset("#slicerTurnstile");
+    }
+
+    function slicerTurnstileToken(): string {
+      const turnstileWindow = window as typeof window & {
+        __layerForgeSlicerTurnstileToken?: string;
+      };
+      const callbackToken =
+        turnstileWindow.__layerForgeSlicerTurnstileToken?.trim() ?? "";
+
+      if (callbackToken) {
+        return callbackToken;
+      }
+
+      if (!(form instanceof HTMLFormElement)) {
+        return "";
+      }
+
+      const field = form.querySelector(
+        "#slicerTurnstile input[name='slicer-turnstile-response']",
+      );
+      return field instanceof HTMLInputElement ? field.value.trim() : "";
+    }
+
+    function cancelSlicerJobToken(jobToken: string, useBeacon = false) {
+      if (!jobToken) {
+        return;
+      }
+
+      const body = JSON.stringify({ jobToken });
+
+      if (
+        useBeacon &&
+        navigator.sendBeacon(
+          "/api/quote/3d-slicer/cancel",
+          new Blob([body], { type: "application/json" }),
+        )
+      ) {
+        return;
+      }
+
+      void fetch("/api/quote/3d-slicer/cancel", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body,
+        keepalive: true,
+      }).catch(() => undefined);
+    }
+
+    function invalidateSlicerPricing() {
+      window.clearTimeout(slicerAutoStartTimer);
+      slicerRequestSequence += 1;
+      slicerAutoRetryBlocked = false;
+      slicerSecurityWaitStartedAt = 0;
+
+      if (activeSlicerJobToken) {
+        cancelSlicerJobToken(activeSlicerJobToken);
+        activeSlicerJobToken = "";
+      }
+
+      resetSlicerTurnstile();
+      setSlicerStatus("Updating automatic Bambu Studio pricing…");
+    }
+
+    function safeSlicerFilename(filename: string): string {
+      const baseName =
+        filename
+          .replace(/\.[^.]+$/, "")
+          .replace(/[^A-Za-z0-9._-]+/g, "-")
+          .replace(/^-+|-+$/g, "")
+          .slice(0, 100) || "layerforge-model";
+
+      return `${baseName}.stl`;
+    }
+
+    function createSlicerFile(originalFile: File): File {
+      const filename = safeSlicerFilename(originalFile.name);
+
+      if (unitScale() === 1) {
+        return new File([originalFile], filename, { type: "model/stl" });
+      }
+
+      if (!loadedGeometry) {
+        throw new Error("The STL geometry is not ready.");
+      }
+
+      const scaledGeometry = loadedGeometry.clone();
+      scaledGeometry.scale(25.4, 25.4, 25.4);
+
+      try {
+        const exporter = new STLExporter();
+        const binary = exporter.parse(new Mesh(scaledGeometry), {
+          binary: true,
+        });
+
+        return new File(
+          [binary.buffer as ArrayBuffer],
+          filename,
+          { type: "model/stl" },
+        );
+      } finally {
+        scaledGeometry.dispose();
+      }
+    }
+
+    async function readJsonResponse(response: Response) {
+      const result = (await response.json().catch(() => null)) as
+        | Record<string, unknown>
+        | null;
+
+      if (!response.ok || result?.success === false) {
+        throw new Error(
+          typeof result?.error === "string"
+            ? result.error
+            : "Bambu Studio pricing failed.",
+        );
+      }
+
+      return result ?? {};
+    }
+
+    function applySlicerEstimate(estimate: ThreeDQuoteEstimate) {
+      if (!currentMetrics) {
+        return;
+      }
+
+      if (estimatePrice) {
+        estimatePrice.textContent =
+          `${currency.format(estimate.estimatedTotalLow)}–` +
+          currency.format(estimate.estimatedTotalHigh);
+      }
+
+      if (estimateMessage) {
+        estimateMessage.textContent =
+          `Bambu Studio estimate for ${estimate.quantity} item${estimate.quantity === 1 ? "" : "s"}, before tax and delivery. Automatic supports are included when the model needs them.`;
+      }
+
+      if (estimateWeight) {
+        estimateWeight.textContent =
+          `${estimate.estimatedMaterialGramsPerUnit.toFixed(1)} g`;
+      }
+
+      if (estimateHours) {
+        estimateHours.textContent =
+          `${estimate.estimatedPrintHoursPerUnit.toFixed(1)} h`;
+      }
+
+      setEstimateSource("Bambu Studio");
+      setHiddenValue("estimateVersion", estimate.version);
+      setHiddenValue("estimateLow", estimate.estimatedTotalLow.toFixed(2));
+      setHiddenValue("estimateHigh", estimate.estimatedTotalHigh.toFixed(2));
+      setHiddenValue(
+        "estimateMidpoint",
+        estimate.estimatedTotalMidpoint.toFixed(2),
+      );
+      setHiddenValue(
+        "estimateMaterialGrams",
+        estimate.estimatedMaterialGramsPerUnit.toFixed(1),
+      );
+      setHiddenValue(
+        "estimatePrintHours",
+        estimate.estimatedPrintHoursPerUnit.toFixed(1),
+      );
+    }
+
+    function wait(milliseconds: number): Promise<void> {
+      return new Promise((resolve) => {
+        window.setTimeout(resolve, milliseconds);
+      });
+    }
+
+    async function calculateBambuStudioPrice() {
+      if (
+        !(fileInput instanceof HTMLInputElement) ||
+        !(material instanceof HTMLSelectElement) ||
+        !(quality instanceof HTMLSelectElement) ||
+        !(infill instanceof HTMLSelectElement) ||
+        !(quantity instanceof HTMLInputElement) ||
+        !currentBrowserEstimate
+      ) {
+        return;
+      }
+
+      const originalFile = fileInput.files?.[0];
+      const turnstileToken = slicerTurnstileToken();
+
+      if (!originalFile) {
+        setSlicerStatus("Upload an STL to calculate Bambu Studio pricing.", true);
+        return;
+      }
+
+      if (!turnstileToken) {
+        setSlicerStatus(
+          "Completing the security check before Bambu Studio pricing starts…",
+        );
+        return;
+      }
+
+      const requestSequence = ++slicerRequestSequence;
+      let jobToken = "";
+      slicerAutoRetryBlocked = true;
+      setEstimateSource("Bambu Studio calculating…");
+      setSlicerStatus(
+        "Preparing a temporary STL upload. Your pricing settings stay private.",
+      );
+
+      try {
+        const slicerFile = createSlicerFile(originalFile);
+        const startResponse = await fetch("/api/quote/3d-slicer/start", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            turnstileToken,
+            material: material.value,
+            quality: quality.value,
+            infillPercent: Number(infill.value),
+            quantity: Number(quantity.value),
+          }),
+        });
+        const start = await readJsonResponse(startResponse);
+        jobToken = String(start.jobToken ?? "");
+        activeSlicerJobToken = jobToken;
+        resetSlicerTurnstile();
+
+        if (
+          requestSequence !== slicerRequestSequence ||
+          typeof start.uploadUrl !== "string" ||
+          !jobToken
+        ) {
+          cancelSlicerJobToken(jobToken);
+          activeSlicerJobToken = "";
+          return;
+        }
+
+        setSlicerStatus(
+          "Uploading the temporary model directly to the slicer.",
+        );
+        const uploadForm = new FormData();
+        uploadForm.append("file", slicerFile, slicerFile.name);
+        const uploadResponse = await fetch(start.uploadUrl, {
+          method: "POST",
+          body: uploadForm,
+        });
+
+        if (!uploadResponse.ok) {
+          throw new Error("The temporary STL upload failed.");
+        }
+
+        const uploadResult = (await uploadResponse.json().catch(() => null)) as
+          | Record<string, unknown>
+          | null;
+        const uploadedFileId = String(uploadResult?.file_id ?? "").trim();
+
+        if (!uploadedFileId) {
+          throw new Error(
+            "Cloud Slicer uploaded the STL but did not return its file ID.",
+          );
+        }
+
+        if (requestSequence !== slicerRequestSequence) {
+          cancelSlicerJobToken(jobToken);
+          activeSlicerJobToken = "";
+          return;
+        }
+
+        setSlicerStatus("Bambu Studio is slicing with automatic supports.");
+        const queueResponse = await fetch("/api/quote/3d-slicer/queue", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ jobToken, fileId: uploadedFileId }),
+        });
+        const queued = await readJsonResponse(queueResponse);
+        const queuedJobToken = String(queued.jobToken ?? "");
+
+        if (!queuedJobToken) {
+          throw new Error("The slicer did not return a job token.");
+        }
+
+        jobToken = queuedJobToken;
+        activeSlicerJobToken = jobToken;
+
+        if (requestSequence !== slicerRequestSequence) {
+          cancelSlicerJobToken(jobToken);
+          activeSlicerJobToken = "";
+          return;
+        }
+
+        const deadline = Date.now() + SLICER_TIMEOUT_MS;
+        let transientFailures = 0;
+
+        while (Date.now() < deadline) {
+          await wait(SLICER_POLL_INTERVAL_MS);
+
+          if (requestSequence !== slicerRequestSequence) {
+            cancelSlicerJobToken(jobToken);
+            activeSlicerJobToken = "";
+            return;
+          }
+
+          const statusResponse = await fetch("/api/quote/3d-slicer/status", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ jobToken }),
+          });
+
+          if (statusResponse.status >= 500 && transientFailures < 2) {
+            transientFailures += 1;
+            continue;
+          }
+
+          const status = await readJsonResponse(statusResponse);
+
+          if (status.status === "pending") {
+            const progress = Number(status.progress);
+            setSlicerStatus(
+              Number.isFinite(progress) && progress > 0
+                ? `Bambu Studio is slicing… ${Math.round(progress)}%`
+                : "Bambu Studio is slicing…",
+            );
+            continue;
+          }
+
+          const estimate = status.estimate as
+            | ThreeDQuoteEstimate
+            | undefined;
+
+          if (!estimate || status.status !== "success") {
+            throw new Error("The slicer returned an incomplete estimate.");
+          }
+
+          activeSlicerJobToken = "";
+          applySlicerEstimate(estimate);
+          setSlicerStatus(
+            status.cleanupComplete === true
+              ? "Bambu Studio pricing is ready. The temporary slicer files were deleted."
+              : "Bambu Studio pricing is ready. Temporary-file deletion was requested but could not be confirmed.",
+            status.cleanupComplete !== true,
+          );
+          return;
+        }
+
+        throw new Error(
+          "Bambu Studio took too long. The instant geometry price is shown as a fallback.",
+        );
+      } catch (error) {
+        if (jobToken) {
+          cancelSlicerJobToken(jobToken);
+        }
+
+        activeSlicerJobToken = "";
+        resetSlicerTurnstile();
+        setSlicerStatus(
+          error instanceof Error
+            ? error.message
+            : "Bambu Studio pricing failed. The instant geometry price is shown as a fallback.",
+          true,
+        );
+        showBrowserFallbackEstimate();
+      } finally {
+        if (requestSequence === slicerRequestSequence) {
+          activeSlicerJobToken = "";
+        }
+      }
+    }
+
+    async function analyzeSelectedFile() {
+      if (!(fileInput instanceof HTMLInputElement)) {
+        return;
+      }
+
+      const file = fileInput.files?.[0];
+      loadedGeometry = null;
+      currentMetrics = null;
+
+      if (!file) {
+        if (fileStatus) {
+          fileStatus.textContent = "";
+        }
+        showEstimateState(
+          "Upload an STL to calculate",
+          "Choose your material and print options after uploading the model.",
+        );
+        return;
+      }
+
+      if (fileStatus) {
+        fileStatus.textContent = `${file.name} · ${(file.size / 1024 / 1024).toFixed(1)} MB`;
+      }
+
+      const extension = file.name.split(".").pop()?.toLowerCase();
+
+      if (extension !== "stl") {
+        showEstimateState(
+          "Manual review required",
+          "Instant pricing currently supports STL files. Your uploaded design can still be submitted for a personalized quote.",
+        );
+        return;
+      }
+
+      if (file.size > MAX_INSTANT_ANALYSIS_SIZE) {
+        showEstimateState(
+          "Manual review required",
+          "This STL is larger than the 25 MB instant-analysis limit, but it can still be submitted for review.",
+        );
+        return;
+      }
+
+      showEstimateState(
+        "Analyzing model…",
+        "Reading geometry in your browser. Your file has not been submitted yet.",
+      );
+
+      try {
+        const loader = new STLLoader();
+        loadedGeometry = loader.parse(await file.arrayBuffer());
+        recalculateMetrics();
+        renderEstimate();
+      } catch (error) {
+        console.error("Unable to analyze STL.", error);
+        loadedGeometry = null;
+        currentMetrics = null;
+        showEstimateState(
+          "Manual review required",
+          error instanceof Error
+            ? error.message
+            : "The STL could not be analyzed automatically.",
+        );
+      }
+    }
+
+    fileInput?.addEventListener("change", () => {
+      invalidateSlicerPricing();
+      void analyzeSelectedFile();
+    });
+
+    modelUnits?.addEventListener("change", () => {
+      invalidateSlicerPricing();
+
+      try {
+        recalculateMetrics();
+        renderEstimate();
+      } catch (error) {
+        showEstimateState(
+          "Manual review required",
+          error instanceof Error
+            ? error.message
+            : "The STL could not be analyzed automatically.",
+        );
+      }
+    });
+
+    for (const field of [material, quality, infill, quantity]) {
+      const updateEstimate = () => {
+        invalidateSlicerPricing();
+        renderEstimate();
+      };
+      field?.addEventListener("change", updateEstimate);
+      field?.addEventListener("input", updateEstimate);
+    }
+
+    window.addEventListener("layerforge:slicer-turnstile-success", () => {
+      scheduleAutomaticSlicerPricing();
+    });
+
+    window.addEventListener("pagehide", () => {
+      if (activeSlicerJobToken) {
+        cancelSlicerJobToken(activeSlicerJobToken, true);
+        activeSlicerJobToken = "";
+      }
+    });
+
+    form?.addEventListener("submit", async (event) => {
+      event.preventDefault();
+
+      if (!(form instanceof HTMLFormElement)) {
+        return;
+      }
+
+      const submitButton = form.querySelector("button[type='submit']");
+
+      if (!(submitButton instanceof HTMLButtonElement)) {
+        return;
+      }
+
+      const originalText = submitButton.innerText;
+      let submitted = false;
+      submitButton.disabled = true;
+      submitButton.innerText = "Submitting...";
+
+      try {
+        const response = await fetch("/api/quote", {
+          method: "POST",
+          body: new FormData(form),
+        });
+        const result = await response.json();
+
+        if (response.ok && result.success) {
+          submitted = true;
+          window.location.href = result.redirect;
+          return;
+        }
+
+        alert(result.error || "Unable to submit your quote.");
+      } catch (error) {
+        console.error(error);
+        alert("Unexpected server error.");
+      } finally {
+        if (!submitted) {
+          const turnstileWindow = window as typeof window & {
+            turnstile?: { reset: (widget?: string) => void };
+          };
+          turnstileWindow.turnstile?.reset("#quoteTurnstile");
+          submitButton.disabled = false;
+          submitButton.innerText = originalText;
+        }
+      }
+    });
+  </script>
 </MainLayout>

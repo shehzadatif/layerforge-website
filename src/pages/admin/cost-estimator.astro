@@ -1,0 +1,479 @@
+---
+import AdminLayout from "../../layouts/AdminLayout.astro";
+import { getConfiguredCloudSlicerMaterials } from "../../lib/cloudSlicer";
+import { getCloudSlicerServerEnvironment } from "../../lib/cloudSlicerServer";
+import {
+  customerRateFromCost,
+  grossMarginMultiplier,
+  parseThreeDQuotePricingRows,
+  THREE_D_QUOTE_MATERIALS,
+  THREE_D_QUOTE_PRICING_KEYS,
+  THREE_D_QUOTE_PRICING_SETTING_KEYS,
+} from "../../lib/threeDQuotePricing";
+import { supabaseAdmin } from "../../lib/supabaseAdmin";
+
+const { data, error } = await supabaseAdmin
+  .from("settings")
+  .select("setting_key, setting_value")
+  .in("setting_key", [...THREE_D_QUOTE_PRICING_SETTING_KEYS]);
+
+if (error) {
+  console.error("Unable to load cost estimator settings:", error);
+}
+
+const pricing = parseThreeDQuotePricingRows(data ?? []);
+const saved = Astro.url.searchParams.get("saved") === "1";
+const slicerSynced = Astro.url.searchParams.get("slicer-synced") === "1";
+const marginMultiplier = grossMarginMultiplier(pricing.targetMarginPercent);
+const sampleDirectCost = 10;
+const sampleCustomerPrice = sampleDirectCost * marginMultiplier;
+const configuredSlicerMaterials = getConfiguredCloudSlicerMaterials(
+  getCloudSlicerServerEnvironment(),
+);
+---
+
+<AdminLayout title="Cost Estimator" active="cost-estimator">
+  <div class="mb-8 flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+    <div>
+      <p class="text-sm font-bold uppercase tracking-[0.18em] text-yellow-700">
+        3D printing
+      </p>
+      <h1 class="mt-2 text-4xl font-bold text-slate-950">
+        Cost Estimator
+      </h1>
+      <p class="mt-2 max-w-3xl text-slate-500">
+        Adjust the cost basis, target profit margin, and estimate range used by
+        the public STL quote estimator. Saved values affect new estimates
+        without a code deployment.
+      </p>
+    </div>
+
+    <a
+      href="/quote/3d-printing"
+      target="_blank"
+      rel="noreferrer"
+      class="rounded-xl border border-slate-300 bg-white px-5 py-3 text-center font-semibold text-slate-800 transition hover:bg-slate-50"
+    >
+      Open Customer Estimator
+    </a>
+  </div>
+
+  {
+    saved && (
+      <div class="mb-8 rounded-xl border border-green-200 bg-green-50 px-5 py-4 font-medium text-green-800">
+        Cost estimator settings saved. New customer estimates will use the
+        updated values.
+      </div>
+    )
+  }
+
+  {
+    slicerSynced && (
+      <div class="mb-8 rounded-xl border border-green-200 bg-green-50 px-5 py-4 font-medium text-green-800">
+        Cloud Slicer now uses the exported Bambu Lab P1S 0.4 mm machine
+        limits. Run the same STL again to compare its material and print time.
+      </div>
+    )
+  }
+
+  <section class="mb-8 rounded-2xl border border-slate-200 bg-white p-6 shadow">
+    <div class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+      <div>
+        <div class="flex flex-wrap items-center gap-3">
+          <h2 class="text-xl font-bold text-slate-950">
+            Bambu Studio Refinement
+          </h2>
+          <span
+            class:list={[
+              "rounded-full px-3 py-1 text-xs font-bold",
+              configuredSlicerMaterials.length > 0
+                ? "bg-green-100 text-green-800"
+                : "bg-slate-100 text-slate-600",
+            ]}
+          >
+            {configuredSlicerMaterials.length > 0 ? "Configured" : "Not configured"}
+          </span>
+        </div>
+        <p class="mt-2 max-w-3xl text-sm leading-6 text-slate-500">
+          Hybrid estimates use Bambu Studio with the Bambu Lab P1S, 0.4 mm
+          nozzle, and automatic supports. Slicer credentials and profile IDs
+          are managed as server-only deployment settings.
+        </p>
+      </div>
+      <div class="rounded-xl bg-slate-50 px-5 py-4 text-sm">
+        <div class="font-semibold text-slate-700">Enabled materials</div>
+        <div class="mt-1 font-bold text-slate-950">
+          {
+            configuredSlicerMaterials.length > 0
+              ? configuredSlicerMaterials.join(", ")
+              : "None"
+          }
+        </div>
+      </div>
+    </div>
+    {
+      configuredSlicerMaterials.includes("PLA") && (
+        <form
+          action="/api/admin/synchronize-cloud-slicer-p1s"
+          method="POST"
+          class="mt-5 border-t border-slate-200 pt-5"
+        >
+          <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <p class="max-w-3xl text-sm leading-6 text-slate-500">
+              Synchronize the configured Cloud Slicer printer with the machine
+              limits exported from Layer Forge’s Bambu Lab P1S 0.4 mm preset:
+              500 mm/s X/Y feedrate and 20,000 mm/s² X/Y acceleration.
+            </p>
+            <button
+              type="submit"
+              class="shrink-0 rounded-xl bg-slate-950 px-5 py-3 font-semibold text-white transition hover:bg-slate-800"
+            >
+              Synchronize P1S Profile
+            </button>
+          </div>
+        </form>
+      )
+    }
+  </section>
+
+  <form
+    action="/api/admin/update-cost-estimator"
+    method="POST"
+    class="space-y-8"
+  >
+    <section class="rounded-2xl bg-white p-8 shadow">
+      <div class="mb-6">
+        <h2 class="text-2xl font-bold text-slate-950">Base Costs</h2>
+        <p class="mt-2 text-sm leading-6 text-slate-500">
+          Enter direct operating costs before profit. These values can include
+          labour, electricity, consumables, routine wear, and setup effort.
+        </p>
+      </div>
+
+      <div class="grid gap-6 md:grid-cols-3">
+        <label class="grid gap-2">
+          <span class="font-semibold text-slate-800">Setup cost (CAD)</span>
+          <input
+            type="number"
+            name={THREE_D_QUOTE_PRICING_KEYS.setupCost}
+            value={pricing.setupCost}
+            min="0"
+            max="10000"
+            step="0.01"
+            required
+            class="rounded-xl border px-4 py-3"
+          />
+          <span class="text-xs leading-5 text-slate-500">
+            Applied once per quote, not once per item.
+          </span>
+        </label>
+
+        <label class="grid gap-2">
+          <span class="font-semibold text-slate-800">
+            Machine cost per hour (CAD)
+          </span>
+          <input
+            type="number"
+            name={THREE_D_QUOTE_PRICING_KEYS.machineCostPerHour}
+            value={pricing.machineCostPerHour}
+            min="0"
+            max="1000"
+            step="0.01"
+            required
+            class="rounded-xl border px-4 py-3"
+          />
+          <span class="text-xs leading-5 text-slate-500">
+            Direct hourly operating cost before profit margin.
+          </span>
+        </label>
+
+        <label class="grid gap-2">
+          <span class="font-semibold text-slate-800">
+            Minimum customer price (CAD)
+          </span>
+          <input
+            type="number"
+            name={THREE_D_QUOTE_PRICING_KEYS.minimumOrderPrice}
+            value={pricing.minimumOrderPrice}
+            min="0"
+            max="100000"
+            step="0.01"
+            required
+            class="rounded-xl border px-4 py-3"
+          />
+          <span class="text-xs leading-5 text-slate-500">
+            The preliminary midpoint will never be lower than this value.
+          </span>
+        </label>
+      </div>
+    </section>
+
+    <section class="rounded-2xl bg-white p-8 shadow">
+      <div class="grid gap-8 lg:grid-cols-[1.2fr_0.8fr] lg:items-center">
+        <div>
+          <h2 class="text-2xl font-bold text-slate-950">
+            Target Profit Margin
+          </h2>
+          <p class="mt-2 text-sm leading-6 text-slate-500">
+            This is gross margin, not markup. At 40% margin, CAD $6.00 of direct
+            cost becomes CAD $10.00 of customer price.
+          </p>
+
+          <div class="mt-6 flex items-center gap-5">
+            <input
+              id="targetMargin"
+              type="range"
+              name={THREE_D_QUOTE_PRICING_KEYS.targetMarginPercent}
+              value={pricing.targetMarginPercent}
+              min="0"
+              max="80"
+              step="1"
+              class="min-w-0 flex-1 accent-yellow-500"
+            />
+            <output
+              id="targetMarginOutput"
+              for="targetMargin"
+              class="min-w-24 rounded-xl bg-slate-950 px-4 py-3 text-center text-xl font-bold text-white"
+            >
+              {pricing.targetMarginPercent.toFixed(0)}%
+            </output>
+          </div>
+        </div>
+
+        <div class="rounded-2xl border border-yellow-200 bg-yellow-50 p-6">
+          <p class="text-sm font-bold uppercase tracking-[0.14em] text-yellow-700">
+            Live margin example
+          </p>
+          <dl class="mt-4 space-y-3">
+            <div class="flex justify-between gap-4">
+              <dt class="text-slate-600">Direct cost</dt>
+              <dd class="font-bold">CAD $10.00</dd>
+            </div>
+            <div class="flex justify-between gap-4">
+              <dt class="text-slate-600">Customer price</dt>
+              <dd id="marginExamplePrice" class="font-bold">
+                CAD ${sampleCustomerPrice.toFixed(2)}
+              </dd>
+            </div>
+            <div class="flex justify-between gap-4 border-t border-yellow-200 pt-3">
+              <dt class="text-slate-600">Gross profit</dt>
+              <dd id="marginExampleProfit" class="font-bold text-green-700">
+                CAD ${(sampleCustomerPrice - sampleDirectCost).toFixed(2)}
+              </dd>
+            </div>
+          </dl>
+        </div>
+      </div>
+    </section>
+
+    <section class="rounded-2xl bg-white p-8 shadow">
+      <div class="mb-6">
+        <h2 class="text-2xl font-bold text-slate-950">Material Cost Basis</h2>
+        <p class="mt-2 text-sm leading-6 text-slate-500">
+          Cost per gram is the direct cost before margin. Throughput controls the
+          browser estimate of print hours; increase it when the estimator predicts
+          too much time and decrease it when time is underestimated.
+        </p>
+      </div>
+
+      <div class="grid gap-5 md:grid-cols-2 xl:grid-cols-4">
+        {
+          THREE_D_QUOTE_MATERIALS.map((material) => {
+            const materialPricing = pricing.materials[material];
+            const customerRate = customerRateFromCost(
+              materialPricing.costPerGram,
+              pricing.targetMarginPercent,
+            );
+
+            return (
+              <article class="rounded-2xl border border-slate-200 p-5">
+                <h3 class="text-xl font-bold text-slate-950">{material}</h3>
+
+                <label class="mt-5 grid gap-2">
+                  <span class="text-sm font-semibold text-slate-700">
+                    Cost per gram (CAD)
+                  </span>
+                  <input
+                    type="number"
+                    name={
+                      THREE_D_QUOTE_PRICING_KEYS.materialCostPerGram[material]
+                    }
+                    value={materialPricing.costPerGram}
+                    min="0.001"
+                    max="10"
+                    step="0.001"
+                    required
+                    data-material-cost={material}
+                    class="rounded-xl border px-4 py-3"
+                  />
+                </label>
+
+                <label class="mt-4 grid gap-2">
+                  <span class="text-sm font-semibold text-slate-700">
+                    Throughput (g/hour)
+                  </span>
+                  <input
+                    type="number"
+                    name={
+                      THREE_D_QUOTE_PRICING_KEYS.materialThroughput[material]
+                    }
+                    value={materialPricing.throughputGramsPerHour}
+                    min="0.1"
+                    max="100"
+                    step="0.1"
+                    required
+                    class="rounded-xl border px-4 py-3"
+                  />
+                </label>
+
+                <div class="mt-5 rounded-xl bg-slate-100 p-4 text-sm">
+                  <div class="text-slate-500">Derived customer rate</div>
+                  <div
+                    class="mt-1 text-lg font-bold text-slate-950"
+                    data-material-rate={material}
+                  >
+                    CAD ${customerRate.toFixed(3)}/g
+                  </div>
+                </div>
+              </article>
+            );
+          })
+        }
+      </div>
+    </section>
+
+    <section class="rounded-2xl bg-white p-8 shadow">
+      <div class="mb-6">
+        <h2 class="text-2xl font-bold text-slate-950">
+          Estimate Allowances
+        </h2>
+        <p class="mt-2 text-sm leading-6 text-slate-500">
+          These controls account for browser geometry uncertainty before a real
+          slicer and print orientation are reviewed.
+        </p>
+      </div>
+
+      <div class="grid gap-6 md:grid-cols-3">
+        <label class="grid gap-2">
+          <span class="font-semibold text-slate-800">
+            Material waste allowance (%)
+          </span>
+          <input
+            type="number"
+            name={THREE_D_QUOTE_PRICING_KEYS.wasteAllowancePercent}
+            value={pricing.wasteAllowancePercent}
+            min="0"
+            max="100"
+            step="1"
+            required
+            class="rounded-xl border px-4 py-3"
+          />
+        </label>
+
+        <label class="grid gap-2">
+          <span class="font-semibold text-slate-800">
+            Range below midpoint (%)
+          </span>
+          <input
+            type="number"
+            name={THREE_D_QUOTE_PRICING_KEYS.lowRangePercent}
+            value={pricing.lowRangePercent}
+            min="0"
+            max="50"
+            step="1"
+            required
+            class="rounded-xl border px-4 py-3"
+          />
+        </label>
+
+        <label class="grid gap-2">
+          <span class="font-semibold text-slate-800">
+            Range above midpoint (%)
+          </span>
+          <input
+            type="number"
+            name={THREE_D_QUOTE_PRICING_KEYS.highRangePercent}
+            value={pricing.highRangePercent}
+            min="0"
+            max="100"
+            step="1"
+            required
+            class="rounded-xl border px-4 py-3"
+          />
+        </label>
+      </div>
+    </section>
+
+    <div class="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
+      <a
+        href="/admin"
+        class="rounded-xl border border-slate-300 bg-white px-7 py-4 text-center font-bold text-slate-800 hover:bg-slate-50"
+      >
+        Cancel
+      </a>
+      <button
+        type="submit"
+        class="rounded-xl bg-yellow-400 px-8 py-4 font-bold text-slate-950 hover:bg-yellow-300"
+      >
+        Save Cost Estimator
+      </button>
+    </div>
+  </form>
+
+  <script>
+    const marginInput = document.getElementById("targetMargin");
+    const marginOutput = document.getElementById("targetMarginOutput");
+    const examplePrice = document.getElementById("marginExamplePrice");
+    const exampleProfit = document.getElementById("marginExampleProfit");
+    const currency = new Intl.NumberFormat("en-CA", {
+      style: "currency",
+      currency: "CAD",
+    });
+
+    function updateMarginPreview() {
+      if (!(marginInput instanceof HTMLInputElement)) {
+        return;
+      }
+
+      const margin = Math.min(80, Math.max(0, Number(marginInput.value) || 0));
+      const multiplier = 1 / (1 - margin / 100);
+      const directCost = 10;
+      const customerPrice = directCost * multiplier;
+
+      if (marginOutput instanceof HTMLOutputElement) {
+        marginOutput.value = `${margin.toFixed(0)}%`;
+        marginOutput.textContent = `${margin.toFixed(0)}%`;
+      }
+
+      if (examplePrice) {
+        examplePrice.textContent = currency.format(customerPrice);
+      }
+
+      if (exampleProfit) {
+        exampleProfit.textContent = currency.format(customerPrice - directCost);
+      }
+
+      document.querySelectorAll("[data-material-cost]").forEach((element) => {
+        if (!(element instanceof HTMLInputElement)) {
+          return;
+        }
+
+        const material = element.dataset.materialCost;
+        const rateOutput = material
+          ? document.querySelector(`[data-material-rate="${material}"]`)
+          : null;
+        const cost = Number(element.value);
+
+        if (rateOutput && Number.isFinite(cost)) {
+          rateOutput.textContent = `CAD ${(cost * multiplier).toFixed(3)}/g`;
+        }
+      });
+    }
+
+    marginInput?.addEventListener("input", updateMarginPreview);
+    document.querySelectorAll("[data-material-cost]").forEach((element) => {
+      element.addEventListener("input", updateMarginPreview);
+    });
+    updateMarginPreview();
+  </script>
+</AdminLayout>

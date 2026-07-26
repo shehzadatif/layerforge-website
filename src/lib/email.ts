@@ -23,6 +23,10 @@ export async function sendQuoteEmails(data: {
   material: string;
   quantity: number;
   projectName: string;
+  onlineEstimate?: {
+    low: number;
+    high: number;
+  };
 }) {
   const fromEmail =
     import.meta.env.QUOTE_FROM_EMAIL?.trim() ||
@@ -37,6 +41,14 @@ export async function sendQuoteEmails(data: {
   const safeService = escapeHtml(data.service);
   const safeProjectName = escapeHtml(data.projectName);
   const safeMaterial = escapeHtml(data.material);
+  const estimateHtml = data.onlineEstimate
+    ? `
+      <p>
+        <strong>Preliminary online estimate:</strong>
+        CAD $${data.onlineEstimate.low.toFixed(2)}–$${data.onlineEstimate.high.toFixed(2)}
+      </p>
+    `
+    : "";
 
   // Email to Layer Forge
   await resend.emails.send({
@@ -52,10 +64,11 @@ export async function sendQuoteEmails(data: {
       <p><strong>Project:</strong> ${safeProjectName}</p>
       <p><strong>Material:</strong> ${safeMaterial}</p>
       <p><strong>Quantity:</strong> ${data.quantity}</p>
+      ${estimateHtml}
 
       <hr>
 
-      <p>Login to the Layer Forge admin dashboard to review this quote.</p>
+      <p>Login to the Layer Forge admin dashboard to review the design file and finalize pricing.</p>
     `,
   });
 
@@ -70,6 +83,14 @@ export async function sendQuoteEmails(data: {
       <p>Hello ${safeName},</p>
 
       <p>We've successfully received your quote request.</p>
+
+      ${estimateHtml}
+
+      ${
+        data.onlineEstimate
+          ? "<p>This estimate is preliminary and excludes tax and delivery. Final pricing may change after we review model orientation, supports, tolerances, and manufacturability.</p>"
+          : ""
+      }
 
       <p>Our team will review your files and contact you within one business day.</p>
 
