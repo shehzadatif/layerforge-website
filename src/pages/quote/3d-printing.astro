@@ -370,7 +370,6 @@ const slicerPricingConfigured = configuredSlicerMaterials.length > 0;
                           data-sitekey={turnstileSiteKey}
                           data-action={TURNSTILE_ESTIMATE_ACTION}
                           data-response-field-name="slicer-turnstile-response"
-                          data-callback="onSlicerTurnstileSuccess"
                           data-theme="light"
                           data-size="flexible"
                         ></div>
@@ -625,6 +624,7 @@ const slicerPricingConfigured = configuredSlicerMaterials.length > 0;
     let slicerRequestSequence = 0;
     let slicerAutoStartTimer = 0;
     let slicerAutoRetryBlocked = false;
+    let slicerSecurityWaitStartedAt = 0;
 
     function setHiddenValue(name: string, value: string) {
       if (!(form instanceof HTMLFormElement)) {
@@ -774,12 +774,29 @@ const slicerPricingConfigured = configuredSlicerMaterials.length > 0;
       }
 
       if (!slicerTurnstileToken()) {
+        if (!slicerSecurityWaitStartedAt) {
+          slicerSecurityWaitStartedAt = Date.now();
+        }
+
+        if (Date.now() - slicerSecurityWaitStartedAt > 60_000) {
+          setSlicerStatus(
+            "The Bambu Studio security check did not finish. Reload the page to try again.",
+            true,
+          );
+          showBrowserFallbackEstimate();
+          return;
+        }
+
         setSlicerStatus(
           "Completing the security check before Bambu Studio pricing starts…",
         );
+        slicerAutoStartTimer = window.setTimeout(() => {
+          scheduleAutomaticSlicerPricing();
+        }, 500);
         return;
       }
 
+      slicerSecurityWaitStartedAt = 0;
       slicerAutoStartTimer = window.setTimeout(() => {
         void calculateBambuStudioPrice();
       }, 500);
@@ -1031,6 +1048,7 @@ const slicerPricingConfigured = configuredSlicerMaterials.length > 0;
       window.clearTimeout(slicerAutoStartTimer);
       slicerRequestSequence += 1;
       slicerAutoRetryBlocked = false;
+      slicerSecurityWaitStartedAt = 0;
 
       if (activeSlicerJobToken) {
         cancelSlicerJobToken(activeSlicerJobToken);
@@ -1427,13 +1445,6 @@ const slicerPricingConfigured = configuredSlicerMaterials.length > 0;
       field?.addEventListener("change", updateEstimate);
       field?.addEventListener("input", updateEstimate);
     }
-
-    const slicerCallbackWindow = window as typeof window & {
-      onSlicerTurnstileSuccess?: () => void;
-    };
-    slicerCallbackWindow.onSlicerTurnstileSuccess = () => {
-      scheduleAutomaticSlicerPricing();
-    };
 
     window.addEventListener("pagehide", () => {
       if (activeSlicerJobToken) {
