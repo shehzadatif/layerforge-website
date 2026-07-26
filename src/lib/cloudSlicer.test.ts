@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 
 import {
   buildCloudSlicerQuotePayload,
+  BAMBU_P1S_04_PROFILE,
   CloudSlicerApiError,
   cloudSlicerQueueErrorMessage,
   cleanupCloudSlicerJob,
@@ -10,6 +11,7 @@ import {
   getCloudSlicerQuoteStatus,
   queueCloudSlicerQuote,
   resolveCloudSlicerConfiguration,
+  synchronizeCloudSlicerP1sProfile,
   type CloudSlicerConfiguration,
   type CloudSlicerEnvironment,
 } from "./cloudSlicer";
@@ -102,6 +104,35 @@ describe("Cloud Slicer Bambu Studio payload", () => {
         },
       },
     });
+  });
+});
+
+describe("Cloud Slicer P1S profile synchronization", () => {
+  it("uses the machine limits exported from Bambu Studio", async () => {
+    const fetcher = vi
+      .fn<typeof fetch>()
+      .mockResolvedValue(
+        new Response(JSON.stringify({ status: "updated" }), { status: 200 }),
+      );
+
+    await synchronizeCloudSlicerP1sProfile(configuration, fetcher);
+
+    expect(BAMBU_P1S_04_PROFILE.machine_limits).toMatchObject({
+      max_feedrates: { x: 500, y: 500 },
+      max_accelerations: {
+        x: 20000,
+        y: 20000,
+        extruding: 20000,
+        travel: 9000,
+      },
+    });
+    expect(fetcher).toHaveBeenCalledWith(
+      "https://api.cloudslicer3d.com/v1/printer/p1s-printer",
+      expect.objectContaining({
+        method: "PATCH",
+        body: JSON.stringify(BAMBU_P1S_04_PROFILE),
+      }),
+    );
   });
 });
 
@@ -203,8 +234,7 @@ describe("Cloud Slicer API client", () => {
     const fetcher = vi.fn<typeof fetch>(async () =>
       Response.json(
         {
-          detail:
-            "Printer 0123456789abcdef0123456789abcdef was not found",
+          detail: "Printer 0123456789abcdef0123456789abcdef was not found",
         },
         { status: 404 },
       ),
