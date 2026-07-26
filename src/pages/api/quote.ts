@@ -13,6 +13,7 @@ import {
   TURNSTILE_QUOTE_ACTION,
   verifyTurnstileToken,
 } from "../../lib/turnstile";
+import { getTurnstileServerEnvironment } from "../../lib/turnstileServer";
 import { supabaseAdmin } from "../../lib/supabaseAdmin";
 
 export const prerender = false;
@@ -219,9 +220,10 @@ async function verifyQuoteTurnstile(
   request: Request,
   formData: FormData,
 ): Promise<void> {
+  const turnstileEnvironment = getTurnstileServerEnvironment();
   const secret = resolveTurnstileSecretKey(
-    import.meta.env.TURNSTILE_SECRET_KEY,
-    import.meta.env.NODE_ENV,
+    turnstileEnvironment.secretKey,
+    turnstileEnvironment.nodeEnvironment,
   );
 
   if (!secret) {

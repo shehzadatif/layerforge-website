@@ -8,10 +8,12 @@ import {
   TURNSTILE_ESTIMATE_ACTION,
   TURNSTILE_QUOTE_ACTION,
 } from "../../lib/turnstile";
+import { getTurnstileServerEnvironment } from "../../lib/turnstileServer";
 
+const turnstileEnvironment = getTurnstileServerEnvironment();
 const turnstileSiteKey = resolveTurnstileSiteKey(
-  import.meta.env.PUBLIC_TURNSTILE_SITE_KEY,
-  import.meta.env.NODE_ENV,
+  turnstileEnvironment.publicSiteKey,
+  turnstileEnvironment.nodeEnvironment,
 );
 const configuredSlicerMaterials = getConfiguredCloudSlicerMaterials(
   getCloudSlicerServerEnvironment(),

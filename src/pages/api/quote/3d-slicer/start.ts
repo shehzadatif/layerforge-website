@@ -18,6 +18,7 @@ import {
   TURNSTILE_ESTIMATE_ACTION,
   verifyTurnstileToken,
 } from "../../../../lib/turnstile";
+import { getTurnstileServerEnvironment } from "../../../../lib/turnstileServer";
 
 export const prerender = false;
 
@@ -86,9 +87,10 @@ export const POST: APIRoute = async ({ request }) => {
       );
     }
 
+    const turnstileEnvironment = getTurnstileServerEnvironment();
     const turnstileSecret = resolveTurnstileSecretKey(
-      import.meta.env.TURNSTILE_SECRET_KEY,
-      import.meta.env.NODE_ENV,
+      turnstileEnvironment.secretKey,
+      turnstileEnvironment.nodeEnvironment,
     );
 
     if (!turnstileSecret) {
