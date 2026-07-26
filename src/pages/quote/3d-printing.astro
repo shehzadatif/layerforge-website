@@ -1266,6 +1266,17 @@ const slicerPricingConfigured = configuredSlicerMaterials.length > 0;
           throw new Error("The temporary STL upload failed.");
         }
 
+        const uploadResult = (await uploadResponse.json().catch(() => null)) as
+          | Record<string, unknown>
+          | null;
+        const uploadedFileId = String(uploadResult?.file_id ?? "").trim();
+
+        if (!uploadedFileId) {
+          throw new Error(
+            "Cloud Slicer uploaded the STL but did not return its file ID.",
+          );
+        }
+
         if (requestSequence !== slicerRequestSequence) {
           cancelSlicerJobToken(jobToken);
           activeSlicerJobToken = "";
@@ -1278,7 +1289,7 @@ const slicerPricingConfigured = configuredSlicerMaterials.length > 0;
         const queueResponse = await fetch("/api/quote/3d-slicer/queue", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ jobToken }),
+          body: JSON.stringify({ jobToken, fileId: uploadedFileId }),
         });
         const queued = await readJsonResponse(queueResponse);
         const queuedJobToken = String(queued.jobToken ?? "");
