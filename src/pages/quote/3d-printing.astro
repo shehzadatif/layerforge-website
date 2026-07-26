@@ -855,20 +855,33 @@ const slicerPricingConfigured = configuredSlicerMaterials.length > 0;
       }
 
       currentBrowserEstimate = estimate;
+      const dimensions = currentMetrics.dimensionsMm;
+      const file =
+        fileInput instanceof HTMLInputElement ? fileInput.files?.[0] : null;
+      const bambuPricingExpected =
+        Boolean(slicerPricingPanel) &&
+        Boolean(file?.name.toLowerCase().endsWith(".stl")) &&
+        Boolean(file && file.size <= MAX_INSTANT_ANALYSIS_SIZE) &&
+        configuredSlicerMaterials().includes(material.value) &&
+        Math.max(dimensions.x, dimensions.y, dimensions.z) <=
+          P1S_BUILD_VOLUME_MM;
 
       if (estimatePrice) {
-        estimatePrice.textContent =
-          `${currency.format(estimate.estimatedTotalLow)}–` +
-          currency.format(estimate.estimatedTotalHigh);
+        estimatePrice.textContent = bambuPricingExpected
+          ? "Calculating with Bambu Studio…"
+          : `${currency.format(estimate.estimatedTotalLow)}–${currency.format(
+              estimate.estimatedTotalHigh,
+            )}`;
       }
 
       if (estimateMessage) {
-        estimateMessage.textContent =
-          `Estimated total for ${estimate.quantity} item${estimate.quantity === 1 ? "" : "s"}, before tax and delivery.`;
+        estimateMessage.textContent = bambuPricingExpected
+          ? "Slicing the model with the P1S production profile before showing its price."
+          : `Estimated total for ${estimate.quantity} item${estimate.quantity === 1 ? "" : "s"}, before tax and delivery.`;
       }
-      setEstimateSource("Instant fallback · Bambu pending");
-
-      const dimensions = currentMetrics.dimensionsMm;
+      setEstimateSource(
+        bambuPricingExpected ? "Bambu Studio pending" : "Instant fallback",
+      );
 
       if (estimateDimensions) {
         estimateDimensions.textContent =
@@ -876,13 +889,15 @@ const slicerPricingConfigured = configuredSlicerMaterials.length > 0;
       }
 
       if (estimateWeight) {
-        estimateWeight.textContent =
-          `${estimate.estimatedMaterialGramsPerUnit.toFixed(1)} g`;
+        estimateWeight.textContent = bambuPricingExpected
+          ? "Calculating…"
+          : `${estimate.estimatedMaterialGramsPerUnit.toFixed(1)} g`;
       }
 
       if (estimateHours) {
-        estimateHours.textContent =
-          `${estimate.estimatedPrintHoursPerUnit.toFixed(1)} h`;
+        estimateHours.textContent = bambuPricingExpected
+          ? "Calculating…"
+          : "Available after slicing";
       }
 
       if (estimateQuantity) {
@@ -941,6 +956,34 @@ const slicerPricingConfigured = configuredSlicerMaterials.length > 0;
         String(currentMetrics.triangleCount),
       );
       scheduleAutomaticSlicerPricing();
+    }
+
+    function showBrowserFallbackEstimate() {
+      if (!currentBrowserEstimate) {
+        return;
+      }
+
+      if (estimatePrice) {
+        estimatePrice.textContent =
+          `${currency.format(currentBrowserEstimate.estimatedTotalLow)}–` +
+          currency.format(currentBrowserEstimate.estimatedTotalHigh);
+      }
+
+      if (estimateMessage) {
+        estimateMessage.textContent =
+          `Temporary fallback for ${currentBrowserEstimate.quantity} item${currentBrowserEstimate.quantity === 1 ? "" : "s"}, before tax and delivery. Final production time requires Bambu Studio.`;
+      }
+
+      if (estimateWeight) {
+        estimateWeight.textContent =
+          `${currentBrowserEstimate.estimatedMaterialGramsPerUnit.toFixed(1)} g estimated`;
+      }
+
+      if (estimateHours) {
+        estimateHours.textContent = "Unavailable";
+      }
+
+      setEstimateSource("Instant fallback");
     }
 
     function resetSlicerTurnstile() {
@@ -1282,7 +1325,7 @@ const slicerPricingConfigured = configuredSlicerMaterials.length > 0;
             : "Bambu Studio pricing failed. The instant geometry price is shown as a fallback.",
           true,
         );
-        setEstimateSource("Instant fallback");
+        showBrowserFallbackEstimate();
       } finally {
         if (requestSequence === slicerRequestSequence) {
           activeSlicerJobToken = "";
