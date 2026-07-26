@@ -58,6 +58,60 @@ export interface CloudSlicerQuoteStatus {
   estimatedTimeSeconds?: number;
 }
 
+export const BAMBU_P1S_04_PROFILE = {
+  general: {
+    name: "Layer Forge P1S 0.4",
+    printer_model: "Bambu Lab P1S",
+    printer_variant: "0.4",
+    printer_structure: "corexy",
+    bed_size_x: 256,
+    bed_size_y: 256,
+    max_print_z: 250,
+    origin: [0, 0],
+    z_offset: 0,
+    gcode_flavor: "marlin",
+    use_relative_e_distances: true,
+    use_firmware_retraction: false,
+    silent_mode: false,
+  },
+  machine_limits: {
+    max_feedrates: { x: 500, y: 500, z: 20, e: 30 },
+    max_accelerations: {
+      x: 20000,
+      y: 20000,
+      z: 500,
+      e: 5000,
+      extruding: 20000,
+      retracting: 5000,
+      travel: 9000,
+    },
+    max_jerks: { x: 9, y: 9, z: 3, e: 2.5 },
+    min_feedrates: { extruding_rate: 0, travel_rate: 0 },
+  },
+  extruder: {
+    nozzle_diameter: 0.4,
+    layer_height_min: 0.08,
+    layer_height_max: 0.28,
+  },
+  retraction: {
+    length: 0.8,
+    speed: 30,
+    deretract_speed: 30,
+    lift_z: 0.4,
+    lift_above: 0,
+    lift_below: 249,
+    wipe: true,
+    wipe_distance: 2,
+    retract_before_wipe: "0%",
+    minimum_travel: 1,
+    retract_on_layer_change: true,
+  },
+  clearance: {
+    extruder_clearance_height: 90,
+    extruder_clearance_radius: 68,
+  },
+} as const;
+
 export class CloudSlicerApiError extends Error {
   constructor(
     message: string,
@@ -455,6 +509,22 @@ export async function getCloudSlicerQuoteStatus(
     ...(Number.isFinite(filamentWeightGrams) ? { filamentWeightGrams } : {}),
     ...(Number.isFinite(estimatedTimeSeconds) ? { estimatedTimeSeconds } : {}),
   };
+}
+
+export async function synchronizeCloudSlicerP1sProfile(
+  configuration: CloudSlicerConfiguration,
+  fetcher: typeof fetch = fetch,
+): Promise<void> {
+  await fetchCloudSlicerJson(
+    `/printer/${encodeURIComponent(configuration.printerId)}`,
+    configuration,
+    {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(BAMBU_P1S_04_PROFILE),
+    },
+    fetcher,
+  );
 }
 
 async function deleteCloudSlicerResource(
