@@ -69,7 +69,13 @@ describe("Cloud Slicer Bambu Studio payload", () => {
           layer_height: {
             layer_height: 0.2,
             first_layer_height: 0.2,
+            perimeters: 2,
           },
+        },
+        extrusion_width: {
+          default: 0.42,
+          first_layer: 0.5,
+          perimeter: 0.45,
         },
         infill: {
           fill_density: "30%",
@@ -77,10 +83,22 @@ describe("Cloud Slicer Bambu Studio payload", () => {
         },
         support_material: {
           enable: true,
-          style: "grid",
+          style: "organic",
           pattern: "rectilinear",
-          threshold_angle: 40,
+          threshold_angle: 30,
           buildplate_only: false,
+        },
+        speed: {
+          perimeters: 300,
+          external_perimeters: 200,
+          infill: 270,
+          travel: 500,
+        },
+        acceleration: {
+          default: 10000,
+          first_layer: 500,
+          external_perimeter: 5000,
+          travel: 10000,
         },
       },
     });
