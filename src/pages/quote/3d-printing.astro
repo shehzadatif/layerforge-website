@@ -18,8 +18,7 @@ const turnstileSiteKey = resolveTurnstileSiteKey(
 const configuredSlicerMaterials = getConfiguredCloudSlicerMaterials(
   getCloudSlicerServerEnvironment(),
 );
-const slicerRefinementAvailable =
-  Boolean(turnstileSiteKey) && configuredSlicerMaterials.length > 0;
+const slicerPricingConfigured = configuredSlicerMaterials.length > 0;
 ---
 
 <MainLayout title="3D Printing Quote">
@@ -338,48 +337,54 @@ const slicerRefinementAvailable =
             ></p>
 
             {
-              slicerRefinementAvailable && (
+              slicerPricingConfigured && (
                 <div class="mt-5 border-t border-yellow-300 pt-5">
-                  <div class="grid items-start gap-5 md:grid-cols-[1fr_auto]">
-                    <div>
-                      <h3 class="font-bold text-slate-950">
-                        Refine with your production setup
-                      </h3>
-                      <p class="mt-1 text-sm leading-6 text-slate-700">
-                        Run Bambu Studio for a Bambu Lab P1S with a 0.4 mm nozzle
-                        and automatic supports. This usually takes under two minutes.
-                      </p>
-                      <p
-                        id="slicerStatus"
-                        class="mt-2 text-sm font-semibold text-slate-700"
-                        aria-live="polite"
-                      ></p>
-                    </div>
-                    <button
-                      id="refineEstimateButton"
-                      type="button"
-                      disabled
-                      data-configured-materials={configuredSlicerMaterials.join(",")}
-                      class="rounded-xl bg-slate-950 px-5 py-3 text-sm font-bold text-white shadow transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-50"
+                  <div
+                    id="slicerPricingPanel"
+                    data-configured-materials={configuredSlicerMaterials.join(",")}
+                  >
+                    <h3 class="font-bold text-slate-950">
+                      Bambu Studio pricing
+                    </h3>
+                    <p class="mt-1 text-sm leading-6 text-slate-700">
+                      Eligible STL files are automatically sliced for a Bambu Lab
+                      P1S with a 0.4 mm nozzle and automatic supports. The price
+                      updates when slicing finishes.
+                    </p>
+                    <p
+                      id="slicerStatus"
+                      class="mt-2 text-sm font-semibold text-slate-700"
+                      aria-live="polite"
                     >
-                      Refine with Bambu Studio
-                    </button>
+                      Upload an STL and select a supported material to calculate
+                      Bambu Studio pricing.
+                    </p>
                   </div>
 
-                  <div class="mt-4 max-w-sm rounded-xl bg-white p-3">
-                    <div
-                      id="slicerTurnstile"
-                      class="cf-turnstile"
-                      data-sitekey={turnstileSiteKey}
-                      data-action={TURNSTILE_ESTIMATE_ACTION}
-                      data-response-field-name="slicer-turnstile-response"
-                      data-theme="light"
-                      data-size="flexible"
-                    ></div>
-                  </div>
+                  {
+                    turnstileSiteKey ? (
+                      <div class="mt-4 max-w-sm rounded-xl bg-white p-3">
+                        <div
+                          id="slicerTurnstile"
+                          class="cf-turnstile"
+                          data-sitekey={turnstileSiteKey}
+                          data-action={TURNSTILE_ESTIMATE_ACTION}
+                          data-response-field-name="slicer-turnstile-response"
+                          data-callback="onSlicerTurnstileSuccess"
+                          data-theme="light"
+                          data-size="flexible"
+                        ></div>
+                      </div>
+                    ) : (
+                      <p class="mt-3 rounded-xl border border-red-200 bg-red-50 p-3 text-sm font-semibold text-red-700">
+                        Bambu Studio pricing is temporarily unavailable because
+                        its security check is not configured.
+                      </p>
+                    )
+                  }
 
                   <p class="mt-3 text-xs leading-5 text-slate-600">
-                    Refinement sends a temporary copy of the STL to the slicer.
+                    Pricing sends a temporary copy of the STL to the slicer.
                     Layer Forge requests immediate deletion of the uploaded model,
                     generated G-code, and provider quote after the result is
                     retrieved or the job is cancelled.
@@ -392,9 +397,10 @@ const slicerRefinementAvailable =
               This range is an estimate only and assumes a printable, closed STL
               with the selected units. Final pricing may change after orientation,
               wall thickness, tolerances, and manufacturability are reviewed.
-              Bambu Studio refinement uses the uploaded orientation and includes
-              automatic supports; the instant browser estimate does not. Taxes
-              and delivery are additional.
+              Bambu Studio pricing uses the uploaded orientation and includes
+              automatic supports. If slicing is unavailable, the displayed
+              instant geometry price is only a fallback. Taxes and delivery are
+              additional.
             </p>
           </section>
 
@@ -609,9 +615,7 @@ const slicerRefinementAvailable =
     const estimateQuantity = document.getElementById("estimateQuantity");
     const estimateWarning = document.getElementById("estimateWarning");
     const estimateSource = document.getElementById("estimateSource");
-    const refineEstimateButton = document.getElementById(
-      "refineEstimateButton",
-    );
+    const slicerPricingPanel = document.getElementById("slicerPricingPanel");
     const slicerStatus = document.getElementById("slicerStatus");
 
     let loadedGeometry: BufferGeometry | null = null;
@@ -619,6 +623,8 @@ const slicerRefinementAvailable =
     let currentBrowserEstimate: ThreeDQuoteEstimate | null = null;
     let activeSlicerJobToken = "";
     let slicerRequestSequence = 0;
+    let slicerAutoStartTimer = 0;
+    let slicerAutoRetryBlocked = false;
 
     function setHiddenValue(name: string, value: string) {
       if (!(form instanceof HTMLFormElement)) {
@@ -669,39 +675,114 @@ const slicerRefinementAvailable =
     }
 
     function configuredSlicerMaterials(): string[] {
-      if (!(refineEstimateButton instanceof HTMLButtonElement)) {
+      if (!(slicerPricingPanel instanceof HTMLElement)) {
         return [];
       }
 
-      return (refineEstimateButton.dataset.configuredMaterials ?? "")
+      return (slicerPricingPanel.dataset.configuredMaterials ?? "")
         .split(",")
         .map((value) => value.trim())
         .filter(Boolean);
     }
 
-    function updateRefineButton() {
-      if (!(refineEstimateButton instanceof HTMLButtonElement)) {
-        return;
-      }
-
+    function slicerReadiness():
+      | { ready: true }
+      | { ready: false; message: string } {
       const selectedMaterial =
         material instanceof HTMLSelectElement ? material.value : "";
       const file =
         fileInput instanceof HTMLInputElement ? fileInput.files?.[0] : null;
-      const slicerReady =
-        Boolean(currentBrowserEstimate) &&
-        Boolean(file) &&
-        file!.name.toLowerCase().endsWith(".stl") &&
-        file!.size <= MAX_INSTANT_ANALYSIS_SIZE &&
-        Boolean(currentMetrics) &&
-        Math.max(
-          currentMetrics!.dimensionsMm.x,
-          currentMetrics!.dimensionsMm.y,
-          currentMetrics!.dimensionsMm.z,
-        ) <= P1S_BUILD_VOLUME_MM &&
-        configuredSlicerMaterials().includes(selectedMaterial);
 
-      refineEstimateButton.disabled = !slicerReady || Boolean(activeSlicerJobToken);
+      if (!slicerPricingPanel) {
+        return { ready: false, message: "" };
+      }
+
+      if (!file) {
+        return {
+          ready: false,
+          message:
+            "Upload an STL and select a supported material to calculate Bambu Studio pricing.",
+        };
+      }
+
+      if (!file.name.toLowerCase().endsWith(".stl")) {
+        return {
+          ready: false,
+          message: "Bambu Studio pricing currently supports STL files.",
+        };
+      }
+
+      if (file.size > MAX_INSTANT_ANALYSIS_SIZE) {
+        return {
+          ready: false,
+          message:
+            "This STL exceeds the 25 MB automatic-pricing limit. It can still be submitted for manual review.",
+        };
+      }
+
+      if (!selectedMaterial) {
+        return {
+          ready: false,
+          message: "Select a material to start Bambu Studio pricing.",
+        };
+      }
+
+      if (!configuredSlicerMaterials().includes(selectedMaterial)) {
+        return {
+          ready: false,
+          message: `Bambu Studio pricing is not configured for ${selectedMaterial}. The instant geometry price is a fallback.`,
+        };
+      }
+
+      if (!currentMetrics || !currentBrowserEstimate) {
+        return {
+          ready: false,
+          message: "Analyzing the STL before Bambu Studio pricing starts…",
+        };
+      }
+
+      if (
+        Math.max(
+          currentMetrics.dimensionsMm.x,
+          currentMetrics.dimensionsMm.y,
+          currentMetrics.dimensionsMm.z,
+        ) > P1S_BUILD_VOLUME_MM
+      ) {
+        return {
+          ready: false,
+          message:
+            "This model exceeds the P1S 256 mm build volume. Split the model or submit it for manual review.",
+        };
+      }
+
+      return { ready: true };
+    }
+
+    function scheduleAutomaticSlicerPricing() {
+      window.clearTimeout(slicerAutoStartTimer);
+      const readiness = slicerReadiness();
+
+      if (!readiness.ready) {
+        if (readiness.message) {
+          setSlicerStatus(readiness.message);
+        }
+        return;
+      }
+
+      if (activeSlicerJobToken || slicerAutoRetryBlocked) {
+        return;
+      }
+
+      if (!slicerTurnstileToken()) {
+        setSlicerStatus(
+          "Completing the security check before Bambu Studio pricing starts…",
+        );
+        return;
+      }
+
+      slicerAutoStartTimer = window.setTimeout(() => {
+        void calculateBambuStudioPrice();
+      }, 500);
     }
 
     function showEstimateState(price: string, message: string) {
@@ -720,7 +801,7 @@ const slicerRefinementAvailable =
       estimateWarning?.classList.add("hidden");
       setEstimateSource("");
       clearEstimateFields();
-      updateRefineButton();
+      scheduleAutomaticSlicerPricing();
     }
 
     function unitScale(): number {
@@ -785,7 +866,7 @@ const slicerRefinementAvailable =
         estimateMessage.textContent =
           `Estimated total for ${estimate.quantity} item${estimate.quantity === 1 ? "" : "s"}, before tax and delivery.`;
       }
-      setEstimateSource("Instant geometry");
+      setEstimateSource("Instant fallback · Bambu pending");
 
       const dimensions = currentMetrics.dimensionsMm;
 
@@ -824,7 +905,7 @@ const slicerRefinementAvailable =
           estimateWarning.classList.remove("hidden");
         } else if (largestDimension > P1S_BUILD_VOLUME_MM) {
           estimateWarning.textContent =
-            "This model exceeds the P1S 256 mm build volume on at least one axis. Bambu Studio refinement is unavailable unless the model is split.";
+            "This model exceeds the P1S 256 mm build volume on at least one axis. Bambu Studio pricing is unavailable unless the model is split.";
           estimateWarning.classList.remove("hidden");
         } else {
           estimateWarning.classList.add("hidden");
@@ -859,7 +940,7 @@ const slicerRefinementAvailable =
         "modelTriangleCount",
         String(currentMetrics.triangleCount),
       );
-      updateRefineButton();
+      scheduleAutomaticSlicerPricing();
     }
 
     function resetSlicerTurnstile() {
@@ -903,23 +984,18 @@ const slicerRefinementAvailable =
       }).catch(() => undefined);
     }
 
-    function invalidateSlicerRefinement() {
+    function invalidateSlicerPricing() {
+      window.clearTimeout(slicerAutoStartTimer);
       slicerRequestSequence += 1;
+      slicerAutoRetryBlocked = false;
 
       if (activeSlicerJobToken) {
         cancelSlicerJobToken(activeSlicerJobToken);
         activeSlicerJobToken = "";
       }
 
-      if (estimateSource?.textContent?.startsWith("Bambu Studio")) {
-        setSlicerStatus("Print options changed. Run the refinement again.");
-      }
-
-      if (refineEstimateButton instanceof HTMLButtonElement) {
-        refineEstimateButton.textContent = "Refine with Bambu Studio";
-      }
-
-      updateRefineButton();
+      resetSlicerTurnstile();
+      setSlicerStatus("Updating automatic Bambu Studio pricing…");
     }
 
     function safeSlicerFilename(filename: string): string {
@@ -972,7 +1048,7 @@ const slicerRefinementAvailable =
         throw new Error(
           typeof result?.error === "string"
             ? result.error
-            : "Bambu Studio refinement failed.",
+            : "Bambu Studio pricing failed.",
         );
       }
 
@@ -1029,9 +1105,8 @@ const slicerRefinementAvailable =
       });
     }
 
-    async function refineEstimateWithSlicer() {
+    async function calculateBambuStudioPrice() {
       if (
-        !(refineEstimateButton instanceof HTMLButtonElement) ||
         !(fileInput instanceof HTMLInputElement) ||
         !(material instanceof HTMLSelectElement) ||
         !(quality instanceof HTMLSelectElement) ||
@@ -1046,23 +1121,21 @@ const slicerRefinementAvailable =
       const turnstileToken = slicerTurnstileToken();
 
       if (!originalFile) {
-        setSlicerStatus("Upload an STL before refining the estimate.", true);
+        setSlicerStatus("Upload an STL to calculate Bambu Studio pricing.", true);
         return;
       }
 
       if (!turnstileToken) {
         setSlicerStatus(
-          "Complete the refinement security check, then try again.",
-          true,
+          "Completing the security check before Bambu Studio pricing starts…",
         );
         return;
       }
 
       const requestSequence = ++slicerRequestSequence;
-      const originalButtonText = refineEstimateButton.textContent ?? "";
       let jobToken = "";
-      refineEstimateButton.disabled = true;
-      refineEstimateButton.textContent = "Preparing slicer…";
+      slicerAutoRetryBlocked = true;
+      setEstimateSource("Bambu Studio calculating…");
       setSlicerStatus(
         "Preparing a temporary STL upload. Your pricing settings stay private.",
       );
@@ -1095,7 +1168,6 @@ const slicerRefinementAvailable =
           return;
         }
 
-        refineEstimateButton.textContent = "Uploading model…";
         setSlicerStatus(
           "Uploading the temporary model directly to the slicer.",
         );
@@ -1116,7 +1188,6 @@ const slicerRefinementAvailable =
           return;
         }
 
-        refineEstimateButton.textContent = "Slicing model…";
         setSlicerStatus(
           "Bambu Studio is slicing for the P1S with automatic supports.",
         );
@@ -1188,15 +1259,15 @@ const slicerRefinementAvailable =
           applySlicerEstimate(estimate);
           setSlicerStatus(
             status.cleanupComplete === true
-              ? "Refined with Bambu Studio. The temporary slicer files were deleted."
-              : "Refined with Bambu Studio. Temporary-file deletion was requested but could not be confirmed.",
+              ? "Bambu Studio pricing is ready. The temporary slicer files were deleted."
+              : "Bambu Studio pricing is ready. Temporary-file deletion was requested but could not be confirmed.",
             status.cleanupComplete !== true,
           );
           return;
         }
 
         throw new Error(
-          "Bambu Studio took too long. The instant estimate is still available.",
+          "Bambu Studio took too long. The instant geometry price is shown as a fallback.",
         );
       } catch (error) {
         if (jobToken) {
@@ -1208,14 +1279,13 @@ const slicerRefinementAvailable =
         setSlicerStatus(
           error instanceof Error
             ? error.message
-            : "Bambu Studio refinement failed. The instant estimate is still available.",
+            : "Bambu Studio pricing failed. The instant geometry price is shown as a fallback.",
           true,
         );
+        setEstimateSource("Instant fallback");
       } finally {
         if (requestSequence === slicerRequestSequence) {
           activeSlicerJobToken = "";
-          refineEstimateButton.textContent = originalButtonText;
-          updateRefineButton();
         }
       }
     }
@@ -1286,12 +1356,12 @@ const slicerRefinementAvailable =
     }
 
     fileInput?.addEventListener("change", () => {
-      invalidateSlicerRefinement();
+      invalidateSlicerPricing();
       void analyzeSelectedFile();
     });
 
     modelUnits?.addEventListener("change", () => {
-      invalidateSlicerRefinement();
+      invalidateSlicerPricing();
 
       try {
         recalculateMetrics();
@@ -1308,16 +1378,19 @@ const slicerRefinementAvailable =
 
     for (const field of [material, quality, infill, quantity]) {
       const updateEstimate = () => {
-        invalidateSlicerRefinement();
+        invalidateSlicerPricing();
         renderEstimate();
       };
       field?.addEventListener("change", updateEstimate);
       field?.addEventListener("input", updateEstimate);
     }
 
-    refineEstimateButton?.addEventListener("click", () => {
-      void refineEstimateWithSlicer();
-    });
+    const slicerCallbackWindow = window as typeof window & {
+      onSlicerTurnstileSuccess?: () => void;
+    };
+    slicerCallbackWindow.onSlicerTurnstileSuccess = () => {
+      scheduleAutomaticSlicerPricing();
+    };
 
     window.addEventListener("pagehide", () => {
       if (activeSlicerJobToken) {
