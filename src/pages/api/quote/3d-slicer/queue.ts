@@ -32,6 +32,7 @@ export const POST: APIRoute = async ({ request }) => {
   try {
     const body = (await request.json()) as Record<string, unknown>;
     const jobToken = String(body.jobToken ?? "").trim();
+    const uploadedFileId = String(body.fileId ?? "").trim();
     const environment = getCloudSlicerServerEnvironment();
     const signingSecret =
       environment.CLOUD_SLICER_JOB_SIGNING_SECRET?.trim() ?? "";
@@ -48,7 +49,18 @@ export const POST: APIRoute = async ({ request }) => {
       );
     }
 
-    fileId = job.fileId;
+    if (
+      !uploadedFileId ||
+      uploadedFileId.length > 128 ||
+      !/^[A-Za-z0-9_-]+$/.test(uploadedFileId)
+    ) {
+      return Response.json(
+        { success: false, error: "The uploaded slicer file ID is invalid." },
+        { status: 400 },
+      );
+    }
+
+    fileId = uploadedFileId;
     configuration =
       resolveCloudSlicerConfiguration(environment, job.material) ?? undefined;
 
@@ -62,7 +74,7 @@ export const POST: APIRoute = async ({ request }) => {
       );
     }
 
-    const queuedQuote = await queueCloudSlicerQuote(configuration, job.fileId, {
+    const queuedQuote = await queueCloudSlicerQuote(configuration, fileId, {
       material: job.material,
       quality: job.quality,
       infillPercent: job.infillPercent,
@@ -73,6 +85,7 @@ export const POST: APIRoute = async ({ request }) => {
     const pollToken = await signThreeDSlicerJobToken(
       {
         ...job,
+        fileId,
         stage: "poll",
         quoteId,
         expiresAt: nowSeconds + THREE_D_SLICER_JOB_TOKEN_TTL_SECONDS,
