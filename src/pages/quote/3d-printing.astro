@@ -370,6 +370,7 @@ const slicerPricingConfigured = configuredSlicerMaterials.length > 0;
                           data-sitekey={turnstileSiteKey}
                           data-action={TURNSTILE_ESTIMATE_ACTION}
                           data-response-field-name="slicer-turnstile-response"
+                          data-callback="onSlicerTurnstileSuccess"
                           data-theme="light"
                           data-size="flexible"
                         ></div>
@@ -566,12 +567,20 @@ const slicerPricingConfigured = configuredSlicerMaterials.length > 0;
 
   {
     turnstileSiteKey && (
-      <script
-        is:inline
-        src="https://challenges.cloudflare.com/turnstile/v0/api.js"
-        async
-        defer
-      ></script>
+      <>
+        <script is:inline>
+          window.onSlicerTurnstileSuccess = function (token) {
+            window.__layerForgeSlicerTurnstileToken = token;
+            window.dispatchEvent(new Event("layerforge:slicer-turnstile-success"));
+          };
+        </script>
+        <script
+          is:inline
+          src="https://challenges.cloudflare.com/turnstile/v0/api.js"
+          async
+          defer
+        ></script>
+      </>
     )
   }
 
@@ -1006,16 +1015,30 @@ const slicerPricingConfigured = configuredSlicerMaterials.length > 0;
     function resetSlicerTurnstile() {
       const turnstileWindow = window as typeof window & {
         turnstile?: { reset: (widget?: string) => void };
+        __layerForgeSlicerTurnstileToken?: string;
       };
+      turnstileWindow.__layerForgeSlicerTurnstileToken = "";
       turnstileWindow.turnstile?.reset("#slicerTurnstile");
     }
 
     function slicerTurnstileToken(): string {
+      const turnstileWindow = window as typeof window & {
+        __layerForgeSlicerTurnstileToken?: string;
+      };
+      const callbackToken =
+        turnstileWindow.__layerForgeSlicerTurnstileToken?.trim() ?? "";
+
+      if (callbackToken) {
+        return callbackToken;
+      }
+
       if (!(form instanceof HTMLFormElement)) {
         return "";
       }
 
-      const field = form.elements.namedItem("slicer-turnstile-response");
+      const field = form.querySelector(
+        "#slicerTurnstile input[name='slicer-turnstile-response']",
+      );
       return field instanceof HTMLInputElement ? field.value.trim() : "";
     }
 
@@ -1445,6 +1468,10 @@ const slicerPricingConfigured = configuredSlicerMaterials.length > 0;
       field?.addEventListener("change", updateEstimate);
       field?.addEventListener("input", updateEstimate);
     }
+
+    window.addEventListener("layerforge:slicer-turnstile-success", () => {
+      scheduleAutomaticSlicerPricing();
+    });
 
     window.addEventListener("pagehide", () => {
       if (activeSlicerJobToken) {
