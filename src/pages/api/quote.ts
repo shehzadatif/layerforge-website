@@ -5,6 +5,7 @@ import { isSameOriginRequest } from "../../lib/isSameOriginRequest";
 import { generateApprovalToken } from "../../lib/tracking";
 import {
   THREE_D_QUOTE_ESTIMATE_VERSION,
+  THREE_D_QUOTE_SLICER_ESTIMATE_VERSION,
   type ThreeDPrintQuality,
 } from "../../lib/threeDQuoteEstimator";
 import {
@@ -43,6 +44,10 @@ const THREE_D_QUALITY_VALUES = new Set<ThreeDPrintQuality>([
   "draft",
   "standard",
   "fine",
+]);
+const THREE_D_ESTIMATE_VERSIONS = new Set<string>([
+  THREE_D_QUOTE_ESTIMATE_VERSION,
+  THREE_D_QUOTE_SLICER_ESTIMATE_VERSION,
 ]);
 
 class QuoteRequestError extends Error {
@@ -131,8 +136,10 @@ function readOnlineEstimate(
     return null;
   }
 
-  if (version !== THREE_D_QUOTE_ESTIMATE_VERSION) {
-    throw new QuoteRequestError("The online estimate version is not supported.");
+  if (!THREE_D_ESTIMATE_VERSIONS.has(version)) {
+    throw new QuoteRequestError(
+      "The online estimate version is not supported.",
+    );
   }
 
   const low = optionalNumber(formData, "estimateLow", 0, 1_000_000);
@@ -431,7 +438,10 @@ export const POST: APIRoute = async ({ request }) => {
       ...(onlineEstimate
         ? {
             online_estimate: {
-              source: "browser_stl_analysis",
+              source:
+                onlineEstimate.version === THREE_D_QUOTE_SLICER_ESTIMATE_VERSION
+                  ? "bambu_studio_slice"
+                  : "browser_stl_analysis",
               ...onlineEstimate,
             },
           }

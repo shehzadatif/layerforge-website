@@ -1,5 +1,7 @@
 ---
 import AdminLayout from "../../layouts/AdminLayout.astro";
+import { getConfiguredCloudSlicerMaterials } from "../../lib/cloudSlicer";
+import { getCloudSlicerServerEnvironment } from "../../lib/cloudSlicerServer";
 import {
   customerRateFromCost,
   grossMarginMultiplier,
@@ -24,6 +26,9 @@ const saved = Astro.url.searchParams.get("saved") === "1";
 const marginMultiplier = grossMarginMultiplier(pricing.targetMarginPercent);
 const sampleDirectCost = 10;
 const sampleCustomerPrice = sampleDirectCost * marginMultiplier;
+const configuredSlicerMaterials = getConfiguredCloudSlicerMaterials(
+  getCloudSlicerServerEnvironment(),
+);
 ---
 
 <AdminLayout title="Cost Estimator" active="cost-estimator">
@@ -60,6 +65,43 @@ const sampleCustomerPrice = sampleDirectCost * marginMultiplier;
       </div>
     )
   }
+
+  <section class="mb-8 rounded-2xl border border-slate-200 bg-white p-6 shadow">
+    <div class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+      <div>
+        <div class="flex flex-wrap items-center gap-3">
+          <h2 class="text-xl font-bold text-slate-950">
+            Bambu Studio Refinement
+          </h2>
+          <span
+            class:list={[
+              "rounded-full px-3 py-1 text-xs font-bold",
+              configuredSlicerMaterials.length > 0
+                ? "bg-green-100 text-green-800"
+                : "bg-slate-100 text-slate-600",
+            ]}
+          >
+            {configuredSlicerMaterials.length > 0 ? "Configured" : "Not configured"}
+          </span>
+        </div>
+        <p class="mt-2 max-w-3xl text-sm leading-6 text-slate-500">
+          Hybrid estimates use Bambu Studio with the Bambu Lab P1S, 0.4 mm
+          nozzle, and automatic supports. Slicer credentials and profile IDs
+          are managed as server-only deployment settings.
+        </p>
+      </div>
+      <div class="rounded-xl bg-slate-50 px-5 py-4 text-sm">
+        <div class="font-semibold text-slate-700">Enabled materials</div>
+        <div class="mt-1 font-bold text-slate-950">
+          {
+            configuredSlicerMaterials.length > 0
+              ? configuredSlicerMaterials.join(", ")
+              : "None"
+          }
+        </div>
+      </div>
+    </div>
+  </section>
 
   <form
     action="/api/admin/update-cost-estimator"

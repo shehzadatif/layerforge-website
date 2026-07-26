@@ -65,6 +65,21 @@ then configure these server-only values:
 The dashboard uses Cloudflare visits and successful HTML page views. It does
 not retrieve, display, or store raw visitor IP addresses.
 
+## Bambu Studio quote refinement
+
+The 3D quote page can refine its immediate browser estimate with an asynchronous
+Bambu Studio slice through Cloud Slicer. Create a Cloud Slicer API token, a
+Bambu Lab P1S printer profile with the 0.4 mm nozzle, and one filament profile
+for each material you want to enable. Configure the matching
+`CLOUD_SLICER_*` server-only values shown in `env.example`.
+
+The integration sends the STL directly to a one-time anonymous upload URL,
+keeps the API token and Layer Forge pricing on the server, and requests
+immediate deletion of the uploaded model, generated G-code, and provider quote
+after the result is retrieved or cancelled. The immediate browser estimate
+remains available when the integration is unconfigured, unavailable, or cannot
+slice a model.
+
 ## License
 
 Private.

@@ -7,6 +7,11 @@ import type { ThreeDQuoteMaterial } from "./threeDQuotePricing";
 
 export const THREE_D_QUOTE_ESTIMATE_VERSION =
   "stl-browser-v5-admin-private-margin";
+export const THREE_D_QUOTE_SLICER_ESTIMATE_VERSION = "bambu-studio-cloud-v1";
+
+export type ThreeDQuoteEstimateVersion =
+  | typeof THREE_D_QUOTE_ESTIMATE_VERSION
+  | typeof THREE_D_QUOTE_SLICER_ESTIMATE_VERSION;
 
 export type ThreeDPrintMaterial = ThreeDQuoteMaterial;
 export type ThreeDPrintQuality = "draft" | "standard" | "fine";
@@ -32,7 +37,7 @@ export interface ThreeDQuoteEstimateInput {
 }
 
 export interface ThreeDQuoteEstimate {
-  version: typeof THREE_D_QUOTE_ESTIMATE_VERSION;
+  version: ThreeDQuoteEstimateVersion;
   pricingVersion: string;
   material: ThreeDPrintMaterial;
   quality: ThreeDPrintQuality;
@@ -46,16 +51,27 @@ export interface ThreeDQuoteEstimate {
   estimatedTotalHigh: number;
 }
 
+export interface ThreeDQuoteSlicerEstimateInput {
+  material: string;
+  quality: ThreeDPrintQuality;
+  infillPercent: number;
+  quantity: number;
+  materialGramsPerUnit: number;
+  printHoursPerUnit: number;
+  pricing: ThreeDQuotePublicPricingConfig;
+}
+
 interface MaterialPhysicalProfile {
   densityGramsPerCm3: number;
 }
 
-const MATERIAL_PROFILES: Record<ThreeDPrintMaterial, MaterialPhysicalProfile> = {
-  PLA: { densityGramsPerCm3: 1.24 },
-  PETG: { densityGramsPerCm3: 1.27 },
-  ABS: { densityGramsPerCm3: 1.04 },
-  TPU: { densityGramsPerCm3: 1.21 },
-};
+const MATERIAL_PROFILES: Record<ThreeDPrintMaterial, MaterialPhysicalProfile> =
+  {
+    PLA: { densityGramsPerCm3: 1.24 },
+    PETG: { densityGramsPerCm3: 1.27 },
+    ABS: { densityGramsPerCm3: 1.04 },
+    TPU: { densityGramsPerCm3: 1.21 },
+  };
 
 const QUALITY_TIME_MULTIPLIERS: Record<ThreeDPrintQuality, number> = {
   draft: 0.82,
@@ -123,6 +139,75 @@ function isValidMetrics(metrics: ThreeDModelMetrics): boolean {
   );
 }
 
+function isValidQuoteOptions(
+  material: ThreeDPrintMaterial | null,
+  quality: ThreeDPrintQuality,
+  infillPercent: number,
+  quantity: number,
+): material is ThreeDPrintMaterial {
+  return (
+    material !== null &&
+    quality in QUALITY_TIME_MULTIPLIERS &&
+    Number.isFinite(infillPercent) &&
+    infillPercent >= 5 &&
+    infillPercent <= 100 &&
+    Number.isInteger(quantity) &&
+    quantity >= 1 &&
+    quantity <= 10_000
+  );
+}
+
+function priceThreeDPrintUsage({
+  version,
+  material,
+  quality,
+  infillPercent,
+  quantity,
+  materialGramsPerUnit,
+  printHoursPerUnit,
+  pricing,
+}: {
+  version: ThreeDQuoteEstimateVersion;
+  material: ThreeDPrintMaterial;
+  quality: ThreeDPrintQuality;
+  infillPercent: number;
+  quantity: number;
+  materialGramsPerUnit: number;
+  printHoursPerUnit: number;
+  pricing: ThreeDQuotePublicPricingConfig;
+}): ThreeDQuoteEstimate {
+  const pricingProfile = pricing.materials[material];
+  const customerMaterialPricePerUnit =
+    materialGramsPerUnit * pricingProfile.customerPricePerGram;
+  const customerMachinePricePerUnit =
+    printHoursPerUnit * pricing.machinePricePerHour;
+  const midpoint = Math.max(
+    pricing.minimumOrderPrice,
+    pricing.setupPrice +
+      (customerMaterialPricePerUnit + customerMachinePricePerUnit) * quantity,
+  );
+  const low = Math.max(
+    pricing.minimumOrderPrice,
+    midpoint * (1 - pricing.lowRangePercent / 100),
+  );
+  const high = Math.max(low, midpoint * (1 + pricing.highRangePercent / 100));
+
+  return {
+    version,
+    pricingVersion: pricing.version,
+    material,
+    quality,
+    infillPercent,
+    quantity,
+    estimatedMaterialGramsPerUnit: round(materialGramsPerUnit, 1),
+    estimatedPrintHoursPerUnit: round(printHoursPerUnit, 1),
+    estimatedUnitPrice: round(midpoint / quantity, 2),
+    estimatedTotalMidpoint: round(midpoint, 2),
+    estimatedTotalLow: round(low, 2),
+    estimatedTotalHigh: round(high, 2),
+  };
+}
+
 export function estimateThreeDPrintQuote(
   input: ThreeDQuoteEstimateInput,
 ): ThreeDQuoteEstimate | null {
@@ -132,15 +217,13 @@ export function estimateThreeDPrintQuote(
     : activePricingConfig;
 
   if (
-    !material ||
     !isValidMetrics(input.metrics) ||
-    !(input.quality in QUALITY_TIME_MULTIPLIERS) ||
-    !Number.isFinite(input.infillPercent) ||
-    input.infillPercent < 5 ||
-    input.infillPercent > 100 ||
-    !Number.isInteger(input.quantity) ||
-    input.quantity < 1 ||
-    input.quantity > 10_000
+    !isValidQuoteOptions(
+      material,
+      input.quality,
+      input.infillPercent,
+      input.quantity,
+    )
   ) {
     return null;
   }
@@ -156,8 +239,7 @@ export function estimateThreeDPrintQuote(
     0,
     input.metrics.volumeCm3 - shellVolumeCm3,
   );
-  const printedVolumeCm3 =
-    shellVolumeCm3 + interiorVolumeCm3 * infillFraction;
+  const printedVolumeCm3 = shellVolumeCm3 + interiorVolumeCm3 * infillFraction;
   const wasteFactor = 1 + pricing.wasteAllowancePercent / 100;
   const materialGramsPerUnit =
     printedVolumeCm3 * physicalProfile.densityGramsPerCm3 * wasteFactor;
@@ -166,37 +248,52 @@ export function estimateThreeDPrintQuote(
     (materialGramsPerUnit / pricingProfile.throughputGramsPerHour) *
       QUALITY_TIME_MULTIPLIERS[input.quality],
   );
-  const customerMaterialPricePerUnit =
-    materialGramsPerUnit * pricingProfile.customerPricePerGram;
-  const customerMachinePricePerUnit =
-    printHoursPerUnit * pricing.machinePricePerHour;
-  const midpoint = Math.max(
-    pricing.minimumOrderPrice,
-    pricing.setupPrice +
-      (customerMaterialPricePerUnit + customerMachinePricePerUnit) *
-        input.quantity,
-  );
-  const low = Math.max(
-    pricing.minimumOrderPrice,
-    midpoint * (1 - pricing.lowRangePercent / 100),
-  );
-  const high = Math.max(
-    low,
-    midpoint * (1 + pricing.highRangePercent / 100),
-  );
-
-  return {
+  return priceThreeDPrintUsage({
     version: THREE_D_QUOTE_ESTIMATE_VERSION,
-    pricingVersion: pricing.version,
     material,
     quality: input.quality,
     infillPercent: input.infillPercent,
     quantity: input.quantity,
-    estimatedMaterialGramsPerUnit: round(materialGramsPerUnit, 1),
-    estimatedPrintHoursPerUnit: round(printHoursPerUnit, 1),
-    estimatedUnitPrice: round(midpoint / input.quantity, 2),
-    estimatedTotalMidpoint: round(midpoint, 2),
-    estimatedTotalLow: round(low, 2),
-    estimatedTotalHigh: round(high, 2),
-  };
+    materialGramsPerUnit,
+    printHoursPerUnit,
+    pricing,
+  });
+}
+
+export function priceThreeDPrintQuoteFromSlicer(
+  input: ThreeDQuoteSlicerEstimateInput,
+): ThreeDQuoteEstimate | null {
+  const material = normalizeMaterial(input.material);
+  const pricing = normalizeThreeDQuotePublicPricingConfig(input.pricing);
+
+  if (
+    !isValidQuoteOptions(
+      material,
+      input.quality,
+      input.infillPercent,
+      input.quantity,
+    ) ||
+    !Number.isFinite(input.materialGramsPerUnit) ||
+    input.materialGramsPerUnit <= 0 ||
+    input.materialGramsPerUnit > 1_000_000 ||
+    !Number.isFinite(input.printHoursPerUnit) ||
+    input.printHoursPerUnit <= 0 ||
+    input.printHoursPerUnit > 100_000
+  ) {
+    return null;
+  }
+
+  const materialGramsWithWaste =
+    input.materialGramsPerUnit * (1 + pricing.wasteAllowancePercent / 100);
+
+  return priceThreeDPrintUsage({
+    version: THREE_D_QUOTE_SLICER_ESTIMATE_VERSION,
+    material,
+    quality: input.quality,
+    infillPercent: input.infillPercent,
+    quantity: input.quantity,
+    materialGramsPerUnit: materialGramsWithWaste,
+    printHoursPerUnit: input.printHoursPerUnit,
+    pricing,
+  });
 }

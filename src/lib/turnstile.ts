@@ -1,4 +1,5 @@
 export const TURNSTILE_QUOTE_ACTION = "quote_request";
+export const TURNSTILE_ESTIMATE_ACTION = "quote_estimate";
 
 export const TURNSTILE_TEST_SITE_KEY = "1x00000000000000000000AA";
 export const TURNSTILE_TEST_SECRET_KEY =

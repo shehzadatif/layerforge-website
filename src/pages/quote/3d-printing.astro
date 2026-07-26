@@ -1,8 +1,11 @@
 ---
 import MainLayout from "../../layouts/MainLayout.astro";
+import { getConfiguredCloudSlicerMaterials } from "../../lib/cloudSlicer";
+import { getCloudSlicerServerEnvironment } from "../../lib/cloudSlicerServer";
 import { getPacificDateInputValue } from "../../lib/dateUtils";
 import {
   resolveTurnstileSiteKey,
+  TURNSTILE_ESTIMATE_ACTION,
   TURNSTILE_QUOTE_ACTION,
 } from "../../lib/turnstile";
 
@@ -10,6 +13,11 @@ const turnstileSiteKey = resolveTurnstileSiteKey(
   import.meta.env.PUBLIC_TURNSTILE_SITE_KEY,
   import.meta.env.NODE_ENV,
 );
+const configuredSlicerMaterials = getConfiguredCloudSlicerMaterials(
+  getCloudSlicerServerEnvironment(),
+);
+const slicerRefinementAvailable =
+  Boolean(turnstileSiteKey) && configuredSlicerMaterials.length > 0;
 ---
 
 <MainLayout title="3D Printing Quote">
@@ -277,9 +285,15 @@ const turnstileSiteKey = resolveTurnstileSiteKey(
             class="rounded-2xl border border-yellow-300 bg-yellow-50 p-6"
             aria-labelledby="estimate-heading"
           >
-            <p class="text-sm font-bold uppercase tracking-[0.16em] text-yellow-700">
-              Instant preliminary estimate
-            </p>
+            <div class="flex flex-wrap items-center gap-3">
+              <p class="text-sm font-bold uppercase tracking-[0.16em] text-yellow-700">
+                Preliminary estimate
+              </p>
+              <span
+                id="estimateSource"
+                class="hidden rounded-full bg-white px-3 py-1 text-xs font-bold text-slate-600"
+              ></span>
+            </div>
             <h2
               id="estimate-heading"
               class="mt-2 text-3xl font-bold text-slate-950"
@@ -321,11 +335,64 @@ const turnstileSiteKey = resolveTurnstileSiteKey(
               class="mt-4 hidden rounded-xl border border-amber-300 bg-white p-4 text-sm font-medium text-amber-800"
             ></p>
 
+            {
+              slicerRefinementAvailable && (
+                <div class="mt-5 border-t border-yellow-300 pt-5">
+                  <div class="grid items-start gap-5 md:grid-cols-[1fr_auto]">
+                    <div>
+                      <h3 class="font-bold text-slate-950">
+                        Refine with your production setup
+                      </h3>
+                      <p class="mt-1 text-sm leading-6 text-slate-700">
+                        Run Bambu Studio for a Bambu Lab P1S with a 0.4 mm nozzle
+                        and automatic supports. This usually takes under two minutes.
+                      </p>
+                      <p
+                        id="slicerStatus"
+                        class="mt-2 text-sm font-semibold text-slate-700"
+                        aria-live="polite"
+                      ></p>
+                    </div>
+                    <button
+                      id="refineEstimateButton"
+                      type="button"
+                      disabled
+                      data-configured-materials={configuredSlicerMaterials.join(",")}
+                      class="rounded-xl bg-slate-950 px-5 py-3 text-sm font-bold text-white shadow transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-50"
+                    >
+                      Refine with Bambu Studio
+                    </button>
+                  </div>
+
+                  <div class="mt-4 max-w-sm rounded-xl bg-white p-3">
+                    <div
+                      id="slicerTurnstile"
+                      class="cf-turnstile"
+                      data-sitekey={turnstileSiteKey}
+                      data-action={TURNSTILE_ESTIMATE_ACTION}
+                      data-response-field-name="slicer-turnstile-response"
+                      data-theme="light"
+                      data-size="flexible"
+                    ></div>
+                  </div>
+
+                  <p class="mt-3 text-xs leading-5 text-slate-600">
+                    Refinement sends a temporary copy of the STL to the slicer.
+                    Layer Forge requests immediate deletion of the uploaded model,
+                    generated G-code, and provider quote after the result is
+                    retrieved or the job is cancelled.
+                  </p>
+                </div>
+              )
+            }
+
             <p class="mt-5 text-xs leading-5 text-slate-600">
               This range is an estimate only and assumes a printable, closed STL
               with the selected units. Final pricing may change after orientation,
-              supports, wall thickness, tolerances, and manufacturability are
-              reviewed. Taxes and delivery are additional.
+              wall thickness, tolerances, and manufacturability are reviewed.
+              Bambu Studio refinement uses the uploaded orientation and includes
+              automatic supports; the instant browser estimate does not. Taxes
+              and delivery are additional.
             </p>
           </section>
 
@@ -458,6 +525,7 @@ const turnstileSiteKey = resolveTurnstileSiteKey(
             turnstileSiteKey ? (
               <div class="rounded-xl border border-slate-200 bg-slate-50 p-4">
                 <div
+                  id="quoteTurnstile"
                   class="cf-turnstile"
                   data-sitekey={turnstileSiteKey}
                   data-action={TURNSTILE_QUOTE_ACTION}
@@ -501,17 +569,22 @@ const turnstileSiteKey = resolveTurnstileSiteKey(
   }
 
   <script>
-    import type { BufferGeometry } from "three";
+    import { Mesh, type BufferGeometry } from "three";
+    import { STLExporter } from "three/examples/jsm/exporters/STLExporter.js";
     import { STLLoader } from "three/examples/jsm/loaders/STLLoader.js";
 
     import { analyzeThreeDGeometry } from "../../lib/threeDModelAnalysis";
     import {
       estimateThreeDPrintQuote,
+      type ThreeDQuoteEstimate,
       type ThreeDModelMetrics,
       type ThreeDPrintQuality,
     } from "../../lib/threeDQuoteEstimator";
 
     const MAX_INSTANT_ANALYSIS_SIZE = 25 * 1024 * 1024;
+    const P1S_BUILD_VOLUME_MM = 256;
+    const SLICER_POLL_INTERVAL_MS = 2_000;
+    const SLICER_TIMEOUT_MS = 3 * 60 * 1_000;
     const currency = new Intl.NumberFormat("en-CA", {
       style: "currency",
       currency: "CAD",
@@ -533,9 +606,17 @@ const turnstileSiteKey = resolveTurnstileSiteKey(
     const estimateHours = document.getElementById("estimateHours");
     const estimateQuantity = document.getElementById("estimateQuantity");
     const estimateWarning = document.getElementById("estimateWarning");
+    const estimateSource = document.getElementById("estimateSource");
+    const refineEstimateButton = document.getElementById(
+      "refineEstimateButton",
+    );
+    const slicerStatus = document.getElementById("slicerStatus");
 
     let loadedGeometry: BufferGeometry | null = null;
     let currentMetrics: ThreeDModelMetrics | null = null;
+    let currentBrowserEstimate: ThreeDQuoteEstimate | null = null;
+    let activeSlicerJobToken = "";
+    let slicerRequestSequence = 0;
 
     function setHiddenValue(name: string, value: string) {
       if (!(form instanceof HTMLFormElement)) {
@@ -566,7 +647,64 @@ const turnstileSiteKey = resolveTurnstileSiteKey(
       }
     }
 
+    function setEstimateSource(label: string) {
+      if (!estimateSource) {
+        return;
+      }
+
+      estimateSource.textContent = label;
+      estimateSource.classList.toggle("hidden", !label);
+    }
+
+    function setSlicerStatus(message: string, isError = false) {
+      if (!slicerStatus) {
+        return;
+      }
+
+      slicerStatus.textContent = message;
+      slicerStatus.classList.toggle("text-red-700", isError);
+      slicerStatus.classList.toggle("text-slate-700", !isError);
+    }
+
+    function configuredSlicerMaterials(): string[] {
+      if (!(refineEstimateButton instanceof HTMLButtonElement)) {
+        return [];
+      }
+
+      return (refineEstimateButton.dataset.configuredMaterials ?? "")
+        .split(",")
+        .map((value) => value.trim())
+        .filter(Boolean);
+    }
+
+    function updateRefineButton() {
+      if (!(refineEstimateButton instanceof HTMLButtonElement)) {
+        return;
+      }
+
+      const selectedMaterial =
+        material instanceof HTMLSelectElement ? material.value : "";
+      const file =
+        fileInput instanceof HTMLInputElement ? fileInput.files?.[0] : null;
+      const slicerReady =
+        Boolean(currentBrowserEstimate) &&
+        Boolean(file) &&
+        file!.name.toLowerCase().endsWith(".stl") &&
+        file!.size <= MAX_INSTANT_ANALYSIS_SIZE &&
+        Boolean(currentMetrics) &&
+        Math.max(
+          currentMetrics!.dimensionsMm.x,
+          currentMetrics!.dimensionsMm.y,
+          currentMetrics!.dimensionsMm.z,
+        ) <= P1S_BUILD_VOLUME_MM &&
+        configuredSlicerMaterials().includes(selectedMaterial);
+
+      refineEstimateButton.disabled = !slicerReady || Boolean(activeSlicerJobToken);
+    }
+
     function showEstimateState(price: string, message: string) {
+      currentBrowserEstimate = null;
+
       if (estimatePrice) {
         estimatePrice.textContent = price;
       }
@@ -578,7 +716,9 @@ const turnstileSiteKey = resolveTurnstileSiteKey(
       estimateDetails?.classList.add("hidden");
       estimateDetails?.classList.remove("grid");
       estimateWarning?.classList.add("hidden");
+      setEstimateSource("");
       clearEstimateFields();
+      updateRefineButton();
     }
 
     function unitScale(): number {
@@ -631,6 +771,8 @@ const turnstileSiteKey = resolveTurnstileSiteKey(
         return;
       }
 
+      currentBrowserEstimate = estimate;
+
       if (estimatePrice) {
         estimatePrice.textContent =
           `${currency.format(estimate.estimatedTotalLow)}–` +
@@ -641,6 +783,7 @@ const turnstileSiteKey = resolveTurnstileSiteKey(
         estimateMessage.textContent =
           `Estimated total for ${estimate.quantity} item${estimate.quantity === 1 ? "" : "s"}, before tax and delivery.`;
       }
+      setEstimateSource("Instant geometry");
 
       const dimensions = currentMetrics.dimensionsMm;
 
@@ -677,6 +820,10 @@ const turnstileSiteKey = resolveTurnstileSiteKey(
           estimateWarning.textContent =
             "This model exceeds 300 mm on at least one axis and may require splitting or a larger-format printer. Manual review is required.";
           estimateWarning.classList.remove("hidden");
+        } else if (largestDimension > P1S_BUILD_VOLUME_MM) {
+          estimateWarning.textContent =
+            "This model exceeds the P1S 256 mm build volume on at least one axis. Bambu Studio refinement is unavailable unless the model is split.";
+          estimateWarning.classList.remove("hidden");
         } else {
           estimateWarning.classList.add("hidden");
         }
@@ -710,6 +857,365 @@ const turnstileSiteKey = resolveTurnstileSiteKey(
         "modelTriangleCount",
         String(currentMetrics.triangleCount),
       );
+      updateRefineButton();
+    }
+
+    function resetSlicerTurnstile() {
+      const turnstileWindow = window as typeof window & {
+        turnstile?: { reset: (widget?: string) => void };
+      };
+      turnstileWindow.turnstile?.reset("#slicerTurnstile");
+    }
+
+    function slicerTurnstileToken(): string {
+      if (!(form instanceof HTMLFormElement)) {
+        return "";
+      }
+
+      const field = form.elements.namedItem("slicer-turnstile-response");
+      return field instanceof HTMLInputElement ? field.value.trim() : "";
+    }
+
+    function cancelSlicerJobToken(jobToken: string, useBeacon = false) {
+      if (!jobToken) {
+        return;
+      }
+
+      const body = JSON.stringify({ jobToken });
+
+      if (
+        useBeacon &&
+        navigator.sendBeacon(
+          "/api/quote/3d-slicer/cancel",
+          new Blob([body], { type: "application/json" }),
+        )
+      ) {
+        return;
+      }
+
+      void fetch("/api/quote/3d-slicer/cancel", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body,
+        keepalive: true,
+      }).catch(() => undefined);
+    }
+
+    function invalidateSlicerRefinement() {
+      slicerRequestSequence += 1;
+
+      if (activeSlicerJobToken) {
+        cancelSlicerJobToken(activeSlicerJobToken);
+        activeSlicerJobToken = "";
+      }
+
+      if (estimateSource?.textContent?.startsWith("Bambu Studio")) {
+        setSlicerStatus("Print options changed. Run the refinement again.");
+      }
+
+      if (refineEstimateButton instanceof HTMLButtonElement) {
+        refineEstimateButton.textContent = "Refine with Bambu Studio";
+      }
+
+      updateRefineButton();
+    }
+
+    function safeSlicerFilename(filename: string): string {
+      const baseName =
+        filename
+          .replace(/\.[^.]+$/, "")
+          .replace(/[^A-Za-z0-9._-]+/g, "-")
+          .replace(/^-+|-+$/g, "")
+          .slice(0, 100) || "layerforge-model";
+
+      return `${baseName}.stl`;
+    }
+
+    function createSlicerFile(originalFile: File): File {
+      const filename = safeSlicerFilename(originalFile.name);
+
+      if (unitScale() === 1) {
+        return new File([originalFile], filename, { type: "model/stl" });
+      }
+
+      if (!loadedGeometry) {
+        throw new Error("The STL geometry is not ready.");
+      }
+
+      const scaledGeometry = loadedGeometry.clone();
+      scaledGeometry.scale(25.4, 25.4, 25.4);
+
+      try {
+        const exporter = new STLExporter();
+        const binary = exporter.parse(new Mesh(scaledGeometry), {
+          binary: true,
+        });
+
+        return new File(
+          [binary.buffer as ArrayBuffer],
+          filename,
+          { type: "model/stl" },
+        );
+      } finally {
+        scaledGeometry.dispose();
+      }
+    }
+
+    async function readJsonResponse(response: Response) {
+      const result = (await response.json().catch(() => null)) as
+        | Record<string, unknown>
+        | null;
+
+      if (!response.ok || result?.success === false) {
+        throw new Error(
+          typeof result?.error === "string"
+            ? result.error
+            : "Bambu Studio refinement failed.",
+        );
+      }
+
+      return result ?? {};
+    }
+
+    function applySlicerEstimate(estimate: ThreeDQuoteEstimate) {
+      if (!currentMetrics) {
+        return;
+      }
+
+      if (estimatePrice) {
+        estimatePrice.textContent =
+          `${currency.format(estimate.estimatedTotalLow)}–` +
+          currency.format(estimate.estimatedTotalHigh);
+      }
+
+      if (estimateMessage) {
+        estimateMessage.textContent =
+          `Bambu Studio estimate for ${estimate.quantity} item${estimate.quantity === 1 ? "" : "s"}, before tax and delivery. Automatic supports are included when the model needs them.`;
+      }
+
+      if (estimateWeight) {
+        estimateWeight.textContent =
+          `${estimate.estimatedMaterialGramsPerUnit.toFixed(1)} g`;
+      }
+
+      if (estimateHours) {
+        estimateHours.textContent =
+          `${estimate.estimatedPrintHoursPerUnit.toFixed(1)} h`;
+      }
+
+      setEstimateSource("Bambu Studio · P1S");
+      setHiddenValue("estimateVersion", estimate.version);
+      setHiddenValue("estimateLow", estimate.estimatedTotalLow.toFixed(2));
+      setHiddenValue("estimateHigh", estimate.estimatedTotalHigh.toFixed(2));
+      setHiddenValue(
+        "estimateMidpoint",
+        estimate.estimatedTotalMidpoint.toFixed(2),
+      );
+      setHiddenValue(
+        "estimateMaterialGrams",
+        estimate.estimatedMaterialGramsPerUnit.toFixed(1),
+      );
+      setHiddenValue(
+        "estimatePrintHours",
+        estimate.estimatedPrintHoursPerUnit.toFixed(1),
+      );
+    }
+
+    function wait(milliseconds: number): Promise<void> {
+      return new Promise((resolve) => {
+        window.setTimeout(resolve, milliseconds);
+      });
+    }
+
+    async function refineEstimateWithSlicer() {
+      if (
+        !(refineEstimateButton instanceof HTMLButtonElement) ||
+        !(fileInput instanceof HTMLInputElement) ||
+        !(material instanceof HTMLSelectElement) ||
+        !(quality instanceof HTMLSelectElement) ||
+        !(infill instanceof HTMLSelectElement) ||
+        !(quantity instanceof HTMLInputElement) ||
+        !currentBrowserEstimate
+      ) {
+        return;
+      }
+
+      const originalFile = fileInput.files?.[0];
+      const turnstileToken = slicerTurnstileToken();
+
+      if (!originalFile) {
+        setSlicerStatus("Upload an STL before refining the estimate.", true);
+        return;
+      }
+
+      if (!turnstileToken) {
+        setSlicerStatus(
+          "Complete the refinement security check, then try again.",
+          true,
+        );
+        return;
+      }
+
+      const requestSequence = ++slicerRequestSequence;
+      const originalButtonText = refineEstimateButton.textContent ?? "";
+      let jobToken = "";
+      refineEstimateButton.disabled = true;
+      refineEstimateButton.textContent = "Preparing slicer…";
+      setSlicerStatus(
+        "Preparing a temporary STL upload. Your pricing settings stay private.",
+      );
+
+      try {
+        const slicerFile = createSlicerFile(originalFile);
+        const startResponse = await fetch("/api/quote/3d-slicer/start", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            turnstileToken,
+            material: material.value,
+            quality: quality.value,
+            infillPercent: Number(infill.value),
+            quantity: Number(quantity.value),
+          }),
+        });
+        const start = await readJsonResponse(startResponse);
+        jobToken = String(start.jobToken ?? "");
+        activeSlicerJobToken = jobToken;
+        resetSlicerTurnstile();
+
+        if (
+          requestSequence !== slicerRequestSequence ||
+          typeof start.uploadUrl !== "string" ||
+          !jobToken
+        ) {
+          cancelSlicerJobToken(jobToken);
+          activeSlicerJobToken = "";
+          return;
+        }
+
+        refineEstimateButton.textContent = "Uploading model…";
+        setSlicerStatus(
+          "Uploading the temporary model directly to the slicer.",
+        );
+        const uploadForm = new FormData();
+        uploadForm.append("file", slicerFile, slicerFile.name);
+        const uploadResponse = await fetch(start.uploadUrl, {
+          method: "POST",
+          body: uploadForm,
+        });
+
+        if (!uploadResponse.ok) {
+          throw new Error("The temporary STL upload failed.");
+        }
+
+        if (requestSequence !== slicerRequestSequence) {
+          cancelSlicerJobToken(jobToken);
+          activeSlicerJobToken = "";
+          return;
+        }
+
+        refineEstimateButton.textContent = "Slicing model…";
+        setSlicerStatus(
+          "Bambu Studio is slicing for the P1S with automatic supports.",
+        );
+        const queueResponse = await fetch("/api/quote/3d-slicer/queue", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ jobToken }),
+        });
+        const queued = await readJsonResponse(queueResponse);
+        const queuedJobToken = String(queued.jobToken ?? "");
+
+        if (!queuedJobToken) {
+          throw new Error("The slicer did not return a job token.");
+        }
+
+        jobToken = queuedJobToken;
+        activeSlicerJobToken = jobToken;
+
+        if (requestSequence !== slicerRequestSequence) {
+          cancelSlicerJobToken(jobToken);
+          activeSlicerJobToken = "";
+          return;
+        }
+
+        const deadline = Date.now() + SLICER_TIMEOUT_MS;
+        let transientFailures = 0;
+
+        while (Date.now() < deadline) {
+          await wait(SLICER_POLL_INTERVAL_MS);
+
+          if (requestSequence !== slicerRequestSequence) {
+            cancelSlicerJobToken(jobToken);
+            activeSlicerJobToken = "";
+            return;
+          }
+
+          const statusResponse = await fetch("/api/quote/3d-slicer/status", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ jobToken }),
+          });
+
+          if (statusResponse.status >= 500 && transientFailures < 2) {
+            transientFailures += 1;
+            continue;
+          }
+
+          const status = await readJsonResponse(statusResponse);
+
+          if (status.status === "pending") {
+            const progress = Number(status.progress);
+            setSlicerStatus(
+              Number.isFinite(progress) && progress > 0
+                ? `Bambu Studio is slicing… ${Math.round(progress)}%`
+                : "Bambu Studio is slicing…",
+            );
+            continue;
+          }
+
+          const estimate = status.estimate as
+            | ThreeDQuoteEstimate
+            | undefined;
+
+          if (!estimate || status.status !== "success") {
+            throw new Error("The slicer returned an incomplete estimate.");
+          }
+
+          activeSlicerJobToken = "";
+          applySlicerEstimate(estimate);
+          setSlicerStatus(
+            status.cleanupComplete === true
+              ? "Refined with Bambu Studio. The temporary slicer files were deleted."
+              : "Refined with Bambu Studio. Temporary-file deletion was requested but could not be confirmed.",
+            status.cleanupComplete !== true,
+          );
+          return;
+        }
+
+        throw new Error(
+          "Bambu Studio took too long. The instant estimate is still available.",
+        );
+      } catch (error) {
+        if (jobToken) {
+          cancelSlicerJobToken(jobToken);
+        }
+
+        activeSlicerJobToken = "";
+        resetSlicerTurnstile();
+        setSlicerStatus(
+          error instanceof Error
+            ? error.message
+            : "Bambu Studio refinement failed. The instant estimate is still available.",
+          true,
+        );
+      } finally {
+        if (requestSequence === slicerRequestSequence) {
+          activeSlicerJobToken = "";
+          refineEstimateButton.textContent = originalButtonText;
+          updateRefineButton();
+        }
+      }
     }
 
     async function analyzeSelectedFile() {
@@ -778,10 +1284,13 @@ const turnstileSiteKey = resolveTurnstileSiteKey(
     }
 
     fileInput?.addEventListener("change", () => {
+      invalidateSlicerRefinement();
       void analyzeSelectedFile();
     });
 
     modelUnits?.addEventListener("change", () => {
+      invalidateSlicerRefinement();
+
       try {
         recalculateMetrics();
         renderEstimate();
@@ -796,9 +1305,24 @@ const turnstileSiteKey = resolveTurnstileSiteKey(
     });
 
     for (const field of [material, quality, infill, quantity]) {
-      field?.addEventListener("change", renderEstimate);
-      field?.addEventListener("input", renderEstimate);
+      const updateEstimate = () => {
+        invalidateSlicerRefinement();
+        renderEstimate();
+      };
+      field?.addEventListener("change", updateEstimate);
+      field?.addEventListener("input", updateEstimate);
     }
+
+    refineEstimateButton?.addEventListener("click", () => {
+      void refineEstimateWithSlicer();
+    });
+
+    window.addEventListener("pagehide", () => {
+      if (activeSlicerJobToken) {
+        cancelSlicerJobToken(activeSlicerJobToken, true);
+        activeSlicerJobToken = "";
+      }
+    });
 
     form?.addEventListener("submit", async (event) => {
       event.preventDefault();
@@ -838,9 +1362,9 @@ const turnstileSiteKey = resolveTurnstileSiteKey(
       } finally {
         if (!submitted) {
           const turnstileWindow = window as typeof window & {
-            turnstile?: { reset: () => void };
+            turnstile?: { reset: (widget?: string) => void };
           };
-          turnstileWindow.turnstile?.reset();
+          turnstileWindow.turnstile?.reset("#quoteTurnstile");
           submitButton.disabled = false;
           submitButton.innerText = originalText;
         }

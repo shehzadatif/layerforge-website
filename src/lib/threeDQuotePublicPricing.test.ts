@@ -7,8 +7,8 @@ import {
 import {
   DEFAULT_THREE_D_QUOTE_PUBLIC_PRICING,
   normalizeThreeDQuotePublicPricingConfig,
-  toThreeDQuotePublicPricingConfig,
 } from "./threeDQuotePublicPricing";
+import { toThreeDQuotePublicPricingConfig } from "./threeDQuotePublicPricingServer";
 
 function clonePricing(): ThreeDQuotePricingConfig {
   return {
@@ -83,8 +83,7 @@ describe("3D quote public pricing", () => {
     );
     expect(pricing.materials.PLA.customerPricePerGram).toBe(0.25);
     expect(pricing.materials.PLA.throughputGramsPerHour).toBe(
-      DEFAULT_THREE_D_QUOTE_PUBLIC_PRICING.materials.PLA
-        .throughputGramsPerHour,
+      DEFAULT_THREE_D_QUOTE_PUBLIC_PRICING.materials.PLA.throughputGramsPerHour,
     );
   });
 });

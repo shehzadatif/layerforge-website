@@ -1,13 +1,12 @@
-import {
-  customerRateFromCost,
-  DEFAULT_THREE_D_QUOTE_PRICING,
-  normalizeThreeDQuotePricingConfig,
-  THREE_D_QUOTE_MATERIALS,
-  type ThreeDQuoteMaterial,
-  type ThreeDQuotePricingConfig,
-} from "./threeDQuotePricing";
+import type { ThreeDQuoteMaterial } from "./threeDQuotePricing";
 
 export const THREE_D_QUOTE_PUBLIC_PRICING_VERSION = "admin-customer-v1";
+export const THREE_D_QUOTE_PUBLIC_MATERIALS = [
+  "PLA",
+  "PETG",
+  "ABS",
+  "TPU",
+] as const satisfies readonly ThreeDQuoteMaterial[];
 
 export interface ThreeDQuotePublicMaterialPricing {
   customerPricePerGram: number;
@@ -38,51 +37,40 @@ function boundedNumber(
     : fallback;
 }
 
-function round(value: number, digits = 6): number {
-  const factor = 10 ** digits;
-  return Math.round(value * factor) / factor;
-}
-
-export function toThreeDQuotePublicPricingConfig(
-  value: ThreeDQuotePricingConfig,
-): ThreeDQuotePublicPricingConfig {
-  const pricing = normalizeThreeDQuotePricingConfig(value);
-
-  return {
+/*
+ * These are customer-facing defaults, not Layer Forge's underlying cost
+ * basis. Keeping this browser-safe fallback separate from the server-side
+ * converter prevents direct costs and the target margin from entering the
+ * public JavaScript bundle.
+ */
+export const DEFAULT_THREE_D_QUOTE_PUBLIC_PRICING: ThreeDQuotePublicPricingConfig =
+  {
     version: THREE_D_QUOTE_PUBLIC_PRICING_VERSION,
-    setupPrice: round(
-      customerRateFromCost(pricing.setupCost, pricing.targetMarginPercent),
-    ),
-    machinePricePerHour: round(
-      customerRateFromCost(
-        pricing.machineCostPerHour,
-        pricing.targetMarginPercent,
-      ),
-    ),
-    minimumOrderPrice: pricing.minimumOrderPrice,
-    wasteAllowancePercent: pricing.wasteAllowancePercent,
-    lowRangePercent: pricing.lowRangePercent,
-    highRangePercent: pricing.highRangePercent,
-    materials: Object.fromEntries(
-      THREE_D_QUOTE_MATERIALS.map((material) => [
-        material,
-        {
-          customerPricePerGram: round(
-            customerRateFromCost(
-              pricing.materials[material].costPerGram,
-              pricing.targetMarginPercent,
-            ),
-          ),
-          throughputGramsPerHour:
-            pricing.materials[material].throughputGramsPerHour,
-        },
-      ]),
-    ) as Record<ThreeDQuoteMaterial, ThreeDQuotePublicMaterialPricing>,
+    setupPrice: 8,
+    machinePricePerHour: 3.5,
+    minimumOrderPrice: 18,
+    wasteAllowancePercent: 10,
+    lowRangePercent: 8,
+    highRangePercent: 12,
+    materials: {
+      PLA: {
+        customerPricePerGram: 0.13,
+        throughputGramsPerHour: 8.5,
+      },
+      PETG: {
+        customerPricePerGram: 0.15,
+        throughputGramsPerHour: 7.5,
+      },
+      ABS: {
+        customerPricePerGram: 0.16,
+        throughputGramsPerHour: 7,
+      },
+      TPU: {
+        customerPricePerGram: 0.23,
+        throughputGramsPerHour: 4.5,
+      },
+    },
   };
-}
-
-export const DEFAULT_THREE_D_QUOTE_PUBLIC_PRICING =
-  toThreeDQuotePublicPricingConfig(DEFAULT_THREE_D_QUOTE_PRICING);
 
 export function normalizeThreeDQuotePublicPricingConfig(
   value: unknown,
@@ -97,11 +85,10 @@ export function normalizeThreeDQuotePublicPricingConfig(
       : {};
 
   const materials = Object.fromEntries(
-    THREE_D_QUOTE_MATERIALS.map((material) => {
+    THREE_D_QUOTE_PUBLIC_MATERIALS.map((material) => {
       const fallback = DEFAULT_THREE_D_QUOTE_PUBLIC_PRICING.materials[material];
       const raw =
-        inputMaterials[material] &&
-        typeof inputMaterials[material] === "object"
+        inputMaterials[material] && typeof inputMaterials[material] === "object"
           ? (inputMaterials[material] as Record<string, unknown>)
           : {};
 

@@ -3,6 +3,7 @@ import { describe, expect, it, vi } from "vitest";
 import {
   resolveTurnstileSecretKey,
   resolveTurnstileSiteKey,
+  TURNSTILE_ESTIMATE_ACTION,
   TURNSTILE_QUOTE_ACTION,
   TURNSTILE_TEST_SECRET_KEY,
   TURNSTILE_TEST_SITE_KEY,
@@ -10,6 +11,11 @@ import {
 } from "./turnstile";
 
 describe("Turnstile configuration", () => {
+  it("uses distinct actions for estimation and final submission", () => {
+    expect(TURNSTILE_ESTIMATE_ACTION).toBe("quote_estimate");
+    expect(TURNSTILE_ESTIMATE_ACTION).not.toBe(TURNSTILE_QUOTE_ACTION);
+  });
+
   it("uses configured keys before development test keys", () => {
     expect(resolveTurnstileSiteKey(" site-key ", "development")).toBe(
       "site-key",
