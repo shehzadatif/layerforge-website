@@ -93,7 +93,16 @@ describe("Cloud Slicer API client", () => {
       cloudSlicerQueueErrorMessage(
         new CloudSlicerApiError("Provider response", 404),
       ),
-    ).toMatch(/could not find.*P1S.*PLA/i);
+    ).toMatch(/could not find.*uploaded file.*printer\/material/i);
+    expect(
+      cloudSlicerQueueErrorMessage(
+        new CloudSlicerApiError(
+          "Provider response",
+          404,
+          "File 0123456789abcdef0123456789abcdef was not found",
+        ),
+      ),
+    ).toMatch(/File \[redacted-id\] was not found/i);
     expect(
       cloudSlicerQueueErrorMessage(
         new CloudSlicerApiError("Provider response", 401),
@@ -169,6 +178,35 @@ describe("Cloud Slicer API client", () => {
       progress: 100,
       filamentWeightGrams: 82.4,
       estimatedTimeSeconds: 7200,
+    });
+  });
+
+  it("preserves a safe provider error detail for queue diagnostics", async () => {
+    const fetcher = vi.fn<typeof fetch>(async () =>
+      Response.json(
+        {
+          detail:
+            "Printer 0123456789abcdef0123456789abcdef was not found",
+        },
+        { status: 404 },
+      ),
+    );
+
+    await expect(
+      queueCloudSlicerQuote(
+        configuration,
+        "file-123",
+        {
+          material: "PLA",
+          quality: "standard",
+          infillPercent: 20,
+          quantity: 1,
+        },
+        fetcher,
+      ),
+    ).rejects.toMatchObject({
+      status: 404,
+      providerDetail: "Printer [redacted-id] was not found",
     });
   });
 
