@@ -80,6 +80,12 @@ import { getPacificDateInputValue } from "../../lib/dateUtils";
               <p class="mt-1 text-sm text-slate-500">
                 AI, SVG, PDF, PNG, JPG, JPEG
               </p>
+
+              <p
+                id="selectedFileName"
+                class="mt-3 hidden rounded-lg bg-green-100 px-4 py-2 text-sm font-semibold text-green-800"
+                aria-live="polite"
+              ></p>
             </div>
           </label>
 
@@ -416,6 +422,24 @@ import { getPacificDateInputValue } from "../../lib/dateUtils";
 import { estimateLaserEngraving } from "../../lib/laserEngravingEstimator";
 
 const form = document.getElementById("quoteForm");
+const fileInput = document.querySelector<HTMLInputElement>("#file");
+const selectedFileName =
+  document.querySelector<HTMLElement>("#selectedFileName");
+
+fileInput?.addEventListener("change", () => {
+  const file = fileInput.files?.[0];
+
+  if (!selectedFileName) return;
+
+  if (file) {
+    selectedFileName.textContent = `✓ Selected: ${file.name}`;
+    selectedFileName.classList.remove("hidden");
+  } else {
+    selectedFileName.textContent = "";
+    selectedFileName.classList.add("hidden");
+  }
+});
+
 const fields = {
   width: document.querySelector<HTMLInputElement>("#engravingWidth"),
   height: document.querySelector<HTMLInputElement>("#engravingHeight"),
