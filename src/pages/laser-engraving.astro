@@ -8,6 +8,81 @@ const applications = [
   ["Corporate Branding", "Add logos and messaging to client gifts, employee items, and promotional products."],
 ];
 
+const engravingExamples = [
+  {
+    title: "Tumblers & Drinkware",
+    description: "Names, logos, monograms, and detailed artwork on coated stainless steel.",
+    image: "/images/laser-engraving/examples/tumbler.webp",
+    alt: "Matte black stainless-steel tumbler with an engraved mountain design",
+  },
+  {
+    title: "Wood",
+    description: "Keepsake boxes, cutting boards, signs, gifts, and décor with a warm natural finish.",
+    image: "/images/laser-engraving/examples/wood.webp",
+    alt: "Walnut keepsake box with an engraved botanical design",
+  },
+  {
+    title: "Acrylic",
+    description: "Clean, modern signage, displays, awards, and branded desk pieces.",
+    image: "/images/laser-engraving/examples/acrylic.webp",
+    alt: "Frosted acrylic desk sign with a geometric engraved design",
+  },
+  {
+    title: "Cork",
+    description: "Coasters, mats, tags, and lightweight promotional pieces with crisp contrast.",
+    image: "/images/laser-engraving/examples/cork.webp",
+    alt: "Natural cork coasters with an engraved leaf design",
+  },
+  {
+    title: "Anodized Metal",
+    description: "Business cards, tags, plates, and identification pieces with permanent fine detail.",
+    image: "/images/laser-engraving/examples/anodized-metal.webp",
+    alt: "Black anodized aluminum business card with an engraved geometric mark",
+  },
+  {
+    title: "Leatherette",
+    description: "Notebooks, portfolios, patches, wallets, and gifts with a refined personalized mark.",
+    image: "/images/laser-engraving/examples/leatherette.webp",
+    alt: "Tan leatherette notebook with an engraved compass design",
+  },
+  {
+    title: "Glass",
+    description: "Drinkware, awards, and keepsakes with an elegant frosted appearance.",
+    image: "/images/laser-engraving/examples/glass.webp",
+    alt: "Clear glass drinkware with a frosted engraved landscape",
+  },
+  {
+    title: "Slate",
+    description: "Coasters, serving pieces, plaques, and gifts with a distinctive natural texture.",
+    image: "/images/laser-engraving/examples/slate.webp",
+    alt: "Dark slate coaster with an engraved mountain landscape",
+  },
+  {
+    title: "Jewelry",
+    description: "Rings, pendants, bracelets, and keepsakes marked with precise personal details.",
+    image: "/images/laser-engraving/examples/jewelry.webp",
+    alt: "Stainless-steel ring and pendant with precision engraved landscape designs",
+  },
+  {
+    title: "Metal Tags & Coins",
+    description: "Pet tags, commemorative coins, identification plates, and durable branded pieces.",
+    image: "/images/laser-engraving/examples/metal-tags-coins.webp",
+    alt: "Engraved brass commemorative coin and stainless-steel pet tag",
+  },
+  {
+    title: "Plastic Accessories",
+    description: "Compatible plastic cases, labels, electronics tags, and promotional accessories.",
+    image: "/images/laser-engraving/examples/plastic-accessories.webp",
+    alt: "Dark plastic phone case and accessory tag with engraved landscape artwork",
+  },
+  {
+    title: "Bamboo",
+    description: "Cutting boards, trays, utensils, gifts, and home décor with a naturally warm finish.",
+    image: "/images/laser-engraving/examples/bamboo.webp",
+    alt: "Bamboo cutting board with an engraved botanical border",
+  },
+];
+
 const materials = ["Wood", "Powder-coated metal", "Slate", "Acrylic", "Leatherette", "Anodized aluminum", "Glass", "Customer-supplied items"];
 ---
 
@@ -55,6 +130,49 @@ const materials = ["Wood", "Powder-coated metal", "Slate", "Acrylic", "Leatheret
             </article>
           ))}
         </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="bg-white py-24" aria-labelledby="engraving-examples-heading">
+    <div class="mx-auto max-w-7xl px-6">
+      <div class="mx-auto max-w-3xl text-center">
+        <p class="font-semibold uppercase tracking-[0.3em] text-yellow-600">Engraving possibilities</p>
+        <h2 id="engraving-examples-heading" class="mt-4 text-4xl font-black text-slate-950 sm:text-5xl">
+          See what we can personalize.
+        </h2>
+        <p class="mt-6 text-lg leading-8 text-slate-600">
+          Explore popular products and materials for gifts, branding, recognition, and everyday use.
+          Have something different? Send us a photo and we’ll check its compatibility.
+        </p>
+      </div>
+
+      <div class="mt-14 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
+        {
+          engravingExamples.map((example) => (
+            <article class="group overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm transition duration-300 hover:-translate-y-1 hover:shadow-xl">
+              <div class="overflow-hidden bg-slate-950">
+                <img
+                  src={example.image}
+                  alt={example.alt}
+                  width="800"
+                  height="800"
+                  loading="lazy"
+                  class="aspect-square w-full object-cover transition duration-500 group-hover:scale-105"
+                />
+              </div>
+              <div class="p-6">
+                <h3 class="text-xl font-bold text-slate-950">{example.title}</h3>
+                <p class="mt-3 leading-7 text-slate-600">{example.description}</p>
+              </div>
+            </article>
+          ))
+        }
+      </div>
+
+      <div class="mt-10 rounded-2xl border border-yellow-200 bg-yellow-50 px-6 py-5 text-center text-sm leading-6 text-slate-700">
+        Material composition, coatings, shape, and engraving area affect the final result. We confirm
+        compatibility before engraving customer-supplied products.
       </div>
     </div>
   </section>
