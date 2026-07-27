@@ -16,9 +16,16 @@ import { getPacificDateInputValue } from "../../lib/dateUtils";
       </h1>
 
       <p class="mb-10 text-slate-600">
-        Upload your artwork and tell us about your engraving project. We'll
-        review your design and send you a personalized quote.
+        Enter your engraving details for an instant preliminary estimate, then
+        send the project to Layer Forge for final price validation.
       </p>
+
+      <div class="mb-10 rounded-xl border border-yellow-300 bg-yellow-50 p-5 text-sm leading-6 text-slate-700">
+        <strong class="text-slate-950">Preliminary estimate only.</strong>
+        Final pricing is confirmed after we review the artwork, material,
+        engraving placement, and production settings. Contact us if you would
+        like the price validated before submitting your item.
+      </div>
 
    <form
       id="quoteForm"
@@ -30,6 +37,10 @@ import { getPacificDateInputValue } from "../../lib/dateUtils";
         name="service"
         value="Laser Engraving"
       />
+      <input id="laserEstimateLow" type="hidden" name="laserEstimateLow" />
+      <input id="laserEstimateHigh" type="hidden" name="laserEstimateHigh" />
+      <input id="laserEstimateMidpoint" type="hidden" name="laserEstimateMidpoint" />
+      <input id="laserEstimateHours" type="hidden" name="laserEstimateHours" />
 
       <section class="space-y-6">
         <h2 class="text-2xl font-bold text-slate-900">Artwork Upload</h2>
@@ -69,6 +80,12 @@ import { getPacificDateInputValue } from "../../lib/dateUtils";
               <p class="mt-1 text-sm text-slate-500">
                 AI, SVG, PDF, PNG, JPG, JPEG
               </p>
+
+              <p
+                id="selectedFileName"
+                class="mt-3 hidden rounded-lg bg-green-100 px-4 py-2 text-sm font-semibold text-green-800"
+                aria-live="polite"
+              ></p>
             </div>
           </label>
 
@@ -91,19 +108,20 @@ import { getPacificDateInputValue } from "../../lib/dateUtils";
               for="itemType"
               class="block text-sm font-semibold text-slate-700"
             >
-              What would you like engraved?
+              Item description (optional)
             </label>
 
             <input
               id="itemType"
               name="itemType"
               type="text"
-              placeholder="Example: customer-supplied tumbler, aluminum plate, wood sign..."
+              placeholder="Example: 20 oz tumbler, wooden sign, metal nameplate..."
               class="mt-2 block w-full rounded-xl border border-slate-300 bg-white p-3 shadow-sm focus:border-yellow-400 focus:outline-none focus:ring-2 focus:ring-yellow-400"
             />
 
             <p class="mt-2 text-sm text-slate-500">
-              Optional. Describe the item or raw material if you already know it.
+              Describe the object being engraved. Select its material
+              separately below.
             </p>
           </div>
 
@@ -130,6 +148,76 @@ import { getPacificDateInputValue } from "../../lib/dateUtils";
           </div>
 
           <div class="grid gap-6 md:grid-cols-2">
+            <div>
+              <label for="engravingMaterial" class="block text-sm font-semibold text-slate-700">Material *</label>
+              <select id="engravingMaterial" name="engravingMaterial" required class="mt-2 block w-full rounded-xl border border-slate-300 bg-white p-3 shadow-sm focus:border-yellow-400 focus:outline-none focus:ring-2 focus:ring-yellow-400">
+                <option value="">Select material</option>
+                <option value="wood">Wood</option>
+                <option value="acrylic">Acrylic</option>
+                <option value="anodized-aluminum">Anodized aluminum</option>
+                <option value="coated-metal">Coated metal</option>
+                <option value="glass">Glass</option>
+                <option value="leather">Leather</option>
+                <option value="other">Other / unsure</option>
+              </select>
+            </div>
+
+            <div>
+              <label for="engravingMode" class="block text-sm font-semibold text-slate-700">Artwork type *</label>
+              <select id="engravingMode" name="engravingMode" required class="mt-2 block w-full rounded-xl border border-slate-300 bg-white p-3 shadow-sm focus:border-yellow-400 focus:outline-none focus:ring-2 focus:ring-yellow-400">
+                <option value="raster">Filled image, photo, or solid text</option>
+                <option value="vector">Outline or line artwork</option>
+              </select>
+            </div>
+
+            <div>
+              <label for="engravingWidth" class="block text-sm font-semibold text-slate-700">Engraving width *</label>
+              <input id="engravingWidth" name="engravingWidth" type="number" min="0.1" step="0.1" required class="mt-2 block w-full rounded-xl border border-slate-300 bg-white p-3 shadow-sm focus:border-yellow-400 focus:outline-none focus:ring-2 focus:ring-yellow-400" />
+            </div>
+
+            <div>
+              <label for="engravingHeight" class="block text-sm font-semibold text-slate-700">Engraving height *</label>
+              <input id="engravingHeight" name="engravingHeight" type="number" min="0.1" step="0.1" required class="mt-2 block w-full rounded-xl border border-slate-300 bg-white p-3 shadow-sm focus:border-yellow-400 focus:outline-none focus:ring-2 focus:ring-yellow-400" />
+            </div>
+
+            <div>
+              <label for="engravingUnits" class="block text-sm font-semibold text-slate-700">Dimension units *</label>
+              <select id="engravingUnits" name="engravingUnits" required class="mt-2 block w-full rounded-xl border border-slate-300 bg-white p-3 shadow-sm focus:border-yellow-400 focus:outline-none focus:ring-2 focus:ring-yellow-400">
+                <option value="mm">Millimetres</option>
+                <option value="in">Inches</option>
+              </select>
+            </div>
+
+            <div>
+              <label for="engravingDetail" class="block text-sm font-semibold text-slate-700">Artwork detail *</label>
+              <select id="engravingDetail" name="engravingDetail" required class="mt-2 block w-full rounded-xl border border-slate-300 bg-white p-3 shadow-sm focus:border-yellow-400 focus:outline-none focus:ring-2 focus:ring-yellow-400">
+                <option value="simple">Simple</option>
+                <option value="standard" selected>Standard</option>
+                <option value="detailed">Detailed / photo</option>
+              </select>
+            </div>
+
+            <div>
+              <label for="engravingLocations" class="block text-sm font-semibold text-slate-700">Engraving locations per item *</label>
+              <input id="engravingLocations" name="engravingLocations" type="number" value="1" min="1" max="20" required class="mt-2 block w-full rounded-xl border border-slate-300 bg-white p-3 shadow-sm focus:border-yellow-400 focus:outline-none focus:ring-2 focus:ring-yellow-400" />
+            </div>
+
+            <div>
+              <label for="engravingSurface" class="block text-sm font-semibold text-slate-700">Surface *</label>
+              <select id="engravingSurface" name="engravingSurface" required class="mt-2 block w-full rounded-xl border border-slate-300 bg-white p-3 shadow-sm focus:border-yellow-400 focus:outline-none focus:ring-2 focus:ring-yellow-400">
+                <option value="flat">Flat surface</option>
+                <option value="rotary">Round item / rotary engraving</option>
+              </select>
+            </div>
+
+            <div>
+              <label for="artworkReadiness" class="block text-sm font-semibold text-slate-700">Artwork readiness *</label>
+              <select id="artworkReadiness" name="artworkReadiness" required class="mt-2 block w-full rounded-xl border border-slate-300 bg-white p-3 shadow-sm focus:border-yellow-400 focus:outline-none focus:ring-2 focus:ring-yellow-400">
+                <option value="ready">Production-ready vector or high-resolution artwork</option>
+                <option value="preparation">Artwork needs cleanup or preparation</option>
+              </select>
+            </div>
+
             <div>
               <label
                 for="quantity"
@@ -169,6 +257,25 @@ import { getPacificDateInputValue } from "../../lib/dateUtils";
               </select>
             </div>
           </div>
+        </div>
+      </section>
+
+      <section id="laserEstimate" class="rounded-2xl border border-yellow-300 bg-yellow-50 p-6" aria-live="polite">
+        <div class="flex flex-wrap items-center gap-3">
+          <p class="text-sm font-bold uppercase tracking-[0.16em] text-yellow-700">Preliminary estimate</p>
+          <span class="rounded-full bg-white px-3 py-1 text-xs font-semibold text-slate-600">Laser engraving</span>
+        </div>
+        <h2 id="laserEstimatePrice" class="mt-3 text-3xl font-bold text-slate-950">Enter engraving dimensions</h2>
+        <p id="laserEstimateSummary" class="mt-2 text-sm text-slate-600">Choose the material and enter the engraved width and height to calculate.</p>
+        <div class="mt-5 grid gap-4 sm:grid-cols-3">
+          <div class="rounded-xl bg-white p-4"><span class="text-sm text-slate-500">Engraved area</span><strong id="laserEstimateArea" class="mt-1 block">—</strong></div>
+          <div class="rounded-xl bg-white p-4"><span class="text-sm text-slate-500">Machine time</span><strong id="laserEstimateTime" class="mt-1 block">—</strong></div>
+          <div class="rounded-xl bg-white p-4"><span class="text-sm text-slate-500">Quantity</span><strong id="laserEstimateQuantity" class="mt-1 block">1</strong></div>
+        </div>
+        <div class="mt-5 rounded-xl border border-amber-300 bg-white p-4 text-sm leading-6 text-slate-700">
+          This estimate covers engraving service only. The item, material,
+          shipping, tax, exceptional artwork repair, and special fixturing are
+          not included. Contact Layer Forge for a reviewed final price.
         </div>
       </section>
 
@@ -312,9 +419,94 @@ import { getPacificDateInputValue } from "../../lib/dateUtils";
 
 </section>
 
-<script is:inline>
+<script>
+import { estimateLaserEngraving } from "../../lib/laserEngravingEstimator";
 
 const form = document.getElementById("quoteForm");
+const fileInput = document.querySelector<HTMLInputElement>("#file");
+const selectedFileName =
+  document.querySelector<HTMLElement>("#selectedFileName");
+
+fileInput?.addEventListener("change", () => {
+  const file = fileInput.files?.[0];
+
+  if (!selectedFileName) return;
+
+  if (file) {
+    selectedFileName.textContent = `✓ Selected: ${file.name}`;
+    selectedFileName.classList.remove("hidden");
+  } else {
+    selectedFileName.textContent = "";
+    selectedFileName.classList.add("hidden");
+  }
+});
+
+const fields = {
+  width: document.querySelector<HTMLInputElement>("#engravingWidth"),
+  height: document.querySelector<HTMLInputElement>("#engravingHeight"),
+  units: document.querySelector<HTMLSelectElement>("#engravingUnits"),
+  mode: document.querySelector<HTMLSelectElement>("#engravingMode"),
+  material: document.querySelector<HTMLSelectElement>("#engravingMaterial"),
+  detail: document.querySelector<HTMLSelectElement>("#engravingDetail"),
+  locations: document.querySelector<HTMLInputElement>("#engravingLocations"),
+  surface: document.querySelector<HTMLSelectElement>("#engravingSurface"),
+  artwork: document.querySelector<HTMLSelectElement>("#artworkReadiness"),
+  quantity: document.querySelector<HTMLInputElement>("#quantity"),
+};
+const output = {
+  price: document.querySelector<HTMLElement>("#laserEstimatePrice"),
+  summary: document.querySelector<HTMLElement>("#laserEstimateSummary"),
+  area: document.querySelector<HTMLElement>("#laserEstimateArea"),
+  time: document.querySelector<HTMLElement>("#laserEstimateTime"),
+  quantity: document.querySelector<HTMLElement>("#laserEstimateQuantity"),
+  low: document.querySelector<HTMLInputElement>("#laserEstimateLow"),
+  high: document.querySelector<HTMLInputElement>("#laserEstimateHigh"),
+  midpoint: document.querySelector<HTMLInputElement>("#laserEstimateMidpoint"),
+  hours: document.querySelector<HTMLInputElement>("#laserEstimateHours"),
+};
+let laserPricing: Parameters<typeof estimateLaserEngraving>[1] | undefined;
+
+function money(value: number) {
+  return new Intl.NumberFormat("en-CA", { style: "currency", currency: "CAD" }).format(value);
+}
+
+function updateLaserEstimate() {
+  if (!laserPricing || Object.values(fields).some((field) => !field) || !fields.material?.value || !fields.width?.value || !fields.height?.value) return;
+  const estimate = estimateLaserEngraving({
+    width: Number(fields.width.value),
+    height: Number(fields.height.value),
+    units: fields.units.value as "mm" | "in",
+    mode: fields.mode.value as "raster" | "vector",
+    material: fields.material.value as Parameters<typeof estimateLaserEngraving>[0]["material"],
+    detail: fields.detail.value as Parameters<typeof estimateLaserEngraving>[0]["detail"],
+    locations: Number(fields.locations.value),
+    rotary: fields.surface.value === "rotary",
+    quantity: Number(fields.quantity.value),
+    artworkPreparation: fields.artwork.value === "preparation",
+  }, laserPricing);
+  if (!estimate) return;
+  if (output.price) output.price.textContent = `${money(estimate.low)}–${money(estimate.high)}`;
+  if (output.summary) output.summary.textContent = `Estimated engraving service total before tax and delivery. Midpoint: ${money(estimate.midpoint)}.`;
+  if (output.area) output.area.textContent = `${estimate.areaCm2.toFixed(1)} cm² per location`;
+  if (output.time) output.time.textContent = `${estimate.totalMachineHours < 1 ? `${Math.max(1, Math.round(estimate.totalMachineHours * 60))} min` : `${estimate.totalMachineHours.toFixed(1)} h`} total`;
+  if (output.quantity) output.quantity.textContent = String(fields.quantity.value);
+  if (output.low) output.low.value = estimate.low.toFixed(2);
+  if (output.high) output.high.value = estimate.high.toFixed(2);
+  if (output.midpoint) output.midpoint.value = estimate.midpoint.toFixed(2);
+  if (output.hours) output.hours.value = estimate.totalMachineHours.toFixed(3);
+}
+
+Object.values(fields).forEach((field) => field?.addEventListener("input", updateLaserEstimate));
+fetch("/api/quote/laser-engraving-pricing-config", { cache: "no-store" })
+  .then((response) => {
+    if (!response.ok) throw new Error("Pricing unavailable");
+    return response.json();
+  })
+  .then((pricing) => { laserPricing = pricing; updateLaserEstimate(); })
+  .catch(() => {
+    if (output.price) output.price.textContent = "Contact us for an estimate";
+    if (output.summary) output.summary.textContent = "The automatic estimator is temporarily unavailable. You can still submit your project for review.";
+  });
 
 form?.addEventListener("submit", async (e) => {
 

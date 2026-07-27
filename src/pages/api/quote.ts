@@ -328,6 +328,39 @@ export const POST: APIRoute = async ({ request }) => {
     const modelUnits = textValue(formData, "modelUnits", 20);
     const quality = textValue(formData, "quality", 20);
     const infill = textValue(formData, "infill", 20);
+    const engravingMaterial = textValue(formData, "engravingMaterial", 80);
+    const engravingMode = textValue(formData, "engravingMode", 40);
+    const engravingWidth = textValue(formData, "engravingWidth", 30);
+    const engravingHeight = textValue(formData, "engravingHeight", 30);
+    const engravingUnits = textValue(formData, "engravingUnits", 10);
+    const engravingDetail = textValue(formData, "engravingDetail", 40);
+    const engravingLocations = textValue(formData, "engravingLocations", 10);
+    const engravingSurface = textValue(formData, "engravingSurface", 20);
+    const artworkReadiness = textValue(formData, "artworkReadiness", 40);
+    const laserEstimateLow = optionalNumber(
+      formData,
+      "laserEstimateLow",
+      0,
+      1_000_000,
+    );
+    const laserEstimateHigh = optionalNumber(
+      formData,
+      "laserEstimateHigh",
+      0,
+      1_000_000,
+    );
+    const laserEstimateMidpoint = optionalNumber(
+      formData,
+      "laserEstimateMidpoint",
+      0,
+      1_000_000,
+    );
+    const laserEstimateHours = optionalNumber(
+      formData,
+      "laserEstimateHours",
+      0,
+      100_000,
+    );
     const quantity = Number(formData.get("quantity") ?? 1);
 
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
@@ -417,6 +450,12 @@ export const POST: APIRoute = async ({ request }) => {
     const estimateSummary = onlineEstimate
       ? `Online estimate: CAD $${onlineEstimate.low.toFixed(2)}–$${onlineEstimate.high.toFixed(2)} before tax and delivery (preliminary; pending file review)`
       : "";
+    const laserEstimateSummary =
+      service === "Laser Engraving" &&
+      laserEstimateLow !== null &&
+      laserEstimateHigh !== null
+        ? `Online engraving estimate: CAD $${laserEstimateLow.toFixed(2)}–$${laserEstimateHigh.toFixed(2)} before tax and delivery (preliminary; pending artwork and material review)`
+        : "";
     const projectDetailsText = [
       notes && `Notes: ${notes}`,
       itemType && `Item Type: ${itemType}`,
@@ -427,8 +466,18 @@ export const POST: APIRoute = async ({ request }) => {
       modelUnits && `STL Units: ${modelUnits === "in" ? "Inches" : "Millimetres"}`,
       quality && `Print Quality: ${quality}`,
       infill && `Infill: ${infill}%`,
+      engravingMaterial && `Engraving Material: ${engravingMaterial}`,
+      engravingMode && `Artwork Type: ${engravingMode}`,
+      engravingWidth &&
+        engravingHeight &&
+        `Engraving Size: ${engravingWidth} × ${engravingHeight} ${engravingUnits}`,
+      engravingDetail && `Artwork Detail: ${engravingDetail}`,
+      engravingLocations && `Engraving Locations: ${engravingLocations}`,
+      engravingSurface && `Engraving Surface: ${engravingSurface}`,
+      artworkReadiness && `Artwork Readiness: ${artworkReadiness}`,
       dueDate && `Requested Completion: ${dueDate}`,
       estimateSummary,
+      laserEstimateSummary,
       `Customer Supplied Item: ${customerSupplied}`,
     ]
       .filter(Boolean)
@@ -445,6 +494,30 @@ export const POST: APIRoute = async ({ request }) => {
                   ? "bambu_studio_slice"
                   : "browser_stl_analysis",
               ...onlineEstimate,
+            },
+          }
+        : {}),
+      ...(service === "Laser Engraving" &&
+      laserEstimateLow !== null &&
+      laserEstimateHigh !== null &&
+      laserEstimateMidpoint !== null &&
+      laserEstimateHours !== null
+        ? {
+            laser_engraving_estimate: {
+              source: "area_time_estimator",
+              low: laserEstimateLow,
+              high: laserEstimateHigh,
+              midpoint: laserEstimateMidpoint,
+              machine_hours: laserEstimateHours,
+              material: engravingMaterial,
+              artwork_type: engravingMode,
+              width: Number(engravingWidth),
+              height: Number(engravingHeight),
+              units: engravingUnits,
+              detail: engravingDetail,
+              locations: Number(engravingLocations),
+              surface: engravingSurface,
+              artwork_readiness: artworkReadiness,
             },
           }
         : {}),

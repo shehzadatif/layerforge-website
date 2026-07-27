@@ -1,0 +1,93 @@
+---
+import AdminLayout from "../../layouts/AdminLayout.astro";
+import {
+  laserGrossMarginMultiplier,
+  LASER_ENGRAVING_PRICING_KEYS as keys,
+  LASER_ENGRAVING_PRICING_SETTING_KEYS,
+  parseLaserEngravingPricingRows,
+} from "../../lib/laserEngravingPricing";
+import { supabaseAdmin } from "../../lib/supabaseAdmin";
+
+const { data, error } = await supabaseAdmin
+  .from("settings")
+  .select("setting_key, setting_value")
+  .in("setting_key", [...LASER_ENGRAVING_PRICING_SETTING_KEYS]);
+if (error) console.error("Unable to load laser estimator settings.", error);
+
+const pricing = parseLaserEngravingPricingRows(data ?? []);
+const saved = Astro.url.searchParams.get("saved") === "1";
+const multiplier = laserGrossMarginMultiplier(pricing.targetMarginPercent);
+---
+
+<AdminLayout title="Laser Estimator" active="laser-estimator">
+  <div class="mb-8 flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+    <div>
+      <p class="text-sm font-bold uppercase tracking-[0.18em] text-yellow-700">Laser engraving</p>
+      <h1 class="mt-2 text-4xl font-bold text-slate-950">Cost Estimator</h1>
+      <p class="mt-2 max-w-3xl text-slate-500">
+        Configure preliminary engraving prices. Throughput is an average engraving
+        area per minute and should be calibrated against completed LightBurn jobs.
+      </p>
+    </div>
+    <a href="/quote/laser-engraving" target="_blank" class="rounded-xl border border-slate-300 bg-white px-5 py-3 font-semibold">
+      Open Customer Estimator
+    </a>
+  </div>
+
+  {saved && <div class="mb-8 rounded-xl border border-green-200 bg-green-50 p-4 font-medium text-green-800">Laser estimator settings saved.</div>}
+
+  <form action="/api/admin/update-laser-estimator" method="POST" class="space-y-8">
+    <section class="rounded-2xl bg-white p-8 shadow">
+      <h2 class="text-2xl font-bold">Direct costs</h2>
+      <p class="mt-2 text-sm text-slate-500">Private operating costs used to derive customer rates.</p>
+      <div class="mt-6 grid gap-6 md:grid-cols-2">
+        {[
+          [keys.setupCost, "Setup cost (CAD)", pricing.setupCost, "0.01"],
+          [keys.artworkPreparationCost, "Artwork preparation cost (CAD)", pricing.artworkPreparationCost, "0.01"],
+          [keys.machineCostPerHour, "Machine cost per hour (CAD)", pricing.machineCostPerHour, "0.01"],
+          [keys.minimumOrderPrice, "Minimum customer price (CAD)", pricing.minimumOrderPrice, "0.01"],
+        ].map(([name, label, value, step]) => (
+          <label class="grid gap-2">
+            <span class="font-semibold">{label}</span>
+            <input class="rounded-xl border px-4 py-3" type="number" name={name} value={value} min="0" step={step} required />
+          </label>
+        ))}
+      </div>
+    </section>
+
+    <section class="rounded-2xl bg-white p-8 shadow">
+      <h2 class="text-2xl font-bold">Production assumptions</h2>
+      <div class="mt-6 grid gap-6 md:grid-cols-3">
+        <label class="grid gap-2"><span class="font-semibold">Raster throughput (cm²/min)</span><input class="rounded-xl border px-4 py-3" type="number" name={keys.rasterAreaCm2PerMinute} value={pricing.rasterAreaCm2PerMinute} min="0.1" step="0.1" required /></label>
+        <label class="grid gap-2"><span class="font-semibold">Vector throughput (cm²/min)</span><input class="rounded-xl border px-4 py-3" type="number" name={keys.vectorAreaCm2PerMinute} value={pricing.vectorAreaCm2PerMinute} min="0.1" step="0.1" required /></label>
+        <label class="grid gap-2"><span class="font-semibold">Rotary time multiplier</span><input class="rounded-xl border px-4 py-3" type="number" name={keys.rotaryTimeMultiplier} value={pricing.rotaryTimeMultiplier} min="1" step="0.05" required /></label>
+      </div>
+    </section>
+
+    <section class="rounded-2xl bg-white p-8 shadow">
+      <h2 class="text-2xl font-bold">Margin and estimate range</h2>
+      <div class="mt-6 grid gap-6 md:grid-cols-3">
+        <label class="grid gap-2"><span class="font-semibold">Gross margin (%)</span><input id="laserMargin" class="rounded-xl border px-4 py-3" type="range" name={keys.targetMarginPercent} value={pricing.targetMarginPercent} min="0" max="80" step="1" required /><strong><span id="laserMarginValue">{pricing.targetMarginPercent}</span>% gross margin</strong></label>
+        <label class="grid gap-2"><span class="font-semibold">Lower range (%)</span><input class="rounded-xl border px-4 py-3" type="number" name={keys.lowRangePercent} value={pricing.lowRangePercent} min="0" max="50" step="1" required /></label>
+        <label class="grid gap-2"><span class="font-semibold">Upper range (%)</span><input class="rounded-xl border px-4 py-3" type="number" name={keys.highRangePercent} value={pricing.highRangePercent} min="0" max="100" step="1" required /></label>
+      </div>
+      <div class="mt-6 rounded-xl bg-slate-50 p-4">
+        CAD $10.00 direct cost becomes <strong id="laserMarginExample">CAD ${(10 * multiplier).toFixed(2)}</strong>.
+        Gross margin is not the same as markup.
+      </div>
+    </section>
+
+    <button class="rounded-xl bg-yellow-400 px-8 py-4 font-bold text-slate-950" type="submit">Save Laser Estimator</button>
+  </form>
+</AdminLayout>
+
+<script>
+  const margin = document.querySelector<HTMLInputElement>("#laserMargin");
+  const value = document.querySelector("#laserMarginValue");
+  const example = document.querySelector("#laserMarginExample");
+  margin?.addEventListener("input", () => {
+    const percent = Number(margin.value);
+    if (value) value.textContent = String(percent);
+    if (example) example.textContent = `CAD ${(10 / (1 - percent / 100)).toFixed(2)}`;
+  });
+</script>
