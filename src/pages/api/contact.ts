@@ -200,7 +200,7 @@ export const POST: APIRoute = async ({ request }) => {
       subject: `Website inquiry: ${emailSubject}`,
       html: `
         <div style="font-family:Arial,sans-serif;max-width:680px;margin:auto;color:#0f172a;">
-          <h1>New Layer Forge website inquiry</h1>
+          <h1>New Layer Forge Canada website inquiry</h1>
           <table style="border-collapse:collapse;margin:24px 0;">
             <tr>
               <td style="padding:7px 24px 7px 0;font-weight:bold;">Name</td>

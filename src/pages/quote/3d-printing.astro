@@ -31,7 +31,7 @@ const slicerPricingConfigured = configuredSlicerMaterials.length > 0;
 
         <p class="mb-10 text-slate-600">
           Upload your model for an instant preliminary estimate, then submit it
-          for Layer Forge review and final pricing.
+          for Layer Forge Canada review and final pricing.
         </p>
 
         <form
@@ -387,7 +387,7 @@ const slicerPricingConfigured = configuredSlicerMaterials.length > 0;
 
                   <p class="mt-3 text-xs leading-5 text-slate-600">
                     Pricing sends a temporary copy of the STL to the slicer.
-                    Layer Forge requests immediate deletion of the uploaded model,
+                    Layer Forge Canada requests immediate deletion of the uploaded model,
                     generated G-code, and provider quote after the result is
                     retrieved or the job is cancelled.
                   </p>
@@ -904,7 +904,7 @@ const slicerPricingConfigured = configuredSlicerMaterials.length > 0;
 
       if (estimateMessage) {
         estimateMessage.textContent = bambuPricingExpected
-          ? "Slicing the model with Layer Forge production settings before showing its price."
+          ? "Slicing the model with Layer Forge Canada production settings before showing its price."
           : `Estimated total for ${estimate.quantity} item${estimate.quantity === 1 ? "" : "s"}, before tax and delivery.`;
       }
       setEstimateSource(

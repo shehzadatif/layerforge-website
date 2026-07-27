@@ -96,7 +96,7 @@ export function paymentConfirmationHtml(
 
     <p>
 
-      Thank you for choosing Layer Forge.
+      Thank you for choosing Layer Forge Canada.
 
     </p>
 

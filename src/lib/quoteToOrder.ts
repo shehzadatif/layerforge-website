@@ -311,7 +311,7 @@ export async function sendPaymentConfirmation(
       ? {
           attachments: [
             {
-              filename: `Layer-Forge-Invoice-${orderNumber}.pdf`,
+              filename: `Layer-Forge-Canada-Invoice-${orderNumber}.pdf`,
               content: invoiceBase64,
             },
           ],

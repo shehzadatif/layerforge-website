@@ -9,7 +9,7 @@ export function shippingConfirmationHtml(
   return `
     <div style="font-family:Arial,sans-serif;max-width:650px;margin:auto;color:#0f172a;">
 
-      <h1>Your Layer Forge order has shipped</h1>
+      <h1>Your Layer Forge Canada order has shipped</h1>
 
       <p>Hello ${customerName},</p>
 
@@ -58,7 +58,7 @@ export function shippingConfirmationHtml(
       }
 
       <p>
-        You can also follow the complete order status on your Layer Forge tracking page:
+        You can also follow the complete order status on your Layer Forge Canada tracking page:
       </p>
 
       <p>
@@ -68,7 +68,7 @@ export function shippingConfirmationHtml(
       </p>
 
       <p style="margin-top:32px;">
-        Thank you for choosing Layer Forge.
+        Thank you for choosing Layer Forge Canada.
       </p>
 
     </div>

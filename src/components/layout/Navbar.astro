@@ -39,12 +39,15 @@ const linkClass = (href: string) =>
 
 <nav class="relative z-50 bg-black text-white" aria-label="Main navigation">
   <div class="mx-auto flex max-w-7xl items-center justify-between px-5 py-3 sm:px-6">
-    <a href="/" class="flex shrink-0 items-center" aria-label="Layer Forge home">
+    <a href="/" class="flex shrink-0 items-center gap-2" aria-label="Layer Forge Canada home">
       <img
         src="/brand/logos/layer-forge-horizontal-reverse-transparent.png"
-        alt="Layer Forge"
+        alt=""
         class="w-44 sm:w-52"
       />
+      <span class="border-l border-white/30 pl-2 text-[10px] font-black uppercase tracking-[0.18em] text-yellow-400 sm:text-xs">
+        Canada
+      </span>
     </a>
 
     <div class="hidden items-center gap-7 md:flex">
@@ -68,7 +71,7 @@ const linkClass = (href: string) =>
           <div class="overflow-hidden rounded-2xl border border-white/10 bg-slate-950 p-2 shadow-2xl">
             <a href="/services" class="block rounded-xl px-4 py-3 transition hover:bg-white/10">
               <span class="block font-semibold text-white">All Services</span>
-              <span class="mt-1 block text-sm text-slate-400">Explore every Layer Forge capability</span>
+              <span class="mt-1 block text-sm text-slate-400">Explore every Layer Forge Canada capability</span>
             </a>
             <div class="my-1 border-t border-white/10"></div>
             {

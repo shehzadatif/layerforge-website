@@ -85,7 +85,7 @@ let activePricingConfig = DEFAULT_THREE_D_QUOTE_PUBLIC_PRICING;
 
 /*
  * Load a derived customer-rate configuration before this browser module
- * finishes initializing. The endpoint never exposes Layer Forge's direct
+ * finishes initializing. The endpoint never exposes Layer Forge Canada's direct
  * costs or target margin; it publishes only the rates needed to calculate the
  * customer-facing estimate. Server-side imports retain safe defaults.
  */

@@ -31,7 +31,7 @@ export const GET: APIRoute = async ({ params, url }) => {
       headers: {
         "Content-Type": "application/pdf",
         "Content-Disposition":
-          `${disposition}; filename="Layer-Forge-Invoice-${orderNumber}.pdf"`,
+          `${disposition}; filename="Layer-Forge-Canada-Invoice-${orderNumber}.pdf"`,
         "Cache-Control": "private, no-store",
       },
     });

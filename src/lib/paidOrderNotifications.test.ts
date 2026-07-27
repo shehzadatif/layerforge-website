@@ -23,7 +23,7 @@ function createOrder(overrides: Partial<CompletedOrder> = {}): CompletedOrder {
   return {
     id: "order-39",
     order_number: 39,
-    customer_name: "Layer Forge Customer",
+    customer_name: "Layer Forge Canada Customer",
     email: "customer@example.com",
     subtotal: 100,
     shipping: 0,

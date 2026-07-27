@@ -2,7 +2,7 @@
 import "../styles/global.css";
 
 const {
-  title = "Layer Forge Admin",
+  title = "Layer Forge Canada Admin",
   active = "dashboard",
 } = Astro.props;
 
@@ -31,13 +31,18 @@ const user = Astro.locals.user;
           <a
             href="/admin"
             class="block rounded-xl focus:outline-none focus:ring-2 focus:ring-yellow-400 focus:ring-offset-2 focus:ring-offset-slate-900"
-            aria-label="Layer Forge admin dashboard"
+            aria-label="Layer Forge Canada admin dashboard"
           >
-            <img
-              src="/brand/logos/layer-forge-horizontal-reverse-transparent.png"
-              alt="Layer Forge"
-              class="w-full max-w-[190px]"
-            />
+            <span class="flex items-center gap-2">
+              <img
+                src="/brand/logos/layer-forge-horizontal-reverse-transparent.png"
+                alt=""
+                class="w-full max-w-[154px]"
+              />
+              <span class="border-l border-white/30 pl-2 text-[9px] font-black uppercase tracking-[0.16em] text-yellow-400">
+                Canada
+              </span>
+            </span>
             <span class="mt-2 block text-xs font-medium uppercase tracking-[0.18em] text-slate-400">
               Admin Panel
             </span>

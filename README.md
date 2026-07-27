@@ -1,4 +1,4 @@
-# Layer Forge
+# Layer Forge Canada
 
 Production manufacturing and e-commerce platform deployed on Cloudflare
 Workers with Supabase, Stripe, and Resend.
@@ -74,7 +74,7 @@ for each material you want to enable. Configure the matching
 `CLOUD_SLICER_*` server-only values shown in `env.example`.
 
 The integration sends the STL directly to a one-time anonymous upload URL,
-keeps the API token and Layer Forge pricing on the server, and requests
+keeps the API token and Layer Forge Canada pricing on the server, and requests
 immediate deletion of the uploaded model, generated G-code, and provider quote
 after the result is retrieved or cancelled. The immediate browser estimate
 remains available when the integration is unconfigured, unavailable, or cannot

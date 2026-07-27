@@ -31,7 +31,7 @@ export async function sendQuoteEmails(data: {
   const fromEmail =
     import.meta.env.QUOTE_FROM_EMAIL?.trim() ||
     import.meta.env.FROM_EMAIL?.trim() ||
-    "Layer Forge <quotes@layerforgecanada.com>";
+    "Layer Forge Canada <quotes@layerforgecanada.com>";
 
   const notificationEmail =
     import.meta.env.QUOTE_TO_EMAIL?.trim() || "shehzadatif@gmail.com";
@@ -50,7 +50,7 @@ export async function sendQuoteEmails(data: {
     `
     : "";
 
-  // Email to Layer Forge
+  // Email to Layer Forge Canada
   await resend.emails.send({
     from: fromEmail,
     to: [notificationEmail],
@@ -68,7 +68,7 @@ export async function sendQuoteEmails(data: {
 
       <hr>
 
-      <p>Login to the Layer Forge admin dashboard to review the design file and finalize pricing.</p>
+      <p>Login to the Layer Forge Canada admin dashboard to review the design file and finalize pricing.</p>
     `,
   });
 
@@ -94,7 +94,7 @@ export async function sendQuoteEmails(data: {
 
       <p>Our team will review your files and contact you within one business day.</p>
 
-      <p>Thank you for choosing <strong>Layer Forge</strong>.</p>
+      <p>Thank you for choosing <strong>Layer Forge Canada</strong>.</p>
     `,
   });
 }

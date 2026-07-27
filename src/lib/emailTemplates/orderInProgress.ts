@@ -18,7 +18,7 @@ export function orderInProgressHtml(
 
   return `
     <div style="font-family:Arial,sans-serif;max-width:650px;margin:auto;color:#0f172a;line-height:1.6;">
-      <h1>Your Layer Forge order is now in production</h1>
+      <h1>Your Layer Forge Canada order is now in production</h1>
 
       <p>Hello ${safeCustomerName},</p>
 
@@ -41,7 +41,7 @@ export function orderInProgressHtml(
       </p>
 
       <p style="margin-top:32px;">
-        Thank you for choosing Layer Forge.
+        Thank you for choosing Layer Forge Canada.
       </p>
     </div>
   `;
