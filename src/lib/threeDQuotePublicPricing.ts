@@ -38,7 +38,7 @@ function boundedNumber(
 }
 
 /*
- * These are customer-facing defaults, not Layer Forge's underlying cost
+ * These are customer-facing defaults, not Layer Forge Canada's underlying cost
  * basis. Keeping this browser-safe fallback separate from the server-side
  * converter prevents direct costs and the target margin from entering the
  * public JavaScript bundle.

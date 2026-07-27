@@ -180,7 +180,7 @@ export async function generateQuotePdf(
       height: logoHeight,
     });
   } else {
-    drawText("Layer Forge", LEFT_MARGIN, 24, bold);
+    drawText("Layer Forge Canada", LEFT_MARGIN, 24, bold);
   }
 
   page.drawText("QUOTE", {
@@ -398,7 +398,7 @@ y = noticeBoxY - 68;
   y -= 18;
 
   drawText(
-    `Layer Forge · ${siteUrl.replace(
+    `Layer Forge Canada · ${siteUrl.replace(
       /^https?:\/\//,
       "",
     )}`,

@@ -13,7 +13,7 @@ export function quoteEmail(data: {
     <div style="max-width:650px;margin:auto;background:white;padding:40px;border-radius:12px;">
 
       <h1 style="color:#f59e0b;">
-        Layer Forge
+        Layer Forge Canada
       </h1>
 
       <p>Hi ${data.name},</p>
@@ -33,7 +33,7 @@ export function quoteEmail(data: {
       </h2>
 
       <p>
-        Thank you for choosing Layer Forge.
+        Thank you for choosing Layer Forge Canada.
       </p>
 
     </div>

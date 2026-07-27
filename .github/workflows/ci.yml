@@ -26,8 +26,8 @@ jobs:
       STRIPE_WEBHOOK_SECRET: whsec_ci_placeholder
       PUBLIC_STRIPE_PUBLISHABLE_KEY: pk_test_ci_placeholder
       RESEND_API_KEY: re_ci_placeholder
-      FROM_EMAIL: Layer Forge <noreply@example.com>
-      ORDER_FROM_EMAIL: Layer Forge <orders@example.com>
+      FROM_EMAIL: Layer Forge Canada <noreply@example.com>
+      ORDER_FROM_EMAIL: Layer Forge Canada <orders@example.com>
       PUBLIC_SITE_URL: https://example.com
 
     steps:

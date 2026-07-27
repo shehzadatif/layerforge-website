@@ -29,7 +29,7 @@ if (!quote) {
 
 const quoteNumber = quote.quote_number
   ? String(quote.quote_number)
-  : "Layer Forge Quote";
+  : "Layer Forge Canada Quote";
 
 const quantity = Number(quote.quantity ?? 1);
 
@@ -55,7 +55,7 @@ const productionDays = normalizeProductionDays(
 );
 ---
 
-<MainLayout title={`${quoteNumber} | Layer Forge`}>
+<MainLayout title={`${quoteNumber} | Layer Forge Canada`}>
 
   <section class="mx-auto max-w-5xl px-6 py-16">
 
@@ -64,11 +64,16 @@ const productionDays = normalizeProductionDays(
       <div class="mb-10 flex flex-col gap-6 border-b pb-8 sm:flex-row sm:justify-between">
 
         <div>
-          <img
-            src="/brand/logos/layer-forge-horizontal-transparent.png"
-            alt="Layer Forge"
-            class="w-64 max-w-full"
-          />
+          <div class="flex items-center gap-3" aria-label="Layer Forge Canada">
+            <img
+              src="/brand/logos/layer-forge-horizontal-transparent.png"
+              alt=""
+              class="w-56 max-w-full"
+            />
+            <span class="border-l border-slate-300 pl-3 text-xs font-black uppercase tracking-[0.2em] text-slate-700">
+              Canada
+            </span>
+          </div>
 
           <div class="mt-1 text-sm text-slate-500">
             layerforgecanada.com
@@ -253,7 +258,7 @@ const productionDays = normalizeProductionDays(
                   <strong class="block text-slate-950">
                     Final sale — paid orders are non-refundable
                   </strong>
-                  I have reviewed and agree to Layer Forge's
+                  I have reviewed and agree to Layer Forge Canada's
                   <a
                     href="/terms"
                     target="_blank"

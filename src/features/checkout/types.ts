@@ -166,7 +166,7 @@ if (!validateForm()) {
           <div className="rounded-2xl bg-white p-8 shadow">
             <h2 className="mb-6 text-2xl font-bold">Pickup Information</h2>
             <div className="rounded-xl bg-slate-100 p-6">
-              <p className="font-semibold">Layer Forge</p>
+              <p className="font-semibold">Layer Forge Canada</p>
               <p className="mt-2 text-slate-600">Surrey, British Columbia</p>
                             <p className="mt-4 text-slate-500">We'll email you when your order is ready for pickup.</p>
             </div>

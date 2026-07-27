@@ -123,7 +123,7 @@ export default function CheckoutPage() {
                 {PICKUP_AREA}
               </p>
               <p className="mt-4 text-sm leading-6 text-slate-600">
-                Layer Forge is a home-based production studio. For privacy,
+                Layer Forge Canada is a home-based production studio. For privacy,
                 we&apos;ll email the exact pickup address and instructions when
                 your order is ready.
               </p>
@@ -257,7 +257,7 @@ export default function CheckoutPage() {
               <strong className="block text-slate-950">
                 Final sale — paid orders are non-refundable
               </strong>
-              I have reviewed and agree to Layer Forge&apos;s{" "}
+              I have reviewed and agree to Layer Forge Canada&apos;s{" "}
               <a
                 href="/terms"
                 target="_blank"

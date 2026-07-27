@@ -13,8 +13,8 @@ interface Props {
 }
 
 const {
-  title = "Layer Forge",
-  description = "Custom 3D printing, laser engraving, UV printing, and apparel decoration from Layer Forge in Surrey, British Columbia.",
+  title = "Layer Forge Canada",
+  description = "Custom 3D printing, laser engraving, UV printing, and apparel decoration from Layer Forge Canada in Surrey, British Columbia.",
   image = "/images/home/layer-forge-hero.webp",
   noIndex = false,
 } = Astro.props;
@@ -41,7 +41,7 @@ const socialImageUrl = new URL(image, siteUrl).toString();
     <link rel="canonical" href={canonicalUrl} />
 
     <meta property="og:type" content="website" />
-    <meta property="og:site_name" content="Layer Forge" />
+    <meta property="og:site_name" content="Layer Forge Canada" />
     <meta property="og:title" content={title} />
     <meta property="og:description" content={description} />
     <meta property="og:url" content={canonicalUrl} />

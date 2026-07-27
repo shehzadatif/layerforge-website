@@ -44,9 +44,9 @@ export const POST: APIRoute = async ({ request }) => {
   });
 
   const { error: emailError } = await resend.emails.send({
-    from: "Layer Forge <quotes@layerforgecanada.com>",
+    from: "Layer Forge Canada <quotes@layerforgecanada.com>",
     to: quote.email,
-    subject: `Your Layer Forge Quote`,
+    subject: `Your Layer Forge Canada Quote`,
     html: quoteHtml,
   });
 

@@ -5,14 +5,14 @@ import { pickupReadyHtml } from "./pickupReady";
 describe("pickupReadyHtml", () => {
   it("includes the pickup address, scheduling phone, map link, and order link", () => {
     const html = pickupReadyHtml(
-      "Layer Forge Customer",
+      "Layer Forge Canada Customer",
       "LF000123",
       "123 Example Avenue\nSurrey, BC",
       "604-555-0100",
       "https://example.com/t/tracking-token",
     );
 
-    expect(html).toContain("Your Layer Forge order is ready for pickup");
+    expect(html).toContain("Your Layer Forge Canada order is ready for pickup");
     expect(html).toContain("123 Example Avenue<br>Surrey, BC");
     expect(html).toContain('href="tel:6045550100"');
     expect(html).toContain("604-555-0100");

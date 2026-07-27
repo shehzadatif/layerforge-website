@@ -140,7 +140,7 @@ export const POST: APIRoute = async ({ request }) => {
         from: fromEmail,
         to: customerEmail,
         subject:
-          `Your Layer Forge quote ${quoteNumber}`,
+          `Your Layer Forge Canada quote ${quoteNumber}`,
         html: quoteEmailHtml(
           quote.customer_name ??
             quote.name ??
@@ -151,7 +151,7 @@ export const POST: APIRoute = async ({ request }) => {
         attachments: [
           {
             filename:
-              `Layer-Forge-Quote-${safeQuoteNumber}.pdf`,
+              `Layer-Forge-Canada-Quote-${safeQuoteNumber}.pdf`,
             content: Buffer.from(quotePdf),
           },
         ],

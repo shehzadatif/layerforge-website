@@ -303,7 +303,7 @@ export const POST: APIRoute = async ({ request }) => {
     const service = textValue(formData, "service", 80, true);
 
     if (!ALLOWED_SERVICES.has(service)) {
-      throw new QuoteRequestError("Select a valid Layer Forge service.");
+      throw new QuoteRequestError("Select a valid Layer Forge Canada service.");
     }
 
     if (service === "3D Printing") {

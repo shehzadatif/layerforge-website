@@ -10,7 +10,7 @@ export function quoteEmailHtml(
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width">
-  <title>Your Layer Forge Quote</title>
+  <title>Your Layer Forge Canada Quote</title>
 </head>
 
 <body
@@ -77,7 +77,7 @@ export function quoteEmailHtml(
 
               <p>
                 Thank you for choosing
-                <strong>Layer Forge</strong>.
+                <strong>Layer Forge Canada</strong>.
                 Your quote
                 <strong>${quoteNumber}</strong>
                 is ready for review.
@@ -142,7 +142,7 @@ export function quoteEmailHtml(
               </p>
 
               <p style="margin-top:28px;">
-                <strong>Layer Forge</strong><br>
+                <strong>Layer Forge Canada</strong><br>
                 layerforgecanada.com
               </p>
             </td>

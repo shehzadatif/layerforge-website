@@ -71,7 +71,7 @@ export default function DeliveryMethod({
 
           <iframe
             src={PICKUP_MAP_EMBED_URL}
-            title="Google map showing the approximate Layer Forge pickup area near 128 Street and 66 Avenue in Surrey"
+            title="Google map showing the approximate Layer Forge Canada pickup area near 128 Street and 66 Avenue in Surrey"
             loading="lazy"
             allowFullScreen
             referrerPolicy="no-referrer-when-downgrade"

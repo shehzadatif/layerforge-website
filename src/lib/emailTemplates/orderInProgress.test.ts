@@ -5,12 +5,12 @@ import { orderInProgressHtml } from "./orderInProgress";
 describe("orderInProgressHtml", () => {
   it("includes the order number and tracking link", () => {
     const html = orderInProgressHtml(
-      "Layer Forge Customer",
+      "Layer Forge Canada Customer",
       "LF000030",
       "https://example.com/t/tracking-token",
     );
 
-    expect(html).toContain("Your Layer Forge order is now in production");
+    expect(html).toContain("Your Layer Forge Canada order is now in production");
     expect(html).toContain("LF000030");
     expect(html).toContain("https://example.com/t/tracking-token");
     expect(html).toContain("Track Order");

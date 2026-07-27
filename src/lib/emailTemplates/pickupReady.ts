@@ -33,7 +33,7 @@ export function pickupReadyHtml(
 
   return `
     <div style="font-family:Arial,sans-serif;max-width:650px;margin:auto;color:#0f172a;line-height:1.6;">
-      <h1>Your Layer Forge order is ready for pickup</h1>
+      <h1>Your Layer Forge Canada order is ready for pickup</h1>
 
       <p>Hello ${safeCustomerName},</p>
 
@@ -73,7 +73,7 @@ export function pickupReadyHtml(
       </p>
 
       <p style="margin-top:32px;">
-        Thank you for choosing Layer Forge.
+        Thank you for choosing Layer Forge Canada.
       </p>
     </div>
   `;

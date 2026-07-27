@@ -5,7 +5,7 @@ export function orderCompletedHtml(
 ) {
   return `
     <div style="font-family:Arial,sans-serif;max-width:650px;margin:auto;color:#0f172a;">
-      <h1>Your Layer Forge order is complete</h1>
+      <h1>Your Layer Forge Canada order is complete</h1>
 
       <p>Hello ${customerName},</p>
 
@@ -28,7 +28,7 @@ export function orderCompletedHtml(
       </p>
 
       <p style="margin-top:32px;">
-        Thank you for choosing Layer Forge. We appreciate your business!
+        Thank you for choosing Layer Forge Canada. We appreciate your business!
       </p>
     </div>
   `;

@@ -60,7 +60,7 @@ if (factorsError) {
   const { data: enrollment, error: enrollmentError } =
     await supabase.auth.mfa.enroll({
       factorType: "totp",
-      friendlyName: "Layer Forge Admin",
+      friendlyName: "Layer Forge Canada Admin",
     });
 
   if (enrollmentError) {
@@ -95,18 +95,19 @@ const enrollmentReady = Boolean(factorId && qrCode && secret);
     <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png" />
     <link rel="apple-touch-icon" href="/icon-192.png" />
 
-    <title>Set Up MFA | Layer Forge</title>
+    <title>Set Up MFA | Layer Forge Canada</title>
   </head>
 
   <body>
     <main class="auth-page">
       <section class="auth-card" aria-labelledby="mfa-heading">
         <header>
-          <a class="brand" href="/" aria-label="Layer Forge home">
+          <a class="brand" href="/" aria-label="Layer Forge Canada home">
             <img
               src="/brand/logos/layer-forge-horizontal-reverse-transparent.png"
-              alt="Layer Forge"
+              alt=""
             />
+            <span>Canada</span>
           </a>
 
           <p class="eyebrow">Admin security</p>
@@ -135,7 +136,7 @@ const enrollmentReady = Boolean(factorId && qrCode && secret);
                   src={qrCode}
                   width="220"
                   height="220"
-                  alt="Layer Forge authenticator enrollment QR code"
+                  alt="Layer Forge Canada authenticator enrollment QR code"
                 />
               </div>
 
@@ -243,7 +244,9 @@ const enrollmentReady = Boolean(factorId && qrCode && secret);
   }
 
   .brand {
-    display: inline-block;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.65rem;
     width: min(100%, 15rem);
     margin-bottom: 2rem;
     text-decoration: none;
@@ -251,8 +254,19 @@ const enrollmentReady = Boolean(factorId && qrCode && secret);
 
   .brand img {
     display: block;
-    width: 100%;
+    width: 11.5rem;
+    max-width: calc(100% - 4.5rem);
     height: auto;
+  }
+
+  .brand span {
+    border-left: 1px solid #52525b;
+    padding-left: 0.65rem;
+    color: #facc15;
+    font-size: 0.65rem;
+    font-weight: 900;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
   }
 
   .eyebrow {

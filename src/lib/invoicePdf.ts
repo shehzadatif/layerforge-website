@@ -166,7 +166,7 @@ export async function generateInvoicePdf(
       height: logoHeight,
     });
   } else {
-    page.drawText("Layer Forge", {
+    page.drawText("Layer Forge Canada", {
       x: LEFT_MARGIN,
       y,
       size: 24,
@@ -323,7 +323,7 @@ export async function generateInvoicePdf(
    * Footer
    */
   drawText(
-    "Payment received. Thank you for choosing Layer Forge.",
+    "Payment received. Thank you for choosing Layer Forge Canada.",
     LEFT_MARGIN,
     11,
     bold,
@@ -382,7 +382,7 @@ export async function generateInvoicePdf(
   y -= 18;
 
   drawText(
-    `Layer Forge · ${siteUrl.replace(/^https?:\/\//, "")}`,
+    `Layer Forge Canada · ${siteUrl.replace(/^https?:\/\//, "")}`,
     LEFT_MARGIN,
     9,
   );
