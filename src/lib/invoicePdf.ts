@@ -57,7 +57,7 @@ function getSiteUrl(): string {
 
 async function embedLogo(pdf: PDFDocument, siteUrl: string) {
   try {
-    const logoUrl = `${siteUrl}/images/pdf/logo.png`;
+    const logoUrl = `${siteUrl}/images/pdf/logo-wordmark.png`;
 
     const response = await fetch(logoUrl);
 
@@ -156,14 +156,31 @@ export async function generateInvoicePdf(
    * Header and logo
    */
   if (logo) {
-    const logoWidth = 150;
+    const logoWidth = 170;
     const logoHeight = logo.height * (logoWidth / logo.width);
+    const logoY = y - logoHeight / 2 + 4;
+    const dividerX = LEFT_MARGIN + logoWidth + 6;
 
     page.drawImage(logo, {
       x: LEFT_MARGIN,
-      y: y - logoHeight + 15,
+      y: logoY,
       width: logoWidth,
       height: logoHeight,
+    });
+
+    page.drawLine({
+      start: { x: dividerX, y: logoY + 1 },
+      end: { x: dividerX, y: logoY + logoHeight - 1 },
+      thickness: 0.75,
+      color: rgb(0.72, 0.75, 0.8),
+    });
+
+    page.drawText("C A N A D A", {
+      x: dividerX + 9,
+      y: y - 3,
+      size: 7.5,
+      font: bold,
+      color: rgb(0.06, 0.09, 0.16),
     });
   } else {
     page.drawText("Layer Forge Canada", {
