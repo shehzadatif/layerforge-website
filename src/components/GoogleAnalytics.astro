@@ -1,0 +1,23 @@
+---
+const measurementId = "G-SXKP5FZJRD";
+const enabled = import.meta.env.PROD;
+---
+
+{
+  enabled && (
+    <>
+      <script
+        async
+        src={`https://www.googletagmanager.com/gtag/js?id=${measurementId}`}
+      />
+      <script is:inline define:vars={{ measurementId }}>
+        window.dataLayer = window.dataLayer || [];
+        function gtag() {
+          window.dataLayer.push(arguments);
+        }
+        gtag("js", new Date());
+        gtag("config", measurementId);
+      </script>
+    </>
+  )
+}
