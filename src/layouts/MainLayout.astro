@@ -4,6 +4,7 @@ import Navbar from "../components/layout/Navbar.astro";
 import AppToaster from "../components/layout/AppToaster";
 import Footer from "../components/Footer.astro";
 import ServiceAnnouncement from "../components/ServiceAnnouncement.astro";
+import GoogleAnalytics from "../components/GoogleAnalytics.astro";
 
 interface Props {
   title?: string;
@@ -53,6 +54,7 @@ const socialImageUrl = new URL(image, siteUrl).toString();
     <meta name="twitter:description" content={description} />
     <meta name="twitter:image" content={socialImageUrl} />
     <title>{title}</title>
+    <GoogleAnalytics />
   </head>
 
   <body>
