@@ -5,6 +5,7 @@ import {
   formatProductionDuration,
   normalizeProductionDays,
 } from "../../../../lib/productionEstimate";
+import type { BulkDiscountConfig } from "../../../../lib/bulkDiscount";
 
 type Material = {
   id: string;
@@ -35,6 +36,8 @@ type Product = {
   description: string;
   price: number;
   sale_price?: number | null;
+  bulk_discount_eligible?: boolean | null;
+  allow_bulk_discount_on_sale?: boolean | null;
   product_materials: ProductMaterial[];
   product_variants?: ProductVariant[] | null;
 };
@@ -42,9 +45,14 @@ type Product = {
 interface Props {
   product: Product;
   image: string;
+  bulkDiscountConfig: BulkDiscountConfig;
 }
 
-export default function ProductConfigurator({ product, image }: Props) {
+export default function ProductConfigurator({
+  product,
+  image,
+  bulkDiscountConfig,
+}: Props) {
   const [selectedMaterial, setSelectedMaterial] = useState(
     product.product_materials?.[0],
   );
@@ -74,17 +82,13 @@ export default function ProductConfigurator({ product, image }: Props) {
 
   useEffect(() => {
     const handleVariantSelection = (event: Event) => {
-      const { variantId } = (
-        event as CustomEvent<{ variantId: string | null }>
-      ).detail;
+      const { variantId } = (event as CustomEvent<{ variantId: string | null }>)
+        .detail;
 
       setSelectedVariantId(variantId ?? "");
     };
 
-    window.addEventListener(
-      "product-variant-selected",
-      handleVariantSelection,
-    );
+    window.addEventListener("product-variant-selected", handleVariantSelection);
 
     return () => {
       window.removeEventListener(
@@ -107,6 +111,13 @@ export default function ProductConfigurator({ product, image }: Props) {
   const productionDays = normalizeProductionDays(
     selectedMaterial?.materials.default_production_days,
   );
+  const salePrice = Number(product.sale_price);
+  const usesSalePrice =
+    !selectedVariant && Number.isFinite(salePrice) && salePrice > 0;
+  const bulkDiscountEligible =
+    bulkDiscountConfig.enabled &&
+    product.bulk_discount_eligible === true &&
+    (!usesSalePrice || product.allow_bulk_discount_on_sale === true);
 
   const unitPrice = useMemo(() => {
     const salePrice = Number(product.sale_price);
@@ -141,6 +152,7 @@ export default function ProductConfigurator({ product, image }: Props) {
       price: Number(unitPrice),
       image: selectedVariant?.image_url || image,
       productionDays,
+      bulkDiscountEligible,
     });
 
     toast.success("Added to Cart", {
@@ -249,6 +261,29 @@ export default function ProductConfigurator({ product, image }: Props) {
           </button>
         </div>
       </div>
+
+      {bulkDiscountEligible ? (
+        <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-5 text-emerald-900">
+          <div className="font-bold">Bulk savings available</div>
+          <p className="mt-2 text-sm leading-6 text-emerald-800">
+            {bulkDiscountConfig.tiers
+              .map(
+                (tier) =>
+                  `${tier.minimumQuantity}+ pieces: ${tier.percentage}% off`,
+              )
+              .join(" · ")}
+          </p>
+          <p className="mt-1 text-xs leading-5 text-emerald-700">
+            Eligible products can be mixed. Savings are applied automatically in
+            your cart.
+          </p>
+        </div>
+      ) : product.bulk_discount_eligible === true && usesSalePrice ? (
+        <div className="rounded-xl border border-slate-200 bg-slate-50 p-5 text-sm leading-6 text-slate-600">
+          This product is already on sale, so bulk discounts do not combine with
+          its sale price.
+        </div>
+      ) : null}
 
       <div className="rounded-xl bg-slate-100 p-6">
         <div className="text-sm text-slate-500">Total</div>

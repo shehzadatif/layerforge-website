@@ -154,6 +154,11 @@ export const POST: APIRoute = async ({ request }) => {
         : null;
 
     const featured = formData.get("featured") === "on";
+    const bulkDiscountEligible =
+      formData.get("bulk_discount_eligible") === "on";
+    const allowBulkDiscountOnSale =
+      bulkDiscountEligible &&
+      formData.get("allow_bulk_discount_on_sale") === "on";
 
     const status = formData.get("active") === "on" ? "Active" : "Inactive";
 
@@ -203,6 +208,8 @@ export const POST: APIRoute = async ({ request }) => {
         price,
         sale_price: salePrice,
         featured,
+        bulk_discount_eligible: bulkDiscountEligible,
+        allow_bulk_discount_on_sale: allowBulkDiscountOnSale,
         status,
       })
       .eq("id", id);

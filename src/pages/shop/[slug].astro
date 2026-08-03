@@ -5,10 +5,12 @@ import { supabaseAdmin } from "../../lib/supabaseAdmin";
 import ProductGallery from "../../features/shop/components/ProductGallery/ProductGallery";
 import ProductConfiguratorWithProvider from "../../features/shop/components/ProductConfigurator/ProductConfiguratorWithProvider";
 import ProductVariantSelector from "../../features/shop/components/ProductConfigurator/ProductVariantSelector";
+import { getBulkDiscountConfig } from "../../lib/bulkDiscountServer";
 
 export const prerender = false;
 
 const { slug } = Astro.params;
+const bulkDiscountConfig = await getBulkDiscountConfig();
 
 const { data: product } = await supabaseAdmin
   .from("products")
@@ -139,6 +141,7 @@ const categoryPath = [parentCategory?.name, product.categories?.name]
           client:load
           product={storefrontProduct}
           image={cover}
+          bulkDiscountConfig={bulkDiscountConfig}
         />
 
       </div>

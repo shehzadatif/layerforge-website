@@ -332,6 +332,54 @@ const productVariants = [...(product.product_variants ?? [])].sort(
           </div>
         </div>
 
+        <section class="rounded-xl border border-emerald-200 bg-emerald-50 p-5">
+          <h2 class="text-lg font-bold text-slate-950">
+            Bulk Discount Eligibility
+          </h2>
+          <p class="mt-2 text-sm leading-6 text-slate-600">
+            Only eligible products count toward the quantity tiers and receive
+            the discount.
+          </p>
+
+          <div class="mt-5 space-y-4">
+            <label class="flex items-start gap-3 rounded-lg border border-emerald-200 bg-white p-4">
+              <input
+                type="checkbox"
+                name="bulk_discount_eligible"
+                checked={product.bulk_discount_eligible === true}
+                class="mt-1 h-5 w-5 accent-emerald-600"
+              />
+              <span>
+                <span class="block font-semibold text-slate-950">
+                  Eligible for bulk discounts
+                </span>
+                <span class="mt-1 block text-sm leading-5 text-slate-500">
+                  Show the bulk-savings message and include this product in tier
+                  calculations.
+                </span>
+              </span>
+            </label>
+
+            <label class="flex items-start gap-3 rounded-lg border border-slate-200 bg-white p-4">
+              <input
+                type="checkbox"
+                name="allow_bulk_discount_on_sale"
+                checked={product.allow_bulk_discount_on_sale === true}
+                class="mt-1 h-5 w-5 accent-emerald-600"
+              />
+              <span>
+                <span class="block font-semibold text-slate-950">
+                  Allow bulk discount on sale price
+                </span>
+                <span class="mt-1 block text-sm leading-5 text-slate-500">
+                  Keep this off unless you intentionally want the two discounts
+                  to stack.
+                </span>
+              </span>
+            </label>
+          </div>
+        </section>
+
         <ProductVariantsField
           variants={productVariants}
           imageBaseUrl={`${supabaseUrl}/storage/v1/object/public/product-images/`}

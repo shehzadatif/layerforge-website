@@ -11,23 +11,32 @@ import {
   formatProductionDuration,
   getOrderProductionDays,
 } from "../../../lib/productionEstimate";
+import {
+  calculateBulkDiscount,
+  getDiscountedUnitPriceCents,
+  type BulkDiscountConfig,
+} from "../../../lib/bulkDiscount";
 
-export default function CheckoutPage() {
+interface Props {
+  bulkDiscountConfig: BulkDiscountConfig;
+}
+
+export default function CheckoutPage({ bulkDiscountConfig }: Props) {
   const cart = getCart();
   const [termsAccepted, setTermsAccepted] = useState(false);
 
   const { form, errors, isSubmitting, setIsSubmitting, updateField, validate } =
     useCheckout();
 
-  const subtotal = useMemo(
-    () => cart.reduce((sum, item) => sum + item.price * item.quantity, 0),
-    [cart],
+  const pricing = useMemo(
+    () => calculateBulkDiscount(cart, bulkDiscountConfig),
+    [cart, bulkDiscountConfig],
   );
   const shippingCost = getShippingCost(
     form.deliveryMethod,
     form.province as Province,
   );
-  const totalBeforeTax = subtotal + shippingCost;
+  const totalBeforeTax = pricing.discountedSubtotalCents / 100 + shippingCost;
   const productionDays = getOrderProductionDays(cart);
   const estimatedReadyDate = formatEstimatedReadyDate(
     new Date(),
@@ -123,9 +132,9 @@ export default function CheckoutPage() {
                 {PICKUP_AREA}
               </p>
               <p className="mt-4 text-sm leading-6 text-slate-600">
-                Layer Forge Canada is a home-based production studio. For privacy,
-                we&apos;ll email the exact pickup address and instructions when
-                your order is ready.
+                Layer Forge Canada is a home-based production studio. For
+                privacy, we&apos;ll email the exact pickup address and
+                instructions when your order is ready.
               </p>
             </div>
           </div>
@@ -169,11 +178,36 @@ export default function CheckoutPage() {
 
                 <div className="text-right">
                   <div className="font-bold">
-                    CAD ${(item.price * item.quantity).toFixed(2)}
+                    CAD $
+                    {(
+                      (getDiscountedUnitPriceCents(
+                        Math.round(item.price * 100),
+                        item.bulkDiscountEligible
+                          ? pricing.discountPercentage
+                          : 0,
+                      ) *
+                        item.quantity) /
+                      100
+                    ).toFixed(2)}
                   </div>
                   <div className="text-sm text-slate-500">
-                    ${item.price.toFixed(2)} each
+                    $
+                    {(
+                      getDiscountedUnitPriceCents(
+                        Math.round(item.price * 100),
+                        item.bulkDiscountEligible
+                          ? pricing.discountPercentage
+                          : 0,
+                      ) / 100
+                    ).toFixed(2)}{" "}
+                    each
                   </div>
+                  {pricing.discountPercentage > 0 &&
+                  item.bulkDiscountEligible ? (
+                    <div className="text-xs text-slate-400 line-through">
+                      CAD ${(item.price * item.quantity).toFixed(2)}
+                    </div>
+                  ) : null}
                   {item.productionDays ? (
                     <div className="mt-1 text-xs font-medium text-amber-700">
                       {formatProductionDuration(item.productionDays)} production
@@ -184,9 +218,34 @@ export default function CheckoutPage() {
             ))}
           </div>
 
-          <div className="mb-3 flex justify-between">
-            <span>Subtotal</span>
-            <span>CAD ${subtotal.toFixed(2)}</span>
+          <div className="mb-3 flex justify-between gap-4">
+            <span>
+              Items subtotal ({pricing.totalQuantity}{" "}
+              {pricing.totalQuantity === 1 ? "piece" : "pieces"})
+            </span>
+            <span>CAD ${(pricing.subtotalCents / 100).toFixed(2)}</span>
+          </div>
+
+          {pricing.discountPercentage > 0 ? (
+            <div className="mb-3 flex justify-between gap-4 font-semibold text-emerald-700">
+              <span>Bulk discount ({pricing.discountPercentage}%)</span>
+              <span>− CAD ${(pricing.discountCents / 100).toFixed(2)}</span>
+            </div>
+          ) : null}
+
+          {pricing.eligibleQuantity > 0 &&
+          pricing.eligibleQuantity < pricing.totalQuantity ? (
+            <p className="mb-3 text-xs leading-5 text-slate-500">
+              Discount applies to {pricing.eligibleQuantity} eligible pieces;
+              other products remain at their regular price.
+            </p>
+          ) : null}
+
+          <div className="mb-3 flex justify-between gap-4 font-semibold">
+            <span>Merchandise total</span>
+            <span>
+              CAD ${(pricing.discountedSubtotalCents / 100).toFixed(2)}
+            </span>
           </div>
 
           <div className="mb-3 flex justify-between gap-4">

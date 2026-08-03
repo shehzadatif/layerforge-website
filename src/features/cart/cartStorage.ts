@@ -9,6 +9,7 @@ export type CartItem = {
   image: string;
   quantity: number;
   productionDays?: number;
+  bulkDiscountEligible?: boolean;
 };
 
 const STORAGE_KEY = "lf-cart";

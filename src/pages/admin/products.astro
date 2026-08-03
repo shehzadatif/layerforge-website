@@ -68,6 +68,8 @@ const categoryNameById = new Map(
 
 <th class="px-6 py-4 text-center">Featured</th>
 
+<th class="px-6 py-4 text-center">Bulk Discount</th>
+
 <th class="px-6 py-4 text-right">Action</th>
 
 </tr>
@@ -133,6 +135,12 @@ ${Number(product.price ?? 0).toFixed(2)}
 <td class="px-6 py-4 text-center">
 
 {product.featured ? "⭐" : "-"}
+
+</td>
+
+<td class="px-6 py-4 text-center">
+
+{product.bulk_discount_eligible ? "Eligible" : "Not eligible"}
 
 </td>
 

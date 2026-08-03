@@ -15,6 +15,11 @@ import {
   getEstimatedReadyDate,
   getOrderProductionDays,
 } from "../../lib/productionEstimate";
+import {
+  calculateBulkDiscount,
+  getDiscountedUnitPriceCents,
+} from "../../lib/bulkDiscount";
+import { getBulkDiscountConfig } from "../../lib/bulkDiscountServer";
 
 export const prerender = false;
 
@@ -54,6 +59,8 @@ interface ProductRecord {
   price: number | string | null;
   sale_price: number | string | null;
   status: string | null;
+  bulk_discount_eligible: boolean | null;
+  allow_bulk_discount_on_sale: boolean | null;
   product_materials: ProductMaterialRecord[] | null;
   product_variants: ProductVariantRecord[] | null;
 }
@@ -69,6 +76,7 @@ interface TrustedCheckoutItem {
   price: number;
   productionDays: number;
   unitPriceCents: number;
+  bulkDiscountEligible: boolean;
 }
 
 class CheckoutRequestError extends Error {
@@ -214,6 +222,8 @@ async function buildTrustedItems(
       price,
       sale_price,
       status,
+      bulk_discount_eligible,
+      allow_bulk_discount_on_sale,
       product_variants(
         id,
         option_value,
@@ -297,6 +307,8 @@ async function buildTrustedItems(
       : Number.isFinite(salePrice) && salePrice > 0
         ? salePrice
         : regularPrice;
+    const usesSalePrice =
+      !selectedVariant && Number.isFinite(salePrice) && salePrice > 0;
     const markupPercent = Number(material.markup_percent ?? 0);
 
     if (
@@ -352,6 +364,9 @@ async function buildTrustedItems(
           ? Math.round(productionDays)
           : 0,
       unitPriceCents,
+      bulkDiscountEligible:
+        product.bulk_discount_eligible === true &&
+        (!usesSalePrice || product.allow_bulk_discount_on_sale === true),
     };
   });
 }
@@ -380,22 +395,36 @@ export const POST: APIRoute = async ({ request }) => {
     }
 
     const customer = validateCustomer(body?.customer);
-    const trustedItems = await buildTrustedItems(requestedItems);
+    const [trustedItems, bulkDiscountConfig] = await Promise.all([
+      buildTrustedItems(requestedItems),
+      getBulkDiscountConfig(),
+    ]);
+    const pricing = calculateBulkDiscount(trustedItems, bulkDiscountConfig);
+    const checkoutItems = trustedItems.map((item) => {
+      const discountedUnitPriceCents = getDiscountedUnitPriceCents(
+        item.unitPriceCents,
+        item.bulkDiscountEligible ? pricing.discountPercentage : 0,
+      );
 
-    const subtotalCents = trustedItems.reduce(
-      (sum, item) => sum + item.unitPriceCents * item.quantity,
-      0,
-    );
+      return {
+        ...item,
+        originalUnitPriceCents: item.unitPriceCents,
+        unitPriceCents: discountedUnitPriceCents,
+        price: discountedUnitPriceCents / 100,
+      };
+    });
+
+    const subtotalCents = pricing.discountedSubtotalCents;
     const orderStartTime = new Date();
     const subtotal = subtotalCents / 100;
-    const productionDays = getOrderProductionDays(trustedItems);
+    const productionDays = getOrderProductionDays(checkoutItems);
     const estimatedReadyDate = getEstimatedReadyDate(
       orderStartTime,
       productionDays,
     );
 
     customer.materialSummary = [
-      ...new Set(trustedItems.map((item) => item.materialName)),
+      ...new Set(checkoutItems.map((item) => item.materialName)),
     ].join(", ");
 
     const shippingCost = getShippingCost(
@@ -419,7 +448,7 @@ export const POST: APIRoute = async ({ request }) => {
     }
 
     const order = await createOrder(customer, subtotal);
-    await createOrderItems(order.id, trustedItems);
+    await createOrderItems(order.id, checkoutItems);
 
     const stripeCustomer =
       customer.deliveryMethod === "shipping"
@@ -452,21 +481,21 @@ export const POST: APIRoute = async ({ request }) => {
             },
           })
         : await stripe.customers.create({
-    email: customer.email,
-    address: {
-      city: "Surrey",
-      state: "BC",
-      country: "CA",
-    },
-    metadata: {
-      orderId: order.id,
-      pickup: "true",
-    },
-  });
+            email: customer.email,
+            address: {
+              city: "Surrey",
+              state: "BC",
+              country: "CA",
+            },
+            metadata: {
+              orderId: order.id,
+              pickup: "true",
+            },
+          });
 
     const session = await stripe.checkout.sessions.create({
       mode: "payment",
-     customer: stripeCustomer.id,
+      customer: stripeCustomer.id,
       automatic_tax: {
         enabled: true,
       },
@@ -509,13 +538,18 @@ export const POST: APIRoute = async ({ request }) => {
         termsVersion: "2026-07-20",
         refundPolicyAccepted: "true",
         productionDays: String(productionDays),
+        bulkDiscountPercentage: String(pricing.discountPercentage),
+        bulkDiscountCents: String(pricing.discountCents),
+        originalSubtotalCents: String(pricing.subtotalCents),
+        totalItemQuantity: String(pricing.totalQuantity),
+        eligibleItemQuantity: String(pricing.eligibleQuantity),
         ...(estimatedReadyDate
           ? {
               estimatedReadyDate: estimatedReadyDate.toISOString().slice(0, 10),
             }
           : {}),
       },
-      line_items: trustedItems.map((item) => ({
+      line_items: checkoutItems.map((item) => ({
         price_data: {
           currency: "cad",
           product_data: {
@@ -526,6 +560,9 @@ export const POST: APIRoute = async ({ request }) => {
               item.materialName,
               item.productionDays
                 ? `${formatProductionDuration(item.productionDays)} production`
+                : "",
+              pricing.discountPercentage > 0 && item.bulkDiscountEligible
+                ? `${pricing.discountPercentage}% bulk discount applied`
                 : "",
             ]
               .filter(Boolean)

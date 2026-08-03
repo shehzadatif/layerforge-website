@@ -1,8 +1,11 @@
 ---
 import MainLayout from "../layouts/MainLayout.astro";
 import CheckoutPage from "../features/checkout/components/CheckoutPage";
+import { getBulkDiscountConfig } from "../lib/bulkDiscountServer";
 
 export const prerender = false;
+
+const bulkDiscountConfig = await getBulkDiscountConfig();
 ---
 
 <MainLayout title="Checkout | Layer Forge Canada">
@@ -15,7 +18,7 @@ export const prerender = false;
       Checkout
     </h1>
 
-    <CheckoutPage client:load />
+    <CheckoutPage client:load bulkDiscountConfig={bulkDiscountConfig} />
 
   </div>
 

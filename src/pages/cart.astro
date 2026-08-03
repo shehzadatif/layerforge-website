@@ -1,8 +1,11 @@
 ---
 import MainLayout from "../layouts/MainLayout.astro";
 import CartPage from "../features/cart/components/CartPage";
+import { getBulkDiscountConfig } from "../lib/bulkDiscountServer";
 
 export const prerender = false;
+
+const bulkDiscountConfig = await getBulkDiscountConfig();
 ---
 
 <MainLayout title="Shopping Cart | Layer Forge Canada">
@@ -15,7 +18,7 @@ export const prerender = false;
       Shopping Cart
     </h1>
 
-    <CartPage client:load />
+    <CartPage client:load bulkDiscountConfig={bulkDiscountConfig} />
 
   </div>
 

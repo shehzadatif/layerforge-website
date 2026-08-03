@@ -11,8 +11,17 @@ import {
   formatProductionDuration,
   getOrderProductionDays,
 } from "../../../lib/productionEstimate";
+import {
+  calculateBulkDiscount,
+  getNextBulkDiscountTier,
+  type BulkDiscountConfig,
+} from "../../../lib/bulkDiscount";
 
-export default function CartPage() {
+interface Props {
+  bulkDiscountConfig: BulkDiscountConfig;
+}
+
+export default function CartPage({ bulkDiscountConfig }: Props) {
   const [cart, setCart] = useState<CartItem[]>([]);
 
   function refreshCart() {
@@ -23,9 +32,16 @@ export default function CartPage() {
     refreshCart();
   }, []);
 
-  const subtotal = useMemo(() => {
-    return cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
-  }, [cart]);
+  const pricing = useMemo(
+    () => calculateBulkDiscount(cart, bulkDiscountConfig),
+    [cart, bulkDiscountConfig],
+  );
+  const nextDiscountTier = getNextBulkDiscountTier(
+    pricing.eligibleQuantity,
+    bulkDiscountConfig,
+  );
+  const bestDiscountPercentage =
+    bulkDiscountConfig.tiers.at(-1)?.percentage ?? 0;
 
   const productionDays = getOrderProductionDays(cart);
   const estimatedReadyDate = formatEstimatedReadyDate(
@@ -105,6 +121,12 @@ export default function CartPage() {
                   CAD ${item.price.toFixed(2)}
                 </p>
 
+                {item.bulkDiscountEligible ? (
+                  <p className="mt-2 w-fit rounded-full bg-emerald-100 px-3 py-1 text-xs font-semibold text-emerald-800">
+                    Eligible for bulk savings
+                  </p>
+                ) : null}
+
                 <div className="mt-5 flex items-center gap-3">
                   <button
                     onClick={() => {
@@ -142,11 +164,7 @@ export default function CartPage() {
 
                   <button
                     onClick={() => {
-                      removeFromCart(
-                        item.id,
-                        item.materialId,
-                        item.variantId,
-                      );
+                      removeFromCart(item.id, item.materialId, item.variantId);
                       refreshCart();
                     }}
                     className="ml-auto text-sm font-medium text-red-600 hover:text-red-700"
@@ -166,11 +184,51 @@ export default function CartPage() {
         <div className="sticky top-8 rounded-2xl bg-white p-8 shadow">
           <h2 className="mb-6 text-2xl font-bold">Order Summary</h2>
 
-          <div className="flex justify-between text-lg">
-            <span>Subtotal</span>
+          <div className="flex justify-between gap-4 text-lg">
+            <span>
+              Items subtotal
+              <span className="ml-2 text-sm text-slate-500">
+                ({pricing.totalQuantity}{" "}
+                {pricing.totalQuantity === 1 ? "piece" : "pieces"})
+              </span>
+            </span>
 
-            <span>CAD ${subtotal.toFixed(2)}</span>
+            <span>CAD ${(pricing.subtotalCents / 100).toFixed(2)}</span>
           </div>
+
+          {pricing.discountPercentage > 0 ? (
+            <div className="mt-4 rounded-xl border border-emerald-200 bg-emerald-50 p-4">
+              <div className="flex justify-between gap-4 font-semibold text-emerald-800">
+                <span>Bulk discount ({pricing.discountPercentage}%)</span>
+                <span>− CAD ${(pricing.discountCents / 100).toFixed(2)}</span>
+              </div>
+              <p className="mt-1 text-sm leading-5 text-emerald-700">
+                Your quantity discount has been applied automatically.
+              </p>
+            </div>
+          ) : null}
+
+          {pricing.eligibleQuantity > 0 &&
+          pricing.eligibleQuantity < pricing.totalQuantity ? (
+            <p className="mt-3 text-xs leading-5 text-slate-500">
+              {pricing.eligibleQuantity} of {pricing.totalQuantity} pieces count
+              toward bulk pricing. Ineligible products remain at their regular
+              price.
+            </p>
+          ) : null}
+
+          {pricing.eligibleQuantity > 0 && nextDiscountTier ? (
+            <p className="mt-4 rounded-xl bg-slate-100 p-4 text-sm font-medium leading-6 text-slate-700">
+              Add {nextDiscountTier.quantityNeeded} more eligible{" "}
+              {nextDiscountTier.quantityNeeded === 1 ? "piece" : "pieces"} to
+              unlock {nextDiscountTier.percentage}% off.
+            </p>
+          ) : pricing.eligibleQuantity > 0 && bestDiscountPercentage > 0 ? (
+            <p className="mt-4 rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-sm font-semibold text-emerald-800">
+              Best bulk rate unlocked — you&apos;re saving{" "}
+              {bestDiscountPercentage}% on eligible products.
+            </p>
+          ) : null}
 
           <hr className="my-6" />
 
@@ -192,7 +250,9 @@ export default function CartPage() {
           <div className="flex justify-between text-2xl font-bold">
             <span>Total</span>
 
-            <span>CAD ${subtotal.toFixed(2)}</span>
+            <span>
+              CAD ${(pricing.discountedSubtotalCents / 100).toFixed(2)}
+            </span>
           </div>
 
           <a
