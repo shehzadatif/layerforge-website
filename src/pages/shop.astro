@@ -1,8 +1,9 @@
 ---
 import MainLayout from "../layouts/MainLayout.astro";
 import { supabaseAdmin } from "../lib/supabaseAdmin";
+import { getBulkDiscountConfig } from "../lib/bulkDiscountServer";
 
-const [productsResult, categoriesResult] = await Promise.all([
+const [productsResult, categoriesResult, bulkDiscountConfig] = await Promise.all([
   supabaseAdmin
     .from("products")
     .select(`
@@ -14,6 +15,7 @@ const [productsResult, categoriesResult] = await Promise.all([
     .eq("status", "Active")
     .order("created_at", { ascending: false }),
   supabaseAdmin.from("categories").select("id, name, parent_id"),
+  getBulkDiscountConfig(),
 ]);
 
 if (productsResult.error) {
@@ -35,6 +37,8 @@ const brands = [
       .filter(Boolean),
   ),
 ].sort((left, right) => left.localeCompare(right, "en-CA"));
+const maximumBulkDiscount =
+  bulkDiscountConfig.tiers.at(-1)?.percentage ?? 0;
 type CategoryOption = {
   id: string;
   name: string;
@@ -274,12 +278,22 @@ function normalizedFilterValue(value: unknown): string {
         const startingPrice =
           availablePrices.length > 0 ? Math.min(...availablePrices) : 0;
         const hasVariants = variantPrices.length > 0;
+        const hasSalePrice = Number.isFinite(salePrice) && salePrice > 0;
+        const bulkDiscountAvailable =
+          bulkDiscountConfig.enabled &&
+          maximumBulkDiscount > 0 &&
+          product.bulk_discount_eligible === true &&
+          (!hasSalePrice || product.allow_bulk_discount_on_sale === true);
 
         return (
 
           <a
             href={`/shop/${product.slug}`}
-            class="flex h-full flex-col overflow-hidden rounded-2xl bg-white shadow transition hover:-translate-y-1 hover:shadow-xl"
+            class:list={[
+              "flex h-full flex-col overflow-hidden rounded-2xl bg-white shadow transition hover:-translate-y-1 hover:shadow-xl",
+              bulkDiscountAvailable &&
+                "ring-2 ring-emerald-300 ring-offset-2 ring-offset-slate-50",
+            ]}
             data-product-card
             data-brand={normalizedFilterValue(brand)}
             data-category={category?.id ?? ""}
@@ -295,7 +309,42 @@ function normalizedFilterValue(value: unknown): string {
             )}
           >
 
-            <div class="aspect-square overflow-hidden bg-slate-100 p-3">
+            <div class="relative aspect-square overflow-hidden bg-slate-100 p-3">
+
+              {bulkDiscountAvailable && (
+                <div
+                  class="absolute left-4 top-4 z-10 inline-flex items-center gap-2 rounded-full border border-emerald-300 bg-emerald-700 px-3 py-2 text-white shadow-lg"
+                  aria-label={`Bulk pricing available, save up to ${maximumBulkDiscount} percent`}
+                >
+                  <span
+                    class="flex h-7 w-7 items-center justify-center rounded-full bg-white/15"
+                    aria-hidden="true"
+                  >
+                    <svg
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="2"
+                      class="h-4 w-4"
+                    >
+                      <path
+                        stroke-linecap="round"
+                        d="m7 17 10-10"
+                      />
+                      <circle cx="7.5" cy="7.5" r="2" />
+                      <circle cx="16.5" cy="16.5" r="2" />
+                    </svg>
+                  </span>
+                  <span class="leading-tight">
+                    <span class="block text-xs font-extrabold uppercase tracking-wide">
+                      Bulk savings
+                    </span>
+                    <span class="block text-[0.7rem] font-medium text-emerald-50">
+                      Save up to {maximumBulkDiscount}%
+                    </span>
+                  </span>
+                </div>
+              )}
 
               {cover ? (
 
