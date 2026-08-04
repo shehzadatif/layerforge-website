@@ -6,11 +6,13 @@ const year = new Date().getFullYear();
   <div class="mx-auto grid max-w-7xl gap-12 px-6 py-14 sm:grid-cols-2 lg:grid-cols-4">
     <div class="sm:col-span-2 lg:col-span-1">
       <a href="/" class="inline-flex items-center gap-2" aria-label="Layer Forge Canada home">
-        <img
-          src="/brand/logos/layer-forge-horizontal-reverse-transparent.png"
-          alt=""
-          class="w-48 translate-y-[4px]"
-        />
+        <span class="relative block h-5 w-48 shrink-0 overflow-hidden">
+          <img
+            src="/brand/logos/layer-forge-horizontal-reverse-transparent.png"
+            alt=""
+            class="absolute -top-[9px] left-0 w-48 max-w-none"
+          />
+        </span>
         <span class="border-l border-white/30 pl-2 text-xs font-black uppercase tracking-[0.18em] text-yellow-400">
           Canada
         </span>
