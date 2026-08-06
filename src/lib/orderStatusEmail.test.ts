@@ -50,6 +50,32 @@ describe("getOrderStatusEmailKind", () => {
     ).toBeNull();
   });
 
+  it("keeps shipped emails retryable for delivery orders", () => {
+    expect(
+      getOrderStatusEmailKind({
+        previousStatus: ORDER_STATUS.READY,
+        requestedStatus: ORDER_STATUS.SHIPPED,
+        isPickupOrder: false,
+      }),
+    ).toBe("shipped");
+
+    expect(
+      getOrderStatusEmailKind({
+        previousStatus: ORDER_STATUS.SHIPPED,
+        requestedStatus: ORDER_STATUS.SHIPPED,
+        isPickupOrder: false,
+      }),
+    ).toBe("shipped");
+
+    expect(
+      getOrderStatusEmailKind({
+        previousStatus: ORDER_STATUS.READY,
+        requestedStatus: ORDER_STATUS.SHIPPED,
+        isPickupOrder: true,
+      }),
+    ).toBeNull();
+  });
+
   it("sends completion email only on the transition into Completed", () => {
     expect(
       getOrderStatusEmailKind({
