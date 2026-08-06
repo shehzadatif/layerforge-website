@@ -6,6 +6,11 @@ import ProductGallery from "../../features/shop/components/ProductGallery/Produc
 import ProductConfiguratorWithProvider from "../../features/shop/components/ProductConfigurator/ProductConfiguratorWithProvider";
 import ProductVariantSelector from "../../features/shop/components/ProductConfigurator/ProductVariantSelector";
 import { getBulkDiscountConfig } from "../../lib/bulkDiscountServer";
+import {
+  buildProductStructuredData,
+  serializeJsonLd,
+  toMerchantListing,
+} from "../../lib/googleMerchant";
 
 export const prerender = false;
 
@@ -71,6 +76,15 @@ const galleryImageUrls = [
 
 const cover = productImageUrls[0] ?? variantImageUrls[0] ?? "";
 
+const configuredSiteUrl = import.meta.env.PUBLIC_SITE_URL
+  ?.trim()
+  .replace(/\/+$/, "");
+const siteUrl = configuredSiteUrl || Astro.url.origin;
+const merchantListing = toMerchantListing(product, siteUrl, publicImageBase);
+const productStructuredData = merchantListing
+  ? serializeJsonLd(buildProductStructuredData(merchantListing))
+  : null;
+
 const storefrontProduct = {
   ...product,
   product_variants: storefrontVariants,
@@ -93,7 +107,15 @@ const categoryPath = [parentCategory?.name, product.categories?.name]
   .join(" → ");
 ---
 
-<MainLayout title={product.name}>
+<MainLayout
+  title={`${product.name} | Layer Forge Canada`}
+  description={product.short_description || product.description}
+  image={cover || undefined}
+>
+
+{productStructuredData && (
+  <script type="application/ld+json" set:html={productStructuredData}></script>
+)}
 
 <section class="bg-slate-50 py-20">
 
@@ -157,6 +179,12 @@ const categoryPath = [parentCategory?.name, product.categories?.name]
         <h1 class="mb-6 text-5xl font-bold">
           {product.name}
         </h1>
+
+        {merchantListing && (
+          <p class="mb-6 text-xl font-semibold text-slate-700">
+            Starting at CAD {merchantListing.price.toFixed(2)}
+          </p>
+        )}
 
         <ProductDescription
           description={product.description}

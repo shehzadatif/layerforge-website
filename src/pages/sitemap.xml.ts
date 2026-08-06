@@ -1,4 +1,5 @@
 import type { APIRoute } from "astro";
+import { supabaseAdmin } from "../lib/supabaseAdmin";
 
 export const prerender = false;
 
@@ -30,14 +31,29 @@ function escapeXml(value: string) {
     .replaceAll("'", "&apos;");
 }
 
-export const GET: APIRoute = ({ url }) => {
+export const GET: APIRoute = async ({ url }) => {
   const configuredSiteUrl = import.meta.env.PUBLIC_SITE_URL?.trim().replace(
     /\/+$/,
     "",
   );
   const siteUrl = configuredSiteUrl || url.origin;
 
-  const entries = routes
+  const { data: products, error } = await supabaseAdmin
+    .from("products")
+    .select("slug")
+    .eq("status", "Active")
+    .order("slug");
+
+  if (error) {
+    console.error("Product sitemap query failed.", error);
+  }
+
+  const productRoutes = (products ?? [])
+    .map((product) => String(product.slug ?? "").trim())
+    .filter(Boolean)
+    .map((slug) => `/shop/${encodeURIComponent(slug)}`);
+
+  const entries = [...routes, ...productRoutes]
     .map((route) => {
       const location = new URL(route || "/", siteUrl).toString();
       return `  <url><loc>${escapeXml(location)}</loc></url>`;
