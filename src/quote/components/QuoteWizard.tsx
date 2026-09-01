@@ -113,7 +113,7 @@ export default function QuoteWizard() {
               <div className="text-5xl">🎨</div>
 
               <h4 className="mt-6 text-2xl font-bold">
-                UV Printing
+                Custom Branding & Printing
               </h4>
 
               <p className="mt-4 text-slate-600">
