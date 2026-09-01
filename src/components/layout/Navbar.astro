@@ -79,7 +79,7 @@ const linkClass = (href: string) =>
           </svg>
         </summary>
 
-        <div class="absolute left-1/2 top-full w-80 -translate-x-1/2 pt-2">
+        <div class="absolute left-1/2 top-full w-96 max-w-[calc(100vw-2rem)] -translate-x-1/2 pt-2">
           <div class="overflow-hidden rounded-2xl border border-white/10 bg-slate-950 p-2 shadow-2xl">
             <a href="/services" class="block rounded-xl px-4 py-3 transition hover:bg-white/10">
               <span class="block font-semibold text-white">All Services</span>
@@ -90,11 +90,11 @@ const linkClass = (href: string) =>
               services.map((service) => (
                 <a href={service.href} class="block rounded-xl px-4 py-3 transition hover:bg-white/10">
                   <span class="flex items-center justify-between gap-3">
-                    <span class={`block font-semibold ${isActive(service.href) ? "text-yellow-400" : "text-white"}`}>
+                    <span class={`block whitespace-nowrap font-semibold ${isActive(service.href) ? "text-yellow-400" : "text-white"}`}>
                       {service.label}
                     </span>
                     {service.comingSoon && (
-                      <span class="rounded-full bg-yellow-400 px-2 py-0.5 text-[10px] font-black uppercase tracking-wide text-slate-950">
+                      <span class="shrink-0 whitespace-nowrap rounded-full bg-yellow-400 px-2 py-0.5 text-[10px] font-black uppercase tracking-wide text-slate-950">
                         Coming Soon
                       </span>
                     )}
@@ -156,7 +156,7 @@ const linkClass = (href: string) =>
                 {service.label}
               </span>
               {service.comingSoon && (
-                <span class="rounded-full bg-yellow-400 px-2 py-0.5 text-[10px] font-black uppercase tracking-wide text-slate-950">
+                <span class="shrink-0 whitespace-nowrap rounded-full bg-yellow-400 px-2 py-0.5 text-[10px] font-black uppercase tracking-wide text-slate-950">
                   Coming Soon
                 </span>
               )}
