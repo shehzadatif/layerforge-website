@@ -24,15 +24,15 @@ const applications = [
   },
 ];
 
-const materials = [
-  "Acrylic",
-  "Coated metal",
-  "Plastic",
-  "Wood",
-  "Glass",
-  "Leatherette",
-  "Phone cases",
-  "Customer-supplied items",
+const brandingCategories = [
+  "QR & counter signs",
+  "Office signage",
+  "Employee identification",
+  "Retail & hospitality",
+  "Promotional technology",
+  "Client gifts",
+  "Packaging & events",
+  "Awards & recognition",
 ];
 ---
 
@@ -279,18 +279,19 @@ const materials = [
   </section>
 
   <section class="bg-slate-950 py-24 text-white">
-    <div class="mx-auto grid max-w-7xl gap-16 px-6 lg:grid-cols-[0.9fr_1.1fr] lg:items-center">
-      <div>
+    <div class="mx-auto max-w-7xl px-6">
+      <div class="mx-auto max-w-3xl text-center">
         <p class="font-semibold uppercase tracking-[0.3em] text-yellow-400">
-          Materials
+          Corporate branding
         </p>
         <h2 class="mt-4 text-4xl font-black sm:text-5xl">
-          Print beyond paper.
+          Put your brand on products people use.
         </h2>
         <p class="mt-6 text-lg leading-8 text-slate-300">
-          UV printing works on flat and gently curved products made from many
-          common materials. Send us your item or idea and we’ll confirm fit,
-          print area, and artwork requirements before production.
+          Explore practical UV-printing ideas for counters, offices, employees,
+          retail spaces, events, client gifts, packaging, and recognition.
+          We’ll confirm material compatibility, print area, and artwork
+          requirements before production.
         </p>
 
         <a
@@ -301,11 +302,28 @@ const materials = [
         </a>
       </div>
 
-      <div class="grid grid-cols-2 gap-4 sm:grid-cols-4">
+      <figure class="mx-auto mt-14 w-full max-w-[72rem]">
+        <div class="overflow-hidden rounded-3xl border border-white/15 bg-white/5 p-2 shadow-2xl shadow-black/30">
+          <img
+            src="/images/uv-printing/uv-material-collage.webp"
+            alt="A grid of 64 corporate branding possibilities including QR stands, office signs, employee badges, retail displays, promotional technology, client gifts, event products, packaging and awards"
+            width="1254"
+            height="1254"
+            loading="lazy"
+            class="aspect-square w-full object-cover"
+          />
+        </div>
+        <figcaption class="mt-4 text-center text-sm leading-6 text-slate-400">
+          Sixty-four practical branding possibilities. QR codes shown are
+          illustrative and non-functional.
+        </figcaption>
+      </figure>
+
+      <div class="mx-auto mt-7 grid max-w-[72rem] grid-cols-2 gap-2 sm:grid-cols-4 lg:grid-cols-8">
         {
-          materials.map((material) => (
-            <div class="flex min-h-28 items-center justify-center rounded-2xl border border-white/10 bg-white/5 p-5 text-center font-semibold text-slate-100">
-              {material}
+          brandingCategories.map((category) => (
+            <div class="flex min-h-16 items-center justify-center rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-center text-sm font-semibold text-slate-100">
+              {category}
             </div>
           ))
         }
