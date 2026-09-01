@@ -2,6 +2,7 @@ import type { APIRoute } from "astro";
 
 import {
   buildGoogleMerchantFeed,
+  isGoogleMerchantEligible,
   toMerchantListing,
 } from "../lib/googleMerchant";
 import { supabaseAdmin } from "../lib/supabaseAdmin";
@@ -45,6 +46,7 @@ export const GET: APIRoute = async ({ url }) => {
   }
 
   const listings = (products ?? [])
+    .filter(isGoogleMerchantEligible)
     .map((product) => toMerchantListing(product, siteUrl, productImageBaseUrl))
     .filter((listing) => listing !== null);
 
