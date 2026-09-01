@@ -256,30 +256,6 @@ const slicerPricingConfigured = configuredSlicerMaterials.length > 0;
                 </select>
               </div>
 
-              <div>
-                <label
-                  for="infill"
-                  class="block text-sm font-semibold text-slate-700"
-                >
-                  Infill
-                </label>
-                <select
-                  id="infill"
-                  name="infill"
-                  class="mt-2 block w-full rounded-xl border border-slate-300 bg-white p-3 shadow-sm focus:border-yellow-400 focus:outline-none focus:ring-2 focus:ring-yellow-400"
-                >
-                  <option value="10">10%</option>
-                  <option value="15" selected>15% · Bambu Standard</option>
-                  <option value="20">20%</option>
-                  <option value="30">30%</option>
-                  <option value="50">50%</option>
-                  <option value="100">100%</option>
-                </select>
-                <p class="mt-2 text-sm text-slate-500">
-                  Bambu Studio Standard uses 15% infill. Increase it when the
-                  part needs additional internal strength.
-                </p>
-              </div>
             </div>
           </section>
 
@@ -603,6 +579,7 @@ const slicerPricingConfigured = configuredSlicerMaterials.length > 0;
     const P1S_BUILD_VOLUME_MM = 256;
     const SLICER_POLL_INTERVAL_MS = 2_000;
     const SLICER_TIMEOUT_MS = 3 * 60 * 1_000;
+    const DEFAULT_INFILL_PERCENT = 15;
     const currency = new Intl.NumberFormat("en-CA", {
       style: "currency",
       currency: "CAD",
@@ -614,7 +591,6 @@ const slicerPricingConfigured = configuredSlicerMaterials.length > 0;
     const modelUnits = document.getElementById("modelUnits");
     const material = document.getElementById("material");
     const quality = document.getElementById("quality");
-    const infill = document.getElementById("infill");
     const quantity = document.getElementById("quantity");
     const estimatePrice = document.getElementById("estimatePrice");
     const estimateMessage = document.getElementById("estimateMessage");
@@ -852,7 +828,6 @@ const slicerPricingConfigured = configuredSlicerMaterials.length > 0;
         !currentMetrics ||
         !(material instanceof HTMLSelectElement) ||
         !(quality instanceof HTMLSelectElement) ||
-        !(infill instanceof HTMLSelectElement) ||
         !(quantity instanceof HTMLInputElement)
       ) {
         return;
@@ -870,7 +845,7 @@ const slicerPricingConfigured = configuredSlicerMaterials.length > 0;
         metrics: currentMetrics,
         material: material.value,
         quality: quality.value as ThreeDPrintQuality,
-        infillPercent: Number(infill.value),
+        infillPercent: DEFAULT_INFILL_PERCENT,
         quantity: Number(quantity.value),
       });
 
@@ -1196,7 +1171,6 @@ const slicerPricingConfigured = configuredSlicerMaterials.length > 0;
         !(fileInput instanceof HTMLInputElement) ||
         !(material instanceof HTMLSelectElement) ||
         !(quality instanceof HTMLSelectElement) ||
-        !(infill instanceof HTMLSelectElement) ||
         !(quantity instanceof HTMLInputElement) ||
         !currentBrowserEstimate
       ) {
@@ -1235,7 +1209,7 @@ const slicerPricingConfigured = configuredSlicerMaterials.length > 0;
             turnstileToken,
             material: material.value,
             quality: quality.value,
-            infillPercent: Number(infill.value),
+            infillPercent: DEFAULT_INFILL_PERCENT,
             quantity: Number(quantity.value),
           }),
         });
@@ -1471,7 +1445,7 @@ const slicerPricingConfigured = configuredSlicerMaterials.length > 0;
       }
     });
 
-    for (const field of [material, quality, infill, quantity]) {
+    for (const field of [material, quality, quantity]) {
       const updateEstimate = () => {
         invalidateSlicerPricing();
         renderEstimate();
