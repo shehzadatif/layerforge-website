@@ -8,6 +8,7 @@ import ProductVariantSelector from "../../features/shop/components/ProductConfig
 import { getBulkDiscountConfig } from "../../lib/bulkDiscountServer";
 import {
   buildProductStructuredData,
+  isGoogleMerchantEligible,
   serializeJsonLd,
   toMerchantListing,
 } from "../../lib/googleMerchant";
@@ -81,9 +82,10 @@ const configuredSiteUrl = import.meta.env.PUBLIC_SITE_URL
   .replace(/\/+$/, "");
 const siteUrl = configuredSiteUrl || Astro.url.origin;
 const merchantListing = toMerchantListing(product, siteUrl, publicImageBase);
-const productStructuredData = merchantListing
-  ? serializeJsonLd(buildProductStructuredData(merchantListing))
-  : null;
+const productStructuredData =
+  merchantListing && isGoogleMerchantEligible(product)
+    ? serializeJsonLd(buildProductStructuredData(merchantListing))
+    : null;
 
 const storefrontProduct = {
   ...product,
