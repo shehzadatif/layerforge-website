@@ -8,6 +8,7 @@ import {
   convertPaidQuoteToOrder,
   type CompletedOrder,
 } from "../../lib/quoteToOrder";
+import { getPaidSessionAmounts } from "../../lib/stripeTaxBreakdown";
 
 export const prerender = false;
 
@@ -115,23 +116,12 @@ export const POST: APIRoute = async ({ request }) => {
             ? session.payment_intent
             : (session.payment_intent?.id ?? "");
 
-        const subtotal = Number(session.amount_subtotal ?? 0) / 100;
-
-        const shipping = Number(session.shipping_cost?.amount_total ?? 0) / 100;
-
-        const tax = Number(session.total_details?.amount_tax ?? 0) / 100;
-
-        const total = Number(session.amount_total ?? 0) / 100;
+        const amounts = getPaidSessionAmounts(session);
 
         const { order, newlyPaid } = await markOrderPaid(
           orderId,
           paymentIntent,
-          {
-            subtotal,
-            shipping,
-            tax,
-            total,
-          },
+          amounts,
         );
 
         console.log(`Order ${orderId} marked paid`);

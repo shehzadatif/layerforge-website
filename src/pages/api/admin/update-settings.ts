@@ -12,11 +12,19 @@ const settingKeys = [
   "quote_from_email",
   "order_from_email",
   "reply_to_email",
-  "tax_name",
-  "default_tax_rate",
   "production_lead_days",
   "shipping_lead_days",
 ] as const;
+
+function rateSetting(formData: FormData, key: string, label: string): number {
+  const value = Number(formData.get(key));
+
+  if (!Number.isFinite(value) || value < 0 || value > 100) {
+    throw new Error(`${label} must be between 0 and 100.`);
+  }
+
+  return Math.round(value * 10_000) / 10_000;
+}
 
 function integerSetting(
   formData: FormData,
@@ -76,6 +84,8 @@ export const POST: APIRoute = async ({ request, redirect }) => {
     }
 
     const updatedAt = new Date().toISOString();
+    const gstRate = rateSetting(formData, "gst_rate", "GST rate");
+    const pstRate = rateSetting(formData, "pst_rate", "PST rate");
     const rows: Array<{
       setting_key: string;
       setting_value: string;
@@ -92,6 +102,29 @@ export const POST: APIRoute = async ({ request, redirect }) => {
         formData.get("bulk_discount_enabled") === "on" ? "true" : "false",
       updated_at: updatedAt,
     });
+
+    rows.push(
+      {
+        setting_key: "gst_enabled",
+        setting_value: formData.get("gst_enabled") === "on" ? "true" : "false",
+        updated_at: updatedAt,
+      },
+      {
+        setting_key: "gst_rate",
+        setting_value: String(gstRate),
+        updated_at: updatedAt,
+      },
+      {
+        setting_key: "pst_enabled",
+        setting_value: formData.get("pst_enabled") === "on" ? "true" : "false",
+        updated_at: updatedAt,
+      },
+      {
+        setting_key: "pst_rate",
+        setting_value: String(pstRate),
+        updated_at: updatedAt,
+      },
+    );
 
     for (const tier of tierSettings) {
       rows.push(

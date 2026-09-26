@@ -20,6 +20,9 @@ import {
   getDiscountedUnitPriceCents,
 } from "../../lib/bulkDiscount";
 import { getBulkDiscountConfig } from "../../lib/bulkDiscountServer";
+import { calculateSalesTaxes } from "../../lib/taxConfig";
+import { getSalesTaxConfig } from "../../lib/taxConfigServer";
+import { getCheckoutTaxRateIds } from "../../lib/stripeTaxRates";
 
 export const prerender = false;
 
@@ -395,10 +398,12 @@ export const POST: APIRoute = async ({ request }) => {
     }
 
     const customer = validateCustomer(body?.customer);
-    const [trustedItems, bulkDiscountConfig] = await Promise.all([
-      buildTrustedItems(requestedItems),
-      getBulkDiscountConfig(),
-    ]);
+    const [trustedItems, bulkDiscountConfig, salesTaxConfig] =
+      await Promise.all([
+        buildTrustedItems(requestedItems),
+        getBulkDiscountConfig(),
+        getSalesTaxConfig(),
+      ]);
     const pricing = calculateBulkDiscount(trustedItems, bulkDiscountConfig);
     const checkoutItems = trustedItems.map((item) => {
       const discountedUnitPriceCents = getDiscountedUnitPriceCents(
@@ -440,6 +445,17 @@ export const POST: APIRoute = async ({ request }) => {
         "Shipping is unavailable for the selected province.",
       );
     }
+
+    const shippingCostCents = Math.round(shippingCost * 100);
+    const taxes = calculateSalesTaxes(
+      subtotalCents + shippingCostCents,
+      customer.province,
+      salesTaxConfig,
+    );
+    const taxRateIds = await getCheckoutTaxRateIds(
+      customer.province,
+      salesTaxConfig,
+    );
 
     const baseUrl = import.meta.env.PUBLIC_SITE_URL?.trim().replace(/\/+$/, "");
 
@@ -496,41 +512,12 @@ export const POST: APIRoute = async ({ request }) => {
     const session = await stripe.checkout.sessions.create({
       mode: "payment",
       customer: stripeCustomer.id,
-      automatic_tax: {
-        enabled: true,
-      },
       custom_text: {
         submit: {
           message:
             "Final sale: By completing payment, you acknowledge that this order is non-refundable, except where a refund is required by applicable law.",
         },
       },
-      shipping_options:
-        customer.deliveryMethod === "pickup"
-          ? [
-              {
-                shipping_rate_data: {
-                  display_name: "Local Pickup",
-                  type: "fixed_amount",
-                  fixed_amount: {
-                    amount: 0,
-                    currency: "cad",
-                  },
-                },
-              },
-            ]
-          : [
-              {
-                shipping_rate_data: {
-                  display_name: `Shipping to ${customer.province}`,
-                  type: "fixed_amount",
-                  fixed_amount: {
-                    amount: Math.round(shippingCost * 100),
-                    currency: "cad",
-                  },
-                },
-              },
-            ],
       billing_address_collection: "required",
       metadata: {
         orderId: order.id,
@@ -543,35 +530,61 @@ export const POST: APIRoute = async ({ request }) => {
         originalSubtotalCents: String(pricing.subtotalCents),
         totalItemQuantity: String(pricing.totalQuantity),
         eligibleItemQuantity: String(pricing.eligibleQuantity),
+        taxCalculationVersion: "admin-config-v1",
+        merchandiseSubtotalCents: String(subtotalCents),
+        shippingCents: String(shippingCostCents),
+        gstRate: String(taxes.gstRate),
+        gstAmountCents: String(taxes.gstAmountCents),
+        pstRate: String(taxes.pstRate),
+        pstAmountCents: String(taxes.pstAmountCents),
         ...(estimatedReadyDate
           ? {
               estimatedReadyDate: estimatedReadyDate.toISOString().slice(0, 10),
             }
           : {}),
       },
-      line_items: checkoutItems.map((item) => ({
-        price_data: {
-          currency: "cad",
-          product_data: {
-            name: item.variantName
-              ? `${item.name} — ${item.variantName}`
-              : item.name,
-            description: [
-              item.materialName,
-              item.productionDays
-                ? `${formatProductionDuration(item.productionDays)} production`
-                : "",
-              pricing.discountPercentage > 0 && item.bulkDiscountEligible
-                ? `${pricing.discountPercentage}% bulk discount applied`
-                : "",
-            ]
-              .filter(Boolean)
-              .join(" · "),
+      line_items: [
+        ...checkoutItems.map((item) => ({
+          price_data: {
+            currency: "cad" as const,
+            product_data: {
+              name: item.variantName
+                ? `${item.name} — ${item.variantName}`
+                : item.name,
+              description: [
+                item.materialName,
+                item.productionDays
+                  ? `${formatProductionDuration(item.productionDays)} production`
+                  : "",
+                pricing.discountPercentage > 0 && item.bulkDiscountEligible
+                  ? `${pricing.discountPercentage}% bulk discount applied`
+                  : "",
+              ]
+                .filter(Boolean)
+                .join(" · "),
+            },
+            unit_amount: item.unitPriceCents,
           },
-          unit_amount: item.unitPriceCents,
-        },
-        quantity: item.quantity,
-      })),
+          quantity: item.quantity,
+          tax_rates: taxRateIds,
+        })),
+        ...(shippingCostCents > 0
+          ? [
+              {
+                price_data: {
+                  currency: "cad" as const,
+                  product_data: {
+                    name: `Shipping to ${customer.province}`,
+                    description: "Flat-rate shipping",
+                  },
+                  unit_amount: shippingCostCents,
+                },
+                quantity: 1,
+                tax_rates: taxRateIds,
+              },
+            ]
+          : []),
+      ],
       success_url: `${baseUrl}/checkout/success?session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${baseUrl}/checkout/cancel`,
     });

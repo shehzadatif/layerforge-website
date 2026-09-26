@@ -16,12 +16,21 @@ import {
   getDiscountedUnitPriceCents,
   type BulkDiscountConfig,
 } from "../../../lib/bulkDiscount";
+import {
+  calculateSalesTaxes,
+  formatTaxRate,
+  type SalesTaxConfig,
+} from "../../../lib/taxConfig";
 
 interface Props {
   bulkDiscountConfig: BulkDiscountConfig;
+  salesTaxConfig: SalesTaxConfig;
 }
 
-export default function CheckoutPage({ bulkDiscountConfig }: Props) {
+export default function CheckoutPage({
+  bulkDiscountConfig,
+  salesTaxConfig,
+}: Props) {
   const cart = getCart();
   const [termsAccepted, setTermsAccepted] = useState(false);
 
@@ -36,7 +45,13 @@ export default function CheckoutPage({ bulkDiscountConfig }: Props) {
     form.deliveryMethod,
     form.province as Province,
   );
-  const totalBeforeTax = pricing.discountedSubtotalCents / 100 + shippingCost;
+  const taxableAmountCents =
+    pricing.discountedSubtotalCents + Math.round(shippingCost * 100);
+  const taxes = calculateSalesTaxes(
+    taxableAmountCents,
+    form.province,
+    salesTaxConfig,
+  );
   const productionDays = getOrderProductionDays(cart);
   const estimatedReadyDate = formatEstimatedReadyDate(
     new Date(),
@@ -258,9 +273,20 @@ export default function CheckoutPage({ bulkDiscountConfig }: Props) {
           </div>
 
           <div className="mb-3 flex justify-between gap-4">
-            <span>PST (7%)</span>
-            <span className="text-right text-slate-500">
-              Calculated at secure checkout for BC orders
+            <span>GST ({formatTaxRate(salesTaxConfig.gstRate)}%)</span>
+            <span>
+              {taxes.gstRate > 0
+                ? `CAD $${(taxes.gstAmountCents / 100).toFixed(2)}`
+                : "Not charged"}
+            </span>
+          </div>
+
+          <div className="mb-3 flex justify-between gap-4">
+            <span>PST ({formatTaxRate(salesTaxConfig.pstRate)}%)</span>
+            <span className="text-right">
+              {taxes.pstRate > 0
+                ? `CAD $${(taxes.pstAmountCents / 100).toFixed(2)}`
+                : "Not applicable"}
             </span>
           </div>
 
@@ -293,14 +319,14 @@ export default function CheckoutPage({ bulkDiscountConfig }: Props) {
           ) : null}
 
           <div className="flex justify-between text-2xl font-bold">
-            <span>Total before PST</span>
-            <span>CAD ${totalBeforeTax.toFixed(2)}</span>
+            <span>Total</span>
+            <span>CAD ${(taxes.totalCents / 100).toFixed(2)}</span>
           </div>
 
           <p className="mt-4 text-sm leading-6 text-slate-500">
             {form.deliveryMethod === "pickup"
-              ? `Pickup is free in ${PICKUP_AREA_SHORT}. We'll email the exact address and instructions when your order is ready. BC PST (7%) is calculated securely in Stripe Checkout.`
-              : "Shipping is based on the province selected in your delivery address. BC PST (7%) is calculated securely in Stripe Checkout for orders taxable in British Columbia."}
+              ? `Pickup is free in ${PICKUP_AREA_SHORT}. Applicable taxes are shown separately above and will be itemized on your paid invoice.`
+              : "Applicable taxes are shown separately above and will be itemized on your paid invoice."}
           </p>
 
           <label className="mt-6 flex cursor-pointer items-start gap-3 rounded-xl border-2 border-yellow-400 bg-yellow-50 p-4 text-sm leading-6 text-slate-800">

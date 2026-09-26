@@ -12,6 +12,7 @@ import {
   getOrderProductionDays,
   normalizeProductionDays,
 } from "./productionEstimate";
+import { getPaidSessionAmounts } from "./stripeTaxBreakdown";
 
 export interface CompletedOrder {
   id: string;
@@ -27,6 +28,10 @@ export interface CompletedOrder {
   postal_code?: string;
   subtotal: number;
   shipping: number;
+  gst_rate?: number;
+  gst_amount?: number;
+  pst_rate?: number;
+  pst_amount?: number;
   tax: number;
   created_at: string;
   total: number;
@@ -100,13 +105,7 @@ export async function convertPaidQuoteToOrder(
 
   const address = customerDetails?.address;
 
-  const subtotal = Number(session.amount_subtotal ?? 0) / 100;
-
-  const shipping = Number(session.shipping_cost?.amount_total ?? 0) / 100;
-
-  const tax = Number(session.total_details?.amount_tax ?? 0) / 100;
-
-  const total = Number(session.amount_total ?? 0) / 100;
+  const amounts = getPaidSessionAmounts(session);
 
   const paymentIntent =
     typeof session.payment_intent === "string"
@@ -142,10 +141,14 @@ export async function convertPaidQuoteToOrder(
 
       material_summary: quote.material ?? "",
 
-      subtotal,
-      shipping,
-      tax,
-      total,
+      subtotal: amounts.subtotal,
+      shipping: amounts.shipping,
+      gst_rate: amounts.gstRate,
+      gst_amount: amounts.gstAmount,
+      pst_rate: amounts.pstRate,
+      pst_amount: amounts.pstAmount,
+      tax: amounts.tax,
+      total: amounts.total,
 
       payment_status: "Paid",
       order_status: ORDER_STATUS.NEW,

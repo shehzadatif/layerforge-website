@@ -10,6 +10,7 @@ import {
   formatEstimatedReadyDate,
   getOrderProductionDays,
 } from "./productionEstimate";
+import { formatTaxRate } from "./taxConfig";
 
 type InvoiceOrder = {
   order_number: number;
@@ -24,6 +25,10 @@ type InvoiceOrder = {
   postal_code?: string;
   subtotal: number;
   shipping: number;
+  gst_rate?: number;
+  gst_amount?: number;
+  pst_rate?: number;
+  pst_amount?: number;
   tax: number;
   total: number;
   created_at: string;
@@ -223,10 +228,7 @@ export async function generateInvoicePdf(
 
   if (order.phone) {
     y -= 16;
-    drawText(
-      `Phone / Cell: ${formatPhoneNumber(order.phone)}`,
-      LEFT_MARGIN,
-    );
+    drawText(`Phone / Cell: ${formatPhoneNumber(order.phone)}`, LEFT_MARGIN);
   }
 
   const payerName = String(order.payer_name ?? "").trim();
@@ -313,10 +315,35 @@ export async function generateInvoicePdf(
 
   y -= 20;
 
-  drawText("Tax", 390, 11, bold);
-  drawText(formatCurrency(order.tax), 490, 11);
+  const gstRate = Number(order.gst_rate ?? 0);
+  const gstAmount = Number(order.gst_amount ?? 0);
+  const pstRate = Number(order.pst_rate ?? 0);
+  const pstAmount = Number(order.pst_amount ?? 0);
+  const hasTaxBreakdown =
+    gstRate > 0 || gstAmount > 0 || pstRate > 0 || pstAmount > 0;
 
-  y -= 25;
+  if (hasTaxBreakdown) {
+    if (gstRate > 0 || gstAmount > 0) {
+      drawText(`GST (${formatTaxRate(gstRate)}%)`, 390, 11, bold);
+      drawText(formatCurrency(gstAmount), 490, 11);
+
+      y -= 20;
+    }
+
+    if (pstRate > 0 || pstAmount > 0) {
+      drawText(`PST (${formatTaxRate(pstRate)}%)`, 390, 11, bold);
+      drawText(formatCurrency(pstAmount), 490, 11);
+
+      y -= 20;
+    }
+  } else {
+    drawText("Tax", 390, 11, bold);
+    drawText(formatCurrency(order.tax), 490, 11);
+
+    y -= 20;
+  }
+
+  y -= 5;
 
   page.drawLine({
     start: {
@@ -349,7 +376,7 @@ export async function generateInvoicePdf(
   y -= 22;
 
   drawText(
-    "Taxes and shipping charges, where applicable, were calculated during secure checkout.",
+    "GST, PST, and shipping charges are itemized above where applicable.",
     LEFT_MARGIN,
     9,
   );

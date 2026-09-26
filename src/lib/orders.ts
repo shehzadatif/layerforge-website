@@ -32,10 +32,7 @@ export interface OrderItem {
 /**
  * Create a new order
  */
-export async function createOrder(
-  customer: CustomerInfo,
-  subtotal: number
-) {
+export async function createOrder(customer: CustomerInfo, subtotal: number) {
   const trackingToken = generateTrackingToken();
 
   const { data, error } = await supabaseAdmin
@@ -79,10 +76,7 @@ export async function createOrder(
 /**
  * Save order items
  */
-export async function createOrderItems(
-  orderId: string,
-  items: OrderItem[]
-) {
+export async function createOrderItems(orderId: string, items: OrderItem[]) {
   const rows = items.map((item) => ({
     order_id: orderId,
     product_id: item.id,
@@ -96,9 +90,7 @@ export async function createOrderItems(
     production_days: item.productionDays ?? 0,
   }));
 
-  const { error } = await supabaseAdmin
-    .from("order_items")
-    .insert(rows);
+  const { error } = await supabaseAdmin.from("order_items").insert(rows);
 
   if (error) throw error;
 }
@@ -106,10 +98,7 @@ export async function createOrderItems(
 /**
  * Save Stripe Checkout Session ID
  */
-export async function updateStripeSession(
-  orderId: string,
-  sessionId: string
-) {
+export async function updateStripeSession(orderId: string, sessionId: string) {
   const { error } = await supabaseAdmin
     .from("orders")
     .update({
@@ -129,6 +118,10 @@ export async function markOrderPaid(
   amounts: {
     subtotal: number;
     shipping: number;
+    gstRate: number;
+    gstAmount: number;
+    pstRate: number;
+    pstAmount: number;
     tax: number;
     total: number;
   },
@@ -140,15 +133,21 @@ export async function markOrderPaid(
       stripe_payment_intent: paymentIntent,
       subtotal: amounts.subtotal,
       shipping: amounts.shipping,
+      gst_rate: amounts.gstRate,
+      gst_amount: amounts.gstAmount,
+      pst_rate: amounts.pstRate,
+      pst_amount: amounts.pstAmount,
       tax: amounts.tax,
       total: amounts.total,
     })
     .eq("id", orderId)
     .neq("payment_status", "Paid")
-    .select(`
+    .select(
+      `
       *,
       order_items(*)
-    `)
+    `,
+    )
     .maybeSingle();
 
   if (error) throw error;
@@ -160,15 +159,16 @@ export async function markOrderPaid(
     };
   }
 
-  const { data: existingOrder, error: existingOrderError } =
-    await supabaseAdmin
-      .from("orders")
-      .select(`
+  const { data: existingOrder, error: existingOrderError } = await supabaseAdmin
+    .from("orders")
+    .select(
+      `
         *,
         order_items(*)
-      `)
-      .eq("id", orderId)
-      .single();
+      `,
+    )
+    .eq("id", orderId)
+    .single();
 
   if (existingOrderError) throw existingOrderError;
 
@@ -241,10 +241,12 @@ export async function getNewPaidOrderCount() {
 export async function getOrder(id: string) {
   const { data, error } = await supabaseAdmin
     .from("orders")
-    .select(`
+    .select(
+      `
       *,
       order_items(*)
-    `)
+    `,
+    )
     .eq("id", id)
     .single();
 

@@ -7,6 +7,7 @@ import {
   formatProductionDuration,
   getOrderProductionDays,
 } from "../../../lib/productionEstimate";
+import { formatTaxRate } from "../../../lib/taxConfig";
 
 const { id } = Astro.params;
 
@@ -15,6 +16,12 @@ if (!id) {
 }
 
 const order = await getOrder(id);
+const gstRate = Number(order.gst_rate ?? 0);
+const gstAmount = Number(order.gst_amount ?? 0);
+const pstRate = Number(order.pst_rate ?? 0);
+const pstAmount = Number(order.pst_amount ?? 0);
+const hasTaxBreakdown =
+  gstRate > 0 || gstAmount > 0 || pstRate > 0 || pstAmount > 0;
 
 const baseUrl =
   import.meta.env.PUBLIC_SITE_URL
@@ -513,13 +520,30 @@ const estimatedReadyDate = formatEstimatedReadyDate(
       </span>
     </div>
 
-    <div class="mb-4 flex justify-between">
-      <span>Tax</span>
+    {
+      hasTaxBreakdown ? (
+        <>
+          {(gstRate > 0 || gstAmount > 0) && (
+            <div class="mb-4 flex justify-between">
+              <span>GST ({formatTaxRate(gstRate)}%)</span>
+              <span>CAD ${gstAmount.toFixed(2)}</span>
+            </div>
+          )}
 
-      <span>
-        CAD ${Number(order.tax ?? 0).toFixed(2)}
-      </span>
-    </div>
+          {(pstRate > 0 || pstAmount > 0) && (
+            <div class="mb-4 flex justify-between">
+              <span>PST ({formatTaxRate(pstRate)}%)</span>
+              <span>CAD ${pstAmount.toFixed(2)}</span>
+            </div>
+          )}
+        </>
+      ) : (
+        <div class="mb-4 flex justify-between">
+          <span>Tax</span>
+          <span>CAD ${Number(order.tax ?? 0).toFixed(2)}</span>
+        </div>
+      )
+    }
 
     <hr class="my-6" />
 
