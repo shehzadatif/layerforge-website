@@ -215,6 +215,27 @@ export async function getOrders() {
 }
 
 /**
+ * Count paid orders that have not entered production yet.
+ *
+ * Pending checkout records are intentionally excluded so the admin badge only
+ * represents confirmed customer orders.
+ */
+export async function getNewPaidOrderCount() {
+  const { count, error } = await supabaseAdmin
+    .from("orders")
+    .select("id", {
+      count: "exact",
+      head: true,
+    })
+    .eq("payment_status", "Paid")
+    .eq("order_status", ORDER_STATUS.NEW);
+
+  if (error) throw error;
+
+  return count ?? 0;
+}
+
+/**
  * Get one order
  */
 export async function getOrder(id: string) {

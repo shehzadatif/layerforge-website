@@ -1,5 +1,6 @@
 ---
 import "../styles/global.css";
+import { getNewPaidOrderCount } from "../lib/orders";
 
 const {
   title = "Layer Forge Canada Admin",
@@ -7,6 +8,17 @@ const {
 } = Astro.props;
 
 const user = Astro.locals.user;
+
+let newOrderCount = 0;
+
+try {
+  newOrderCount = await getNewPaidOrderCount();
+} catch (error) {
+  console.error("Unable to load the new-order badge count.", error);
+}
+
+const newOrderBadgeLabel =
+  newOrderCount === 1 ? "1 new order" : `${newOrderCount} new orders`;
 ---
 
 <!DOCTYPE html>
@@ -74,13 +86,26 @@ const user = Astro.locals.user;
 
           <a
             href="/admin/orders"
+            aria-label={`Orders${newOrderCount > 0 ? `, ${newOrderBadgeLabel}` : ""}`}
             class={`block rounded-lg px-4 py-3 transition ${
               active === "orders"
                 ? "bg-yellow-400 font-semibold text-slate-900"
                 : "text-white hover:bg-slate-700"
             }`}
           >
-            🛒 Orders
+            <span class="flex items-center justify-between gap-3">
+              <span>🛒 Orders</span>
+              {
+                newOrderCount > 0 && (
+                  <span
+                    class="inline-flex min-w-6 items-center justify-center rounded-full bg-red-500 px-1.5 py-0.5 text-xs font-bold leading-5 text-white shadow-sm ring-2 ring-white/20"
+                    title={newOrderBadgeLabel}
+                  >
+                    {newOrderCount > 99 ? "99+" : newOrderCount}
+                  </span>
+                )
+              }
+            </span>
           </a>
 
           <a
