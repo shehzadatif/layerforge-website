@@ -29,10 +29,20 @@ export interface OrderItem {
   productionDays?: number;
 }
 
+export interface OrderShippingSelection {
+  carrier: string;
+  service: string;
+  serviceName: string;
+}
+
 /**
  * Create a new order
  */
-export async function createOrder(customer: CustomerInfo, subtotal: number) {
+export async function createOrder(
+  customer: CustomerInfo,
+  subtotal: number,
+  shippingSelection?: OrderShippingSelection,
+) {
   const trackingToken = generateTrackingToken();
 
   const { data, error } = await supabaseAdmin
@@ -54,6 +64,10 @@ export async function createOrder(customer: CustomerInfo, subtotal: number) {
       unit: customer.unit ?? "",
 
       delivery_method: customer.deliveryMethod,
+
+      shipping_carrier: shippingSelection?.carrier ?? null,
+      shipping_service: shippingSelection?.service ?? null,
+      shipping_service_name: shippingSelection?.serviceName ?? null,
 
       material_summary: customer.materialSummary ?? "",
 

@@ -11,6 +11,8 @@ export interface ShippingDestination {
   city: string;
   provinceCode: Province;
   postalCode: string;
+  email?: string;
+  phone?: string;
 }
 
 export interface ShippingRate {
@@ -21,6 +23,33 @@ export interface ShippingRate {
   currency: "CAD";
   estimatedDays?: number;
   source: "stallion" | "fallback";
+}
+
+export interface StallionPackage {
+  weight: number;
+  length: number;
+  width: number;
+  height: number;
+}
+
+export interface StallionLabelRequest {
+  destination: ShippingDestination;
+  orderReference: string;
+  package: StallionPackage;
+  packageContents: string;
+  service: string;
+}
+
+export interface StallionLabelResult {
+  shipmentId: string;
+  shipCode: string;
+  trackingNumber: string;
+  labelUrl: string;
+  carrier: string;
+  service: string;
+  serviceName: string;
+  costCents: number;
+  currency: "CAD";
 }
 
 export class StallionError extends Error {
@@ -35,6 +64,24 @@ export class StallionError extends Error {
 function positiveNumber(value: string | undefined, fallback: number): number {
   const parsed = Number(value);
   return Number.isFinite(parsed) && parsed > 0 ? parsed : fallback;
+}
+
+export function getEstimatedShipmentWeight(totalQuantity: number): number {
+  const itemWeight = positiveNumber(
+    import.meta.env.STALLION_DEFAULT_ITEM_WEIGHT_LBS,
+    DEFAULT_ITEM_WEIGHT_LBS,
+  );
+  const packagingWeight = positiveNumber(
+    import.meta.env.STALLION_PACKAGING_WEIGHT_LBS,
+    DEFAULT_PACKAGING_WEIGHT_LBS,
+  );
+
+  return Math.max(
+    0.1,
+    Math.round(
+      (packagingWeight + itemWeight * Math.max(0, totalQuantity)) * 100,
+    ) / 100,
+  );
 }
 
 function text(value: unknown): string {
@@ -118,18 +165,7 @@ export async function getShippingRates(
     return [fallbackRate(destination.provinceCode)];
   }
 
-  const itemWeight = positiveNumber(
-    import.meta.env.STALLION_DEFAULT_ITEM_WEIGHT_LBS,
-    DEFAULT_ITEM_WEIGHT_LBS,
-  );
-  const packagingWeight = positiveNumber(
-    import.meta.env.STALLION_PACKAGING_WEIGHT_LBS,
-    DEFAULT_PACKAGING_WEIGHT_LBS,
-  );
-  const weight = Math.max(
-    0.1,
-    Math.round((packagingWeight + itemWeight * totalQuantity) * 100) / 100,
-  );
+  const weight = getEstimatedShipmentWeight(totalQuantity);
   const baseUrl = (
     import.meta.env.STALLION_BASE_URL?.trim() || DEFAULT_BASE_URL
   ).replace(/\/+$/, "");
@@ -211,4 +247,271 @@ export async function getShippingRates(
   } finally {
     clearTimeout(timeout);
   }
+}
+
+function stallionConfig(): { token: string; baseUrl: string } {
+  const token = import.meta.env.STALLION_TOKEN?.trim();
+
+  if (!token) {
+    throw new StallionError(
+      "Stallion label purchasing is not configured.",
+      503,
+    );
+  }
+
+  return {
+    token,
+    baseUrl: (
+      import.meta.env.STALLION_BASE_URL?.trim() || DEFAULT_BASE_URL
+    ).replace(/\/+$/, ""),
+  };
+}
+
+function stallionError(
+  payload: Record<string, unknown> | null,
+  fallback: string,
+  status: number,
+): StallionError {
+  const error =
+    payload?.error && typeof payload.error === "object"
+      ? (payload.error as Record<string, unknown>)
+      : null;
+
+  return new StallionError(
+    text(error?.message) || fallback,
+    status >= 400 && status < 500 ? status : 502,
+  );
+}
+
+async function idempotencyKey(
+  operation: string,
+  body: unknown,
+): Promise<string> {
+  const encoded = new TextEncoder().encode(JSON.stringify(body));
+  const digest = await crypto.subtle.digest("SHA-256", encoded);
+  const hash = Array.from(new Uint8Array(digest))
+    .map((byte) => byte.toString(16).padStart(2, "0"))
+    .join("");
+
+  return `layerforge-${operation}-${hash}`;
+}
+
+async function stallionJson(
+  url: string,
+  options: RequestInit,
+  fallbackError: string,
+): Promise<Record<string, unknown>> {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 20_000);
+
+  try {
+    const response = await fetch(url, {
+      ...options,
+      signal: controller.signal,
+    });
+    const payload = (await response.json().catch(() => null)) as Record<
+      string,
+      unknown
+    > | null;
+
+    if (!response.ok || !payload) {
+      throw stallionError(payload, fallbackError, response.status);
+    }
+
+    return payload;
+  } catch (error) {
+    if (error instanceof StallionError) throw error;
+
+    if (error instanceof Error && error.name === "AbortError") {
+      throw new StallionError(
+        "Stallion took too long to respond. No additional purchase was attempted.",
+        504,
+      );
+    }
+
+    throw new StallionError(fallbackError);
+  } finally {
+    clearTimeout(timeout);
+  }
+}
+
+export async function createStallionLabel(
+  request: StallionLabelRequest,
+): Promise<StallionLabelResult> {
+  const { token, baseUrl } = stallionConfig();
+  const shipment = {
+    type: "regular",
+    to_address: {
+      name: request.destination.name,
+      address1: request.destination.address1,
+      ...(request.destination.address2
+        ? { address2: request.destination.address2 }
+        : {}),
+      city: request.destination.city,
+      province_code: request.destination.provinceCode,
+      postal_code: request.destination.postalCode,
+      country_code: "CA",
+      ...(request.destination.email
+        ? { email: request.destination.email }
+        : {}),
+      ...(request.destination.phone
+        ? { phone: request.destination.phone }
+        : {}),
+      is_residential: true,
+    },
+    packages: [
+      {
+        weight: request.package.weight,
+        weight_unit: "lbs",
+        length: request.package.length,
+        width: request.package.width,
+        height: request.package.height,
+        size_unit: "in",
+        package_contents: request.packageContents,
+      },
+    ],
+    service: request.service,
+    order_id: request.orderReference,
+  };
+  const createBody = { shipments: [shipment] };
+  const createPayload = await stallionJson(
+    `${baseUrl}/shipments`,
+    {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        Accept: "application/json",
+        "Content-Type": "application/json",
+        "User-Agent": "LayerForgeCanada-Admin/1.0",
+        "Idempotency-Key": await idempotencyKey("shipment", createBody),
+      },
+      body: JSON.stringify(createBody),
+    },
+    "Unable to create the Stallion shipment.",
+  );
+  const createData =
+    createPayload.data && typeof createPayload.data === "object"
+      ? (createPayload.data as Record<string, unknown>)
+      : null;
+  const shipments = Array.isArray(createData?.shipments)
+    ? createData.shipments
+    : [];
+  const created =
+    shipments[0] && typeof shipments[0] === "object"
+      ? (shipments[0] as Record<string, unknown>)
+      : null;
+  const shipmentId = text(created?.id) || String(created?.id ?? "").trim();
+
+  if (!shipmentId) {
+    const errors = Array.isArray(createData?.errors) ? createData.errors : [];
+    const firstError =
+      errors[0] && typeof errors[0] === "object"
+        ? (errors[0] as Record<string, unknown>)
+        : null;
+
+    throw new StallionError(
+      text(firstError?.message) || "Stallion did not create the shipment.",
+      422,
+    );
+  }
+
+  const ratesPayload = await stallionJson(
+    `${baseUrl}/rates/${encodeURIComponent(shipmentId)}?timeout=12`,
+    {
+      method: "GET",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        Accept: "application/json",
+        "User-Agent": "LayerForgeCanada-Admin/1.0",
+      },
+    },
+    "Unable to verify the Stallion shipping service.",
+  );
+  const rates = (Array.isArray(ratesPayload.data) ? ratesPayload.data : [])
+    .map(parseRate)
+    .filter((rate): rate is ShippingRate => rate !== null)
+    .sort((left, right) => left.amountCents - right.amountCents);
+  const selectedRate =
+    request.service === "cheapest_tracked"
+      ? (rates[0] ?? null)
+      : (rates.find((rate) => rate.service === request.service) ?? null);
+
+  if (!selectedRate) {
+    throw new StallionError(
+      "The shipping service selected at checkout is no longer available. Refresh the order before purchasing a label.",
+      409,
+    );
+  }
+
+  const labelBody = {
+    service: selectedRate.service,
+    label_format: "pdf",
+  };
+  const labelPayload = await stallionJson(
+    `${baseUrl}/labels/${encodeURIComponent(shipmentId)}`,
+    {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        Accept: "application/json",
+        "Content-Type": "application/json",
+        "User-Agent": "LayerForgeCanada-Admin/1.0",
+        "Idempotency-Key": await idempotencyKey(
+          `label-${shipmentId}`,
+          labelBody,
+        ),
+      },
+      body: JSON.stringify(labelBody),
+    },
+    "Unable to purchase the Stallion label.",
+  );
+  const label =
+    labelPayload.data && typeof labelPayload.data === "object"
+      ? (labelPayload.data as Record<string, unknown>)
+      : labelPayload;
+  const labelUrl = text(label.label_url);
+  const trackingNumber = text(label.tracking_number);
+  const shipCode = text(label.ship_code);
+  const parsedUrl = (() => {
+    try {
+      return new URL(labelUrl);
+    } catch {
+      return null;
+    }
+  })();
+
+  if (!parsedUrl || parsedUrl.protocol !== "https:" || !trackingNumber) {
+    throw new StallionError(
+      "Stallion purchased the shipment but did not return a printable label. Check the shipment in Stallion before retrying.",
+      502,
+    );
+  }
+
+  const labelRate =
+    label.rate && typeof label.rate === "object"
+      ? (label.rate as Record<string, unknown>)
+      : null;
+  const chargedTotal = numberValue(labelRate?.total);
+  const currency = text(labelRate?.currency).toUpperCase() || "CAD";
+
+  if (currency !== "CAD") {
+    throw new StallionError(
+      "Stallion returned an unsupported label currency.",
+      502,
+    );
+  }
+
+  return {
+    shipmentId,
+    shipCode,
+    trackingNumber,
+    labelUrl: parsedUrl.toString(),
+    carrier: text(labelRate?.carrier) || selectedRate.carrier,
+    service: text(labelRate?.service) || selectedRate.service,
+    serviceName: text(labelRate?.service_name) || selectedRate.serviceName,
+    costCents: Math.round(
+      (chargedTotal ?? selectedRate.amountCents / 100) * 100,
+    ),
+    currency: "CAD",
+  };
 }
