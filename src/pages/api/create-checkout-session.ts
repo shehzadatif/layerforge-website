@@ -8,6 +8,11 @@ import {
   type CustomerInfo,
 } from "../../lib/orders";
 import { getShippingCost, SHIPPING_RATES } from "../../lib/shipping";
+import {
+  getShippingRates,
+  StallionError,
+  type ShippingRate,
+} from "../../lib/stallion";
 import { stripe } from "../../lib/stripe";
 import { supabaseAdmin } from "../../lib/supabaseAdmin";
 import {
@@ -398,6 +403,23 @@ export const POST: APIRoute = async ({ request }) => {
     }
 
     const customer = validateCustomer(body?.customer);
+    const requestedShippingService = textValue(
+      body?.shippingRate?.service,
+      "Shipping service",
+      120,
+      customer.deliveryMethod === "shipping",
+    );
+    const requestedShippingAmountCents = Number(
+      body?.shippingRate?.amountCents,
+    );
+
+    if (
+      customer.deliveryMethod === "shipping" &&
+      (!Number.isInteger(requestedShippingAmountCents) ||
+        requestedShippingAmountCents <= 0)
+    ) {
+      throw new CheckoutRequestError("Select a valid shipping rate.");
+    }
     const [trustedItems, bulkDiscountConfig, salesTaxConfig] =
       await Promise.all([
         buildTrustedItems(requestedItems),
@@ -432,10 +454,50 @@ export const POST: APIRoute = async ({ request }) => {
       ...new Set(checkoutItems.map((item) => item.materialName)),
     ].join(", ");
 
-    const shippingCost = getShippingCost(
-      customer.deliveryMethod,
-      customer.province as keyof typeof SHIPPING_RATES,
-    );
+    let selectedShippingRate: ShippingRate | null = null;
+
+    if (customer.deliveryMethod === "shipping") {
+      const shippingRates = await getShippingRates(
+        {
+          name: `${customer.firstName} ${customer.lastName}`,
+          address1: customer.address,
+          address2: customer.unit || undefined,
+          city: customer.city,
+          provinceCode: customer.province as keyof typeof SHIPPING_RATES,
+          postalCode: customer.postalCode,
+        },
+        checkoutItems.reduce((total, item) => total + item.quantity, 0),
+      );
+
+      selectedShippingRate =
+        shippingRates.find(
+          (rate) => rate.service === requestedShippingService,
+        ) ?? null;
+
+      if (!selectedShippingRate) {
+        throw new CheckoutRequestError(
+          "That shipping rate is no longer available. Please refresh the rates and choose again.",
+          409,
+          "SHIPPING_RATE_CHANGED",
+        );
+      }
+
+      if (selectedShippingRate.amountCents !== requestedShippingAmountCents) {
+        throw new CheckoutRequestError(
+          "The shipping price has changed. Please refresh the rates and choose again.",
+          409,
+          "SHIPPING_RATE_CHANGED",
+        );
+      }
+    }
+
+    const shippingCost =
+      selectedShippingRate?.amountCents != null
+        ? selectedShippingRate.amountCents / 100
+        : getShippingCost(
+            customer.deliveryMethod,
+            customer.province as keyof typeof SHIPPING_RATES,
+          );
 
     if (
       customer.deliveryMethod === "shipping" &&
@@ -533,6 +595,11 @@ export const POST: APIRoute = async ({ request }) => {
         taxCalculationVersion: "admin-config-v1",
         merchandiseSubtotalCents: String(subtotalCents),
         shippingCents: String(shippingCostCents),
+        shippingService: selectedShippingRate?.service ?? "pickup",
+        shippingCarrier: selectedShippingRate?.carrier ?? "pickup",
+        shippingServiceName:
+          selectedShippingRate?.serviceName ?? "Local pickup",
+        shippingRateSource: selectedShippingRate?.source ?? "pickup",
         gstRate: String(taxes.gstRate),
         gstAmountCents: String(taxes.gstAmountCents),
         pstRate: String(taxes.pstRate),
@@ -575,7 +642,9 @@ export const POST: APIRoute = async ({ request }) => {
                   currency: "cad" as const,
                   product_data: {
                     name: `Shipping to ${customer.province}`,
-                    description: "Flat-rate shipping",
+                    description: selectedShippingRate
+                      ? `${selectedShippingRate.carrier} — ${selectedShippingRate.serviceName}`
+                      : "Shipping",
                   },
                   unit_amount: shippingCostCents,
                 },
@@ -600,6 +669,16 @@ export const POST: APIRoute = async ({ request }) => {
         {
           error: error.message,
           code: error.code,
+        },
+        { status: error.status },
+      );
+    }
+
+    if (error instanceof StallionError) {
+      return Response.json(
+        {
+          error: error.message,
+          code: "SHIPPING_RATE_FAILED",
         },
         { status: error.status },
       );

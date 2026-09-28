@@ -1,10 +1,11 @@
-import { useMemo, useState } from "react";
-import { getShippingCost, type Province } from "../../../lib/shipping";
+import { useEffect, useMemo, useState } from "react";
+import type { ShippingRate } from "../../../lib/stallion";
 import { useCheckout } from "../hooks/useCheckout";
 import { getCart } from "../../cart/cartStorage";
 import ContactForm from "./ContactForm";
 import DeliveryMethod from "./DeliveryMethod";
 import ShippingAddress from "./ShippingAddress";
+import ShippingRatePicker from "./ShippingRatePicker";
 import { PICKUP_AREA, PICKUP_AREA_SHORT } from "../pickupDetails";
 import {
   formatEstimatedReadyDate,
@@ -33,6 +34,8 @@ export default function CheckoutPage({
 }: Props) {
   const cart = getCart();
   const [termsAccepted, setTermsAccepted] = useState(false);
+  const [selectedShippingRate, setSelectedShippingRate] =
+    useState<ShippingRate | null>(null);
 
   const { form, errors, isSubmitting, setIsSubmitting, updateField, validate } =
     useCheckout();
@@ -41,10 +44,10 @@ export default function CheckoutPage({
     () => calculateBulkDiscount(cart, bulkDiscountConfig),
     [cart, bulkDiscountConfig],
   );
-  const shippingCost = getShippingCost(
-    form.deliveryMethod,
-    form.province as Province,
-  );
+  const shippingCost =
+    form.deliveryMethod === "pickup"
+      ? 0
+      : (selectedShippingRate?.amountCents ?? 0) / 100;
   const taxableAmountCents =
     pricing.discountedSubtotalCents + Math.round(shippingCost * 100);
   const taxes = calculateSalesTaxes(
@@ -58,6 +61,17 @@ export default function CheckoutPage({
     productionDays,
   );
 
+  useEffect(() => {
+    setSelectedShippingRate(null);
+  }, [
+    form.address,
+    form.unit,
+    form.city,
+    form.postalCode,
+    form.province,
+    form.deliveryMethod,
+  ]);
+
   async function handleCheckout() {
     if (cart.length === 0) {
       alert("Your cart is empty.");
@@ -70,6 +84,11 @@ export default function CheckoutPage({
 
     if (!termsAccepted) {
       alert("Please review and accept the Terms & Policies.");
+      return;
+    }
+
+    if (form.deliveryMethod === "shipping" && !selectedShippingRate) {
+      alert("Get shipping rates and choose a service before continuing.");
       return;
     }
 
@@ -88,6 +107,7 @@ export default function CheckoutPage({
         body: JSON.stringify({
           items: cart,
           customer: form,
+          shippingRate: selectedShippingRate,
           termsAccepted,
         }),
       });
@@ -129,11 +149,20 @@ export default function CheckoutPage({
         />
 
         {form.deliveryMethod === "shipping" && (
-          <ShippingAddress
-            form={form}
-            errors={errors}
-            updateField={updateField}
-          />
+          <>
+            <ShippingAddress
+              form={form}
+              errors={errors}
+              updateField={updateField}
+            />
+            <ShippingRatePicker
+              key={`${form.address}|${form.unit}|${form.city}|${form.postalCode}|${form.province}`}
+              customer={form}
+              items={cart}
+              selectedRate={selectedShippingRate}
+              onSelect={setSelectedShippingRate}
+            />
+          </>
         )}
 
         {form.deliveryMethod === "pickup" && (
@@ -268,7 +297,9 @@ export default function CheckoutPage({
             <span className="text-right text-slate-500">
               {form.deliveryMethod === "pickup"
                 ? "Free"
-                : `CAD $${shippingCost.toFixed(2)} (${form.province})`}
+                : selectedShippingRate
+                  ? `CAD $${shippingCost.toFixed(2)} · ${selectedShippingRate.serviceName}`
+                  : "Select a shipping service"}
             </span>
           </div>
 
@@ -358,12 +389,17 @@ export default function CheckoutPage({
 
           <button
             type="submit"
-            disabled={isSubmitting}
+            disabled={
+              isSubmitting ||
+              (form.deliveryMethod === "shipping" && !selectedShippingRate)
+            }
             className="mt-5 w-full rounded-xl bg-yellow-400 py-4 text-lg font-semibold hover:bg-yellow-300 disabled:cursor-not-allowed disabled:opacity-60"
           >
             {isSubmitting
               ? "Preparing Secure Checkout..."
-              : "Continue to Secure Checkout"}
+              : form.deliveryMethod === "shipping" && !selectedShippingRate
+                ? "Choose a Shipping Service"
+                : "Continue to Secure Checkout"}
           </button>
           <p className="mt-4 text-center text-xs text-slate-500">
             Secure checkout powered by Stripe. Your shipping address is entered
