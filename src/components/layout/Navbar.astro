@@ -23,19 +23,16 @@ const services = [
     href: "/uv-printing",
     label: "Custom Branding & Printing",
     description: "Products, signage, and business branding",
-    comingSoon: true,
   },
   {
     href: "/uv-printing#apparel",
     label: "T-Shirt Printing",
     description: "DTF, DTG, and ready-to-press gang sheets",
-    comingSoon: true,
   },
   {
     href: "/uv-printing#stickers-decals",
     label: "Stickers & Decals",
     description: "Custom stickers, labels, and branded decals",
-    comingSoon: true,
   },
 ];
 
@@ -93,11 +90,6 @@ const linkClass = (href: string) =>
                     <span class={`block whitespace-nowrap font-semibold ${isActive(service.href) ? "text-yellow-400" : "text-white"}`}>
                       {service.label}
                     </span>
-                    {service.comingSoon && (
-                      <span class="shrink-0 whitespace-nowrap rounded-full bg-yellow-400 px-2 py-0.5 text-[10px] font-black uppercase tracking-wide text-slate-950">
-                        Coming Soon
-                      </span>
-                    )}
                   </span>
                   <span class="mt-1 block text-sm text-slate-400">{service.description}</span>
                 </a>
@@ -155,11 +147,6 @@ const linkClass = (href: string) =>
               <span class={`block font-semibold ${isActive(service.href) ? "text-yellow-400" : "text-white"}`}>
                 {service.label}
               </span>
-              {service.comingSoon && (
-                <span class="shrink-0 whitespace-nowrap rounded-full bg-yellow-400 px-2 py-0.5 text-[10px] font-black uppercase tracking-wide text-slate-950">
-                  Coming Soon
-                </span>
-              )}
             </span>
             <span class="mt-1 block text-sm text-slate-400">{service.description}</span>
           </a>

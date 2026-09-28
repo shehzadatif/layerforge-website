@@ -312,11 +312,11 @@ export default function QuoteWizard() {
             </p>
 
             <p className="mt-2 text-3xl font-bold text-yellow-600">
-              Coming Soon
+              Calculated After Review
             </p>
 
             <p className="mt-4 text-slate-500">
-              Automatic pricing will be calculated from your uploaded files.
+              We’ll review your files, materials, quantity, and finishing needs before confirming pricing.
             </p>
 
           </div>
