@@ -525,7 +525,17 @@ export const POST: APIRoute = async ({ request }) => {
       throw new Error("Missing PUBLIC_SITE_URL environment variable.");
     }
 
-    const order = await createOrder(customer, subtotal);
+    const order = await createOrder(
+      customer,
+      subtotal,
+      selectedShippingRate
+        ? {
+            carrier: selectedShippingRate.carrier,
+            service: selectedShippingRate.service,
+            serviceName: selectedShippingRate.serviceName,
+          }
+        : undefined,
+    );
     await createOrderItems(order.id, checkoutItems);
 
     const stripeCustomer =

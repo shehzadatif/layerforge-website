@@ -8,6 +8,7 @@ import {
   getOrderProductionDays,
 } from "../../../lib/productionEstimate";
 import { formatTaxRate } from "../../../lib/taxConfig";
+import { getEstimatedShipmentWeight } from "../../../lib/stallion";
 
 const { id } = Astro.params;
 
@@ -44,6 +45,34 @@ const estimatedReadyDate = formatEstimatedReadyDate(
   order.created_at,
   productionDays,
 );
+const totalQuantity = (order.order_items ?? []).reduce(
+  (total: number, item: { quantity?: number }) =>
+    total + Number(item.quantity ?? 0),
+  0,
+);
+const packageWeight = Number(
+  order.package_weight_lbs ?? getEstimatedShipmentWeight(totalQuantity),
+);
+const packageLength = Number(
+  order.package_length_in ??
+    import.meta.env.STALLION_DEFAULT_PACKAGE_LENGTH_IN ??
+    8,
+);
+const packageWidth = Number(
+  order.package_width_in ??
+    import.meta.env.STALLION_DEFAULT_PACKAGE_WIDTH_IN ??
+    6,
+);
+const packageHeight = Number(
+  order.package_height_in ??
+    import.meta.env.STALLION_DEFAULT_PACKAGE_HEIGHT_IN ??
+    4,
+);
+const isShippingOrder =
+  String(order.delivery_method).toLowerCase() === "shipping";
+const hasStallionLabel = Boolean(order.stallion_label_path);
+const shippingService =
+  order.shipping_service || "cheapest_tracked";
 ---
 
 <AdminLayout
@@ -557,6 +586,157 @@ const estimatedReadyDate = formatEstimatedReadyDate(
 
   </div>
 
+  <!-- Stallion Label -->
+
+  {
+    order.payment_status === "Paid" && isShippingOrder && (
+      <div class="mt-8 rounded-2xl border border-yellow-300 bg-yellow-50 p-8 shadow">
+        <div class="flex flex-col gap-6 lg:flex-row lg:items-start lg:justify-between">
+          <div>
+            <h2 class="text-2xl font-bold text-slate-950">
+              Stallion Shipping Label
+            </h2>
+            <p class="mt-2 max-w-3xl text-slate-600">
+              Customer and address details are filled automatically. Confirm the
+              packed parcel measurements before purchasing postage.
+            </p>
+          </div>
+
+          {hasStallionLabel && (
+            <a
+              href={`/api/admin/orders/${order.id}/stallion-label`}
+              target="_blank"
+              rel="noopener noreferrer"
+              class="rounded-xl bg-slate-900 px-6 py-3 text-center font-semibold text-white hover:bg-slate-700"
+            >
+              Print Label
+            </a>
+          )}
+        </div>
+
+        {hasStallionLabel ? (
+          <div class="mt-6 grid gap-4 rounded-xl border border-green-200 bg-white p-5 text-sm md:grid-cols-2 lg:grid-cols-4">
+            <div>
+              <div class="text-slate-500">Service</div>
+              <div class="mt-1 font-semibold">
+                {order.shipping_service_name || order.shipping_service}
+              </div>
+            </div>
+            <div>
+              <div class="text-slate-500">Tracking</div>
+              <div class="mt-1 font-semibold">
+                {order.shipping_tracking_number || "-"}
+              </div>
+            </div>
+            <div>
+              <div class="text-slate-500">Stallion shipment</div>
+              <div class="mt-1 font-semibold">
+                {order.stallion_ship_code || order.stallion_shipment_id || "-"}
+              </div>
+            </div>
+            <div>
+              <div class="text-slate-500">Label cost</div>
+              <div class="mt-1 font-semibold">
+                CAD ${Number(order.stallion_label_cost ?? 0).toFixed(2)}
+              </div>
+            </div>
+          </div>
+        ) : (
+          <>
+            <div class="mt-6 grid gap-5 md:grid-cols-2 lg:grid-cols-5">
+              <label class="block lg:col-span-1">
+                <span class="mb-2 block font-semibold text-slate-700">
+                  Weight (lb)
+                </span>
+                <input
+                  id="stallionWeight"
+                  type="number"
+                  min="0.1"
+                  max="200"
+                  step="0.01"
+                  value={packageWeight}
+                  class="w-full rounded-lg border border-slate-300 bg-white px-4 py-3"
+                />
+              </label>
+              <label class="block">
+                <span class="mb-2 block font-semibold text-slate-700">
+                  Length (in)
+                </span>
+                <input
+                  id="stallionLength"
+                  type="number"
+                  min="0.1"
+                  max="200"
+                  step="0.01"
+                  value={packageLength}
+                  class="w-full rounded-lg border border-slate-300 bg-white px-4 py-3"
+                />
+              </label>
+              <label class="block">
+                <span class="mb-2 block font-semibold text-slate-700">
+                  Width (in)
+                </span>
+                <input
+                  id="stallionWidth"
+                  type="number"
+                  min="0.1"
+                  max="200"
+                  step="0.01"
+                  value={packageWidth}
+                  class="w-full rounded-lg border border-slate-300 bg-white px-4 py-3"
+                />
+              </label>
+              <label class="block">
+                <span class="mb-2 block font-semibold text-slate-700">
+                  Height (in)
+                </span>
+                <input
+                  id="stallionHeight"
+                  type="number"
+                  min="0.1"
+                  max="200"
+                  step="0.01"
+                  value={packageHeight}
+                  class="w-full rounded-lg border border-slate-300 bg-white px-4 py-3"
+                />
+              </label>
+              <label class="block">
+                <span class="mb-2 block font-semibold text-slate-700">
+                  Shipping service
+                </span>
+                <input
+                  id="stallionService"
+                  value={shippingService}
+                  readonly={Boolean(order.shipping_service)}
+                  class="w-full rounded-lg border border-slate-300 bg-white px-4 py-3 read-only:bg-slate-100"
+                />
+              </label>
+            </div>
+
+            {!order.shipping_service && (
+              <p class="mt-3 text-sm text-amber-800">
+                This older order has no saved checkout service. Layerforge will
+                purchase the cheapest currently available tracked service.
+              </p>
+            )}
+
+            <div class="mt-6 flex flex-col gap-3 sm:flex-row sm:items-center">
+              <button
+                id="createStallionLabelButton"
+                type="button"
+                onclick="purchaseStallionLabel()"
+                class="rounded-xl bg-yellow-400 px-7 py-4 font-semibold text-slate-950 hover:bg-yellow-300 disabled:cursor-wait disabled:opacity-60"
+              >
+                Create &amp; Print Stallion Label
+              </button>
+              <p id="stallionLabelStatus" class="text-sm text-slate-600" aria-live="polite"></p>
+            </div>
+          </>
+        )}
+      </div>
+    )
+  }
+
   <!-- Shipping Details -->
 
   <div class="mt-8 rounded-2xl bg-white p-8 shadow">
@@ -580,51 +760,12 @@ const estimatedReadyDate = formatEstimatedReadyDate(
           Carrier
         </label>
 
-        <select
+        <input
           id="shippingCarrier"
+          value={order.shipping_carrier ?? ""}
           class="w-full rounded-lg border px-4 py-3"
-        >
-
-          <option value="">
-            Select carrier
-          </option>
-
-          <option
-            value="Canada Post"
-            selected={order.shipping_carrier === "Canada Post"}
-          >
-            Canada Post
-          </option>
-
-          <option
-            value="UPS"
-            selected={order.shipping_carrier === "UPS"}
-          >
-            UPS
-          </option>
-
-          <option
-            value="Purolator"
-            selected={order.shipping_carrier === "Purolator"}
-          >
-            Purolator
-          </option>
-
-          <option
-            value="FedEx"
-            selected={order.shipping_carrier === "FedEx"}
-          >
-            FedEx
-          </option>
-
-          <option
-            value="DHL"
-            selected={order.shipping_carrier === "DHL"}
-          >
-            DHL
-          </option>
-
-        </select>
+          placeholder="Carrier name"
+        />
 
       </div>
 
@@ -880,6 +1021,89 @@ const estimatedReadyDate = formatEstimatedReadyDate(
         alert(
           "Unable to save shipping details."
         );
+      }
+    };
+
+    window.purchaseStallionLabel = async function () {
+      const fields = {
+        weight: document.getElementById("stallionWeight"),
+        length: document.getElementById("stallionLength"),
+        width: document.getElementById("stallionWidth"),
+        height: document.getElementById("stallionHeight"),
+        service: document.getElementById("stallionService"),
+      };
+      const parcel = {
+        weight: Number(fields.weight?.value ?? 0),
+        length: Number(fields.length?.value ?? 0),
+        width: Number(fields.width?.value ?? 0),
+        height: Number(fields.height?.value ?? 0),
+        service: fields.service?.value.trim() ?? "",
+      };
+
+      if (
+        !parcel.service ||
+        [parcel.weight, parcel.length, parcel.width, parcel.height].some(
+          (value) => !Number.isFinite(value) || value <= 0,
+        )
+      ) {
+        alert("Enter valid package measurements and a shipping service.");
+        return;
+      }
+
+      if (
+        !confirm(
+          "Purchase this Stallion label now? The postage cost will be deducted from your Stallion balance.",
+        )
+      ) {
+        return;
+      }
+
+      const printWindow = window.open("about:blank", "_blank");
+      const button = document.getElementById("createStallionLabelButton");
+      const status = document.getElementById("stallionLabelStatus");
+
+      if (button) button.disabled = true;
+      if (status) status.textContent = "Creating shipment and purchasing label…";
+
+      try {
+        const response = await fetch(
+          `/api/admin/orders/${encodeURIComponent(orderId)}/stallion-label`,
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(parcel),
+          },
+        );
+        const result = await response.json();
+
+        if (!response.ok || !result.success) {
+          printWindow?.close();
+          alert(result.error || "Unable to create the Stallion label.");
+          return;
+        }
+
+        if (printWindow) {
+          printWindow.opener = null;
+          printWindow.location.href = result.labelUrl;
+        } else {
+          window.location.href = result.labelUrl;
+          return;
+        }
+
+        if (status) {
+          status.textContent = `Label ready · ${result.carrier} · ${result.trackingNumber}`;
+        }
+
+        alert(
+          `Label created. Tracking: ${result.trackingNumber}. The printable PDF opened in a new tab.`,
+        );
+        location.reload();
+      } catch (error) {
+        console.error(error);
+        printWindow?.close();
+        alert("Unable to create the Stallion label.");
+      } finally {
+        if (button) button.disabled = false;
       }
     };
 
