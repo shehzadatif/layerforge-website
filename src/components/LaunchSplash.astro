@@ -11,8 +11,8 @@
       alt="Colour-printed tumblers, phone cases, apparel, signs, stickers, labels, and decals"
       class="absolute inset-0 h-full w-full object-cover object-[64%_center] sm:object-center"
     />
-    <div class="absolute inset-0 bg-gradient-to-r from-black via-black/95 to-black/20"></div>
-    <div class="absolute inset-0 bg-gradient-to-t from-black via-black/10 to-black/35"></div>
+    <div class="absolute inset-0 bg-gradient-to-r from-black/95 via-black/75 to-black/5"></div>
+    <div class="absolute inset-0 bg-gradient-to-t from-black/45 via-transparent to-black/15"></div>
 
     <button
       id="full-colour-launch-close"
@@ -37,10 +37,10 @@
         </p>
         <h2
           id="full-colour-launch-title"
-          class="mt-3 text-5xl font-black leading-[0.95] tracking-tight sm:text-6xl lg:text-7xl"
+          class="mt-3 text-5xl font-black leading-[1.08] tracking-tight sm:text-6xl lg:text-7xl"
         >
-          Digital full-colour printing is
-          <span class="text-yellow-400">here.</span>
+          <span class="block">Digital full-colour</span>
+          <span class="block">printing is&nbsp;<span class="text-yellow-400">here.</span></span>
         </h2>
 
         <p class="mt-5 max-w-xl text-lg leading-7 text-slate-200 sm:text-xl sm:leading-8">
@@ -72,13 +72,12 @@
           </a>
         </div>
 
-        <button
-          id="full-colour-launch-continue"
-          type="button"
+        <a
+          href="/"
           class="mt-5 text-sm font-semibold text-slate-300 underline decoration-white/30 underline-offset-4 transition hover:text-white"
         >
           Continue to Layer Forge Canada
-        </button>
+        </a>
       </div>
     </div>
   </div>
@@ -87,7 +86,6 @@
 <script>
   const splash = document.getElementById("full-colour-launch");
   const closeButton = document.getElementById("full-colour-launch-close");
-  const continueButton = document.getElementById("full-colour-launch-continue");
   const storageKey = "layerforge-full-colour-launch-seen";
 
   const closeSplash = () => {
@@ -103,7 +101,6 @@
   }
 
   closeButton?.addEventListener("click", closeSplash);
-  continueButton?.addEventListener("click", closeSplash);
 
   splash?.querySelectorAll("a").forEach((link) => {
     link.addEventListener("click", () => {
