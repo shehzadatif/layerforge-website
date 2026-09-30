@@ -104,6 +104,28 @@ describe("getShippingRates", () => {
         method: "POST",
       }),
     );
+    const request = fetchMock.mock.calls[0][1] as RequestInit;
+    expect(JSON.parse(String(request.body))).toEqual(
+      expect.objectContaining({
+        type: "regular",
+        packages: [
+          expect.objectContaining({
+            weight: 0.75,
+            length: 8,
+            width: 6,
+            height: 4,
+            size_unit: "in",
+          }),
+        ],
+        items: [
+          expect.objectContaining({
+            quantity: 1,
+            currency: "CAD",
+            country_of_origin: "CA",
+          }),
+        ],
+      }),
+    );
     expect(rates).toEqual([
       expect.objectContaining({
         amountCents: 1234,

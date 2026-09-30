@@ -11,7 +11,10 @@
   "vars": {
     "STALLION_BASE_URL": "https://ship.stallion.ca/api/v5",
     "STALLION_DEFAULT_ITEM_WEIGHT_LBS": "0.5",
-    "STALLION_PACKAGING_WEIGHT_LBS": "0.25"
+    "STALLION_PACKAGING_WEIGHT_LBS": "0.25",
+    "STALLION_DEFAULT_PACKAGE_LENGTH_IN": "8",
+    "STALLION_DEFAULT_PACKAGE_WIDTH_IN": "6",
+    "STALLION_DEFAULT_PACKAGE_HEIGHT_IN": "4"
   },
   "assets": {
     "directory": "./dist",

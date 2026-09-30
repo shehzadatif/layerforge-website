@@ -3,6 +3,9 @@ import { getShippingCost, type Province } from "./shipping";
 const DEFAULT_BASE_URL = "https://ship.stallion.ca/api/v5";
 const DEFAULT_ITEM_WEIGHT_LBS = 0.5;
 const DEFAULT_PACKAGING_WEIGHT_LBS = 0.25;
+const DEFAULT_PACKAGE_LENGTH_IN = 8;
+const DEFAULT_PACKAGE_WIDTH_IN = 6;
+const DEFAULT_PACKAGE_HEIGHT_IN = 4;
 
 export interface ShippingDestination {
   name: string;
@@ -166,6 +169,18 @@ export async function getShippingRates(
   }
 
   const weight = getEstimatedShipmentWeight(totalQuantity);
+  const length = positiveNumber(
+    process.env.STALLION_DEFAULT_PACKAGE_LENGTH_IN,
+    DEFAULT_PACKAGE_LENGTH_IN,
+  );
+  const width = positiveNumber(
+    process.env.STALLION_DEFAULT_PACKAGE_WIDTH_IN,
+    DEFAULT_PACKAGE_WIDTH_IN,
+  );
+  const height = positiveNumber(
+    process.env.STALLION_DEFAULT_PACKAGE_HEIGHT_IN,
+    DEFAULT_PACKAGE_HEIGHT_IN,
+  );
   const baseUrl = (
     process.env.STALLION_BASE_URL?.trim() || DEFAULT_BASE_URL
   ).replace(/\/+$/, "");
@@ -182,6 +197,7 @@ export async function getShippingRates(
         "User-Agent": "LayerForgeCanada-Checkout/1.0",
       },
       body: JSON.stringify({
+        type: "regular",
         to_address: {
           name: destination.name,
           address1: destination.address1,
@@ -195,7 +211,22 @@ export async function getShippingRates(
           {
             weight,
             weight_unit: "lbs",
+            length,
+            width,
+            height,
+            size_unit: "in",
             package_contents: "Layer Forge Canada order",
+          },
+        ],
+        items: [
+          {
+            title: "Layer Forge Canada order",
+            description: "Custom printed and fabricated products",
+            customs_description: "Custom merchandise",
+            quantity: Math.max(1, totalQuantity),
+            value: 0,
+            currency: "CAD",
+            country_of_origin: "CA",
           },
         ],
         timeout: 8,
