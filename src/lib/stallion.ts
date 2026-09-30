@@ -224,7 +224,7 @@ export async function getShippingRates(
             description: "Custom printed and fabricated products",
             customs_description: "Custom merchandise",
             quantity: Math.max(1, totalQuantity),
-            value: 0,
+            value: 0.01,
             currency: "CAD",
             country_of_origin: "CA",
           },

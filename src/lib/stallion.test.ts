@@ -120,6 +120,7 @@ describe("getShippingRates", () => {
         items: [
           expect.objectContaining({
             quantity: 1,
+            value: 0.01,
             currency: "CAD",
             country_of_origin: "CA",
           }),
