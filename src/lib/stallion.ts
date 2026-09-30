@@ -1,6 +1,6 @@
 import { getShippingCost, type Province } from "./shipping";
 
-const DEFAULT_BASE_URL = "https://sandbox.stallion.ca/api/v5";
+const DEFAULT_BASE_URL = "https://ship.stallion.ca/api/v5";
 const DEFAULT_ITEM_WEIGHT_LBS = 0.5;
 const DEFAULT_PACKAGING_WEIGHT_LBS = 0.25;
 
@@ -68,11 +68,11 @@ function positiveNumber(value: string | undefined, fallback: number): number {
 
 export function getEstimatedShipmentWeight(totalQuantity: number): number {
   const itemWeight = positiveNumber(
-    import.meta.env.STALLION_DEFAULT_ITEM_WEIGHT_LBS,
+    process.env.STALLION_DEFAULT_ITEM_WEIGHT_LBS,
     DEFAULT_ITEM_WEIGHT_LBS,
   );
   const packagingWeight = positiveNumber(
-    import.meta.env.STALLION_PACKAGING_WEIGHT_LBS,
+    process.env.STALLION_PACKAGING_WEIGHT_LBS,
     DEFAULT_PACKAGING_WEIGHT_LBS,
   );
 
@@ -152,14 +152,14 @@ function fallbackRate(province: Province): ShippingRate {
 }
 
 export function stallionIsConfigured(): boolean {
-  return Boolean(import.meta.env.STALLION_TOKEN?.trim());
+  return Boolean(process.env.STALLION_TOKEN?.trim());
 }
 
 export async function getShippingRates(
   destination: ShippingDestination,
   totalQuantity: number,
 ): Promise<ShippingRate[]> {
-  const token = import.meta.env.STALLION_TOKEN?.trim();
+  const token = process.env.STALLION_TOKEN?.trim();
 
   if (!token) {
     return [fallbackRate(destination.provinceCode)];
@@ -167,7 +167,7 @@ export async function getShippingRates(
 
   const weight = getEstimatedShipmentWeight(totalQuantity);
   const baseUrl = (
-    import.meta.env.STALLION_BASE_URL?.trim() || DEFAULT_BASE_URL
+    process.env.STALLION_BASE_URL?.trim() || DEFAULT_BASE_URL
   ).replace(/\/+$/, "");
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), 12_000);
@@ -250,7 +250,7 @@ export async function getShippingRates(
 }
 
 function stallionConfig(): { token: string; baseUrl: string } {
-  const token = import.meta.env.STALLION_TOKEN?.trim();
+  const token = process.env.STALLION_TOKEN?.trim();
 
   if (!token) {
     throw new StallionError(
@@ -262,7 +262,7 @@ function stallionConfig(): { token: string; baseUrl: string } {
   return {
     token,
     baseUrl: (
-      import.meta.env.STALLION_BASE_URL?.trim() || DEFAULT_BASE_URL
+      process.env.STALLION_BASE_URL?.trim() || DEFAULT_BASE_URL
     ).replace(/\/+$/, ""),
   };
 }
