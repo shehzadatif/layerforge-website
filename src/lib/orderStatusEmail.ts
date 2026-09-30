@@ -3,6 +3,7 @@ import { ORDER_STATUS } from "./orderStatus";
 export type OrderStatusEmailKind =
   | "in_progress"
   | "pickup_ready"
+  | "shipped"
   | "completed"
   | null;
 
@@ -26,6 +27,10 @@ export function getOrderStatusEmailKind({
 
   if (requestedStatus === ORDER_STATUS.READY && isPickupOrder) {
     return "pickup_ready";
+  }
+
+  if (requestedStatus === ORDER_STATUS.SHIPPED && !isPickupOrder) {
+    return "shipped";
   }
 
   if (
