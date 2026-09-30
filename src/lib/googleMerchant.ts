@@ -26,6 +26,7 @@ export type MerchantProduct = {
 
 export type MerchantListing = {
   id: string;
+  mpn: string;
   title: string;
   description: string;
   link: string;
@@ -35,6 +36,13 @@ export type MerchantListing = {
 };
 
 const DEFAULT_BRAND = "Layer Forge Canada";
+const EXCLUDED_MERCHANT_SLUGS = new Set([
+  "handgun-inspired-business-card-holder-office-display-stand",
+]);
+
+export function isGoogleMerchantEligible(product: MerchantProduct): boolean {
+  return !EXCLUDED_MERCHANT_SLUGS.has(String(product.slug ?? "").trim());
+}
 
 export function escapeXml(value: string): string {
   return value
@@ -106,12 +114,13 @@ export function toMerchantListing(
 
   return {
     id,
+    mpn: id,
     title,
     description: description.slice(0, 5_000),
     link: new URL(`/shop/${encodeURIComponent(slug)}`, siteUrl).toString(),
     imageLink,
     price,
-    brand: plainText(product.brand) || DEFAULT_BRAND,
+    brand: DEFAULT_BRAND,
   };
 }
 
@@ -128,7 +137,8 @@ export function buildGoogleMerchantFeed(listings: MerchantListing[]): string {
       <g:condition>new</g:condition>
       <g:price>${listing.price.toFixed(2)} CAD</g:price>
       <g:brand>${escapeXml(listing.brand)}</g:brand>
-      <g:identifier_exists>no</g:identifier_exists>
+      <g:mpn>${escapeXml(listing.mpn)}</g:mpn>
+      <g:identifier_exists>yes</g:identifier_exists>
     </item>`,
     )
     .join("\n");
@@ -152,6 +162,7 @@ export function buildProductStructuredData(listing: MerchantListing) {
     description: listing.description,
     image: [listing.imageLink],
     sku: listing.id,
+    mpn: listing.mpn,
     brand: {
       "@type": "Brand",
       name: listing.brand,
