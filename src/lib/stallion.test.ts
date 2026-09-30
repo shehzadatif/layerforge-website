@@ -75,6 +75,43 @@ describe("getShippingRates", () => {
       expect.objectContaining({ method: "POST" }),
     );
   });
+
+  it("defaults to the production API when the runtime token is present", async () => {
+    vi.stubEnv("STALLION_TOKEN", "runtime-token");
+    vi.stubEnv("STALLION_BASE_URL", "");
+    const fetchMock = vi.spyOn(globalThis, "fetch").mockResolvedValue(
+      Response.json({
+        data: [
+          {
+            service: "canpar_ground",
+            carrier_name: "Canpar",
+            service_name: "Ground",
+            total: 12.34,
+            currency: "CAD",
+          },
+        ],
+      }),
+    );
+
+    const rates = await getShippingRates(destination, 1);
+
+    expect(fetchMock).toHaveBeenCalledWith(
+      "https://ship.stallion.ca/api/v5/rates",
+      expect.objectContaining({
+        headers: expect.objectContaining({
+          Authorization: "Bearer runtime-token",
+        }),
+        method: "POST",
+      }),
+    );
+    expect(rates).toEqual([
+      expect.objectContaining({
+        amountCents: 1234,
+        service: "canpar_ground",
+        source: "stallion",
+      }),
+    ]);
+  });
 });
 
 describe("createStallionLabel", () => {

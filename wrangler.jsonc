@@ -8,6 +8,11 @@
   "name": "layerforge-website",
   "main": "@astrojs/cloudflare/entrypoints/server",
   "keep_vars": true,
+  "vars": {
+    "STALLION_BASE_URL": "https://ship.stallion.ca/api/v5",
+    "STALLION_DEFAULT_ITEM_WEIGHT_LBS": "0.5",
+    "STALLION_PACKAGING_WEIGHT_LBS": "0.25"
+  },
   "assets": {
     "directory": "./dist",
     "binding": "ASSETS"
