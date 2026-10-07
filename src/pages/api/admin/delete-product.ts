@@ -48,7 +48,7 @@ export const POST: APIRoute = async ({ request }) => {
 
     const { data: variants, error: variantsLoadError } = await supabaseAdmin
       .from("product_variants")
-      .select("image_url")
+      .select("id, image_url")
       .eq("product_id", productId);
 
     if (variantsLoadError) {
@@ -92,6 +92,20 @@ export const POST: APIRoute = async ({ request }) => {
 
     if (variantsError) {
       throw new Error(variantsError.message);
+    }
+
+    const shippingSettingKeys = [
+      `product_shipping_profile:${productId}`,
+      ...(variants ?? []).map(
+        (variant) => `variant_shipping_profile:${variant.id}`,
+      ),
+    ];
+    const { error: shippingSettingsError } = await supabaseAdmin
+      .from("settings")
+      .delete()
+      .in("setting_key", shippingSettingKeys);
+    if (shippingSettingsError) {
+      throw new Error(shippingSettingsError.message);
     }
 
     const { error: imagesError } = await supabaseAdmin

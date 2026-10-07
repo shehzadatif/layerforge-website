@@ -49,7 +49,7 @@ export async function createOrder(
   customer: CustomerInfo,
   subtotal: number,
   shippingSelection?: OrderShippingSelection,
-  shippingPackage?: OrderShippingPackage,
+  shippingPackages: OrderShippingPackage[] = [],
 ) {
   const trackingToken = generateTrackingToken();
 
@@ -76,10 +76,10 @@ export async function createOrder(
       shipping_carrier: shippingSelection?.carrier ?? null,
       shipping_service: shippingSelection?.service ?? null,
       shipping_service_name: shippingSelection?.serviceName ?? null,
-      package_weight_lbs: shippingPackage?.weight ?? null,
-      package_length_in: shippingPackage?.length ?? null,
-      package_width_in: shippingPackage?.width ?? null,
-      package_height_in: shippingPackage?.height ?? null,
+      package_weight_lbs: shippingPackages[0]?.weight ?? null,
+      package_length_in: shippingPackages[0]?.length ?? null,
+      package_width_in: shippingPackages[0]?.width ?? null,
+      package_height_in: shippingPackages[0]?.height ?? null,
 
       material_summary: customer.materialSummary ?? "",
 
@@ -95,6 +95,26 @@ export async function createOrder(
     .single();
 
   if (error) throw error;
+
+  if (shippingPackages.length > 0) {
+    const { error: packageError } = await supabaseAdmin
+      .from("order_shipping_packages")
+      .insert(
+        shippingPackages.map((parcel, index) => ({
+          order_id: data.id,
+          package_number: index + 1,
+          weight_lbs: parcel.weight,
+          length_in: parcel.length,
+          width_in: parcel.width,
+          height_in: parcel.height,
+          shipping_service: shippingSelection?.service ?? null,
+          shipping_service_name: shippingSelection?.serviceName ?? null,
+          shipping_carrier: shippingSelection?.carrier ?? null,
+        })),
+      );
+
+    if (packageError) throw packageError;
+  }
 
   return data;
 }
@@ -171,7 +191,8 @@ export async function markOrderPaid(
     .select(
       `
       *,
-      order_items(*)
+      order_items(*),
+      order_shipping_packages(*)
     `,
     )
     .maybeSingle();
@@ -270,7 +291,8 @@ export async function getOrder(id: string) {
     .select(
       `
       *,
-      order_items(*)
+      order_items(*),
+      order_shipping_packages(*)
     `,
     )
     .eq("id", id)

@@ -14,9 +14,12 @@ import {
 import { supabaseAdmin } from "../../../lib/supabaseAdmin";
 import {
   parseProductShippingProfileForm,
+  parseVariantShippingProfilesForm,
   ProductShippingProfileValidationError,
   saveProductShippingProfile,
+  saveVariantShippingProfile,
 } from "../../../lib/shippingPackingServer";
+import type { ProductShippingProfile } from "../../../lib/shippingPacking";
 
 export const prerender = false;
 
@@ -24,6 +27,7 @@ async function syncProductVariants(
   productId: string,
   variants: ProductVariantInput[],
   variantImages: Array<File | null>,
+  shippingProfiles: Array<ProductShippingProfile | null>,
 ) {
   const { data: existingVariants, error: loadError } = await supabaseAdmin
     .from("product_variants")
@@ -86,19 +90,32 @@ async function syncProductVariants(
           throw new Error(error.message);
         }
 
+        await saveVariantShippingProfile(
+          variant.id,
+          shippingProfiles[index] ?? null,
+        );
+
         if (uploadedImagePath) {
           await removeProductVariantImages([
             existingById.get(variant.id)?.imageUrl,
           ]);
         }
       } else {
-        const { error } = await supabaseAdmin
+        const { data: createdVariant, error } = await supabaseAdmin
           .from("product_variants")
-          .insert(productVariantRow(productId, variant, uploadedImagePath));
+          .insert(productVariantRow(productId, variant, uploadedImagePath))
+          .select("id")
+          .single();
 
-        if (error) {
-          throw new Error(error.message);
+        if (error || !createdVariant) {
+          throw new Error(
+            error?.message || "Unable to save the product variant.",
+          );
         }
+        await saveVariantShippingProfile(
+          String(createdVariant.id),
+          shippingProfiles[index] ?? null,
+        );
       }
     } catch (error) {
       if (uploadedImagePath) {
@@ -124,6 +141,9 @@ async function syncProductVariants(
 
     await removeProductVariantImages(
       removedIds.map((id) => existingById.get(id)?.imageUrl),
+    );
+    await Promise.all(
+      removedIds.map((id) => saveVariantShippingProfile(id, null)),
     );
   }
 }
@@ -170,6 +190,10 @@ export const POST: APIRoute = async ({ request }) => {
     const selectedMaterials = formData.getAll("materials").map(String);
 
     const variants = parseProductVariants(formData);
+    const variantShippingProfiles = parseVariantShippingProfilesForm(
+      formData,
+      variants.length,
+    );
     const variantImages = getVariantImageFiles(formData, variants.length);
     const shippingProfile = parseProductShippingProfileForm(formData);
 
@@ -233,7 +257,12 @@ export const POST: APIRoute = async ({ request }) => {
 
     await saveProductShippingProfile(id, shippingProfile);
 
-    await syncProductVariants(id, variants, variantImages);
+    await syncProductVariants(
+      id,
+      variants,
+      variantImages,
+      variantShippingProfiles,
+    );
 
     const { error: deleteError } = await supabaseAdmin
       .from("product_materials")

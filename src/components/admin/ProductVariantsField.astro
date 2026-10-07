@@ -5,6 +5,13 @@ type Variant = {
   price?: number | string | null;
   sku?: string | null;
   image_url?: string | null;
+  shipping_profile?: {
+    unitWeightLbs: number;
+    referenceQuantity: number;
+    lengthIn: number;
+    widthIn: number;
+    heightIn: number;
+  } | null;
 };
 
 interface Props {
@@ -140,6 +147,21 @@ function getImageUrl(path?: string | null) {
               </span>
             </label>
           </div>
+
+          <div class="mt-4 border-t border-slate-100 pt-4">
+            <div class="font-semibold text-slate-900">Shipping Override (Optional)</div>
+            <p class="mt-1 text-xs leading-5 text-slate-500">
+              Complete all five fields only when this variant packs differently.
+              Leave them blank to inherit the product shipping profile.
+            </p>
+            <div class="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
+              <label class="block"><span class="mb-1 block text-xs font-semibold">Unit weight (lb)</span><input type="number" name="variant_shipping_unit_weight_lbs" value={variant.shipping_profile?.unitWeightLbs ?? ""} min="0.01" max="200" step="0.01" class="w-full rounded-lg border p-2" /></label>
+              <label class="block"><span class="mb-1 block text-xs font-semibold">Packed quantity</span><input type="number" name="variant_shipping_reference_quantity" value={variant.shipping_profile?.referenceQuantity ?? ""} min="1" max="200" step="1" class="w-full rounded-lg border p-2" /></label>
+              <label class="block"><span class="mb-1 block text-xs font-semibold">Length (in)</span><input type="number" name="variant_shipping_package_length_in" value={variant.shipping_profile?.lengthIn ?? ""} min="0.01" max="200" step="0.01" class="w-full rounded-lg border p-2" /></label>
+              <label class="block"><span class="mb-1 block text-xs font-semibold">Width (in)</span><input type="number" name="variant_shipping_package_width_in" value={variant.shipping_profile?.widthIn ?? ""} min="0.01" max="200" step="0.01" class="w-full rounded-lg border p-2" /></label>
+              <label class="block"><span class="mb-1 block text-xs font-semibold">Height (in)</span><input type="number" name="variant_shipping_package_height_in" value={variant.shipping_profile?.heightIn ?? ""} min="0.01" max="200" step="0.01" class="w-full rounded-lg border p-2" /></label>
+            </div>
+          </div>
         </div>
       ))
     }
@@ -226,6 +248,21 @@ function getImageUrl(path?: string | null) {
             JPG, PNG, WebP, or GIF up to 10 MB.
           </span>
         </label>
+      </div>
+
+      <div class="mt-4 border-t border-slate-100 pt-4">
+        <div class="font-semibold text-slate-900">Shipping Override (Optional)</div>
+        <p class="mt-1 text-xs leading-5 text-slate-500">
+          Complete all five fields only when this variant packs differently.
+          Leave them blank to inherit the product shipping profile.
+        </p>
+        <div class="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
+          <label class="block"><span class="mb-1 block text-xs font-semibold">Unit weight (lb)</span><input type="number" name="variant_shipping_unit_weight_lbs" min="0.01" max="200" step="0.01" class="w-full rounded-lg border p-2" /></label>
+          <label class="block"><span class="mb-1 block text-xs font-semibold">Packed quantity</span><input type="number" name="variant_shipping_reference_quantity" min="1" max="200" step="1" class="w-full rounded-lg border p-2" /></label>
+          <label class="block"><span class="mb-1 block text-xs font-semibold">Length (in)</span><input type="number" name="variant_shipping_package_length_in" min="0.01" max="200" step="0.01" class="w-full rounded-lg border p-2" /></label>
+          <label class="block"><span class="mb-1 block text-xs font-semibold">Width (in)</span><input type="number" name="variant_shipping_package_width_in" min="0.01" max="200" step="0.01" class="w-full rounded-lg border p-2" /></label>
+          <label class="block"><span class="mb-1 block text-xs font-semibold">Height (in)</span><input type="number" name="variant_shipping_package_height_in" min="0.01" max="200" step="0.01" class="w-full rounded-lg border p-2" /></label>
+        </div>
       </div>
     </div>
   </template>

@@ -1,6 +1,10 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-import { createStallionLabel, getShippingRates } from "./stallion";
+import {
+  createStallionLabel,
+  getMultiPackageShippingRates,
+  getShippingRates,
+} from "./stallion";
 
 const destination = {
   name: "Jane Doe",
@@ -79,19 +83,21 @@ describe("getShippingRates", () => {
   it("defaults to the production API when the runtime token is present", async () => {
     vi.stubEnv("STALLION_TOKEN", "runtime-token");
     vi.stubEnv("STALLION_BASE_URL", "");
-    const fetchMock = vi.spyOn(globalThis, "fetch").mockResolvedValue(
-      Response.json({
-        data: [
-          {
-            service: "canpar_ground",
-            carrier_name: "Canpar",
-            service_name: "Ground",
-            total: 12.34,
-            currency: "CAD",
-          },
-        ],
-      }),
-    );
+    const fetchMock = vi
+      .spyOn(globalThis, "fetch")
+      .mockImplementation(async () =>
+        Response.json({
+          data: [
+            {
+              service: "canpar_ground",
+              carrier_name: "Canpar",
+              service_name: "Ground",
+              total: 12.34,
+              currency: "CAD",
+            },
+          ],
+        }),
+      );
 
     const rates = await getShippingRates(destination, 1);
 
@@ -171,6 +177,46 @@ describe("getShippingRates", () => {
         items: [expect.objectContaining({ quantity: 6 })],
       }),
     );
+  });
+});
+
+describe("getMultiPackageShippingRates", () => {
+  it("adds the matching service price for every physical package", async () => {
+    vi.stubEnv("STALLION_TOKEN", "runtime-token");
+    const fetchMock = vi
+      .spyOn(globalThis, "fetch")
+      .mockImplementation(async () =>
+        Response.json({
+          data: [
+            {
+              service: "intelcom.standard",
+              carrier_name: "Intelcom",
+              service_name: "Standard",
+              total: 7.38,
+              currency: "CAD",
+              delivery_days: 3,
+            },
+          ],
+        }),
+      );
+
+    const rates = await getMultiPackageShippingRates(
+      destination,
+      [
+        { weight: 1.45, length: 4, width: 2, height: 2 },
+        { weight: 1.45, length: 4, width: 2, height: 2 },
+      ],
+      12,
+    );
+
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+    expect(rates).toEqual([
+      expect.objectContaining({
+        service: "intelcom.standard",
+        amountCents: 1476,
+        estimatedDays: 3,
+      }),
+    ]);
   });
 });
 

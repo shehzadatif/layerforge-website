@@ -292,6 +292,61 @@ export async function getShippingRates(
   }
 }
 
+export async function getMultiPackageShippingRates(
+  destination: ShippingDestination,
+  packages: StallionPackage[],
+  totalQuantity: number,
+): Promise<ShippingRate[]> {
+  if (packages.length === 0) {
+    throw new StallionError("At least one shipping package is required.", 400);
+  }
+
+  if (packages.length === 1 || !stallionIsConfigured()) {
+    return getShippingRates(destination, {
+      totalQuantity,
+      package: packages[0],
+    });
+  }
+
+  const ratesByPackage = await Promise.all(
+    packages.map((parcel) =>
+      getShippingRates(destination, {
+        totalQuantity,
+        package: parcel,
+      }),
+    ),
+  );
+  const [firstRates, ...remainingRates] = ratesByPackage;
+
+  return firstRates
+    .flatMap((firstRate) => {
+      const matchingRates = remainingRates.map((rates) =>
+        rates.find((rate) => rate.service === firstRate.service),
+      );
+
+      if (matchingRates.some((rate) => !rate)) return [];
+
+      const allRates = [firstRate, ...(matchingRates as ShippingRate[])];
+      return [
+        {
+          ...firstRate,
+          amountCents: allRates.reduce(
+            (total, rate) => total + rate.amountCents,
+            0,
+          ),
+          estimatedDays: allRates.reduce<number | undefined>(
+            (longest, rate) =>
+              rate.estimatedDays === undefined
+                ? longest
+                : Math.max(longest ?? 0, rate.estimatedDays),
+            undefined,
+          ),
+        },
+      ];
+    })
+    .sort((left, right) => left.amountCents - right.amountCents);
+}
+
 function stallionConfig(): { token: string; baseUrl: string } {
   const token = process.env.STALLION_TOKEN?.trim();
 
