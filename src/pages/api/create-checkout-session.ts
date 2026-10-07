@@ -462,6 +462,7 @@ export const POST: APIRoute = async ({ request }) => {
     if (customer.deliveryMethod === "shipping") {
       const packingItems = checkoutItems.map((item) => ({
         productId: item.id,
+        variantId: item.variantId,
         quantity: item.quantity,
       }));
       const totalQuantity = packingItems.reduce(

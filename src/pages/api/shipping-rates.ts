@@ -58,13 +58,14 @@ export const POST: APIRoute = async ({ request }) => {
 
       const cartItem = item as Record<string, unknown>;
       const productId = stringValue(cartItem.id, 100);
+      const variantId = stringValue(cartItem.variantId, 100);
       const quantity = Number(cartItem.quantity);
 
       return productId &&
         Number.isInteger(quantity) &&
         quantity > 0 &&
         quantity <= 100
-        ? [{ productId, quantity }]
+        ? [{ productId, ...(variantId ? { variantId } : {}), quantity }]
         : [];
     });
     const totalQuantity = packingItems.reduce(

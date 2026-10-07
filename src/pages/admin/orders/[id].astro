@@ -47,8 +47,9 @@ const estimatedReadyDate = formatEstimatedReadyDate(
 );
 const estimatedPackages = await estimateShipmentPackagesForItems(
   (order.order_items ?? []).map(
-    (item: { product_id?: string; quantity?: number }) => ({
+    (item: { product_id?: string; variant_id?: string; quantity?: number }) => ({
       productId: String(item.product_id ?? ""),
+      variantId: String(item.variant_id ?? "") || undefined,
       quantity: Number(item.quantity ?? 0),
     }),
   ),

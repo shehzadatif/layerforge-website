@@ -8,6 +8,7 @@ export interface ProductShippingProfile {
 
 export interface ShippingPackingItem {
   productId: string;
+  variantId?: string;
   quantity: number;
 }
 

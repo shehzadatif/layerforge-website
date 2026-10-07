@@ -3,7 +3,10 @@ import AdminLayout from "../../../layouts/AdminLayout.astro";
 import ProductVariantsField from "../../../components/admin/ProductVariantsField.astro";
 import ProductShippingProfileFields from "../../../components/admin/ProductShippingProfileFields.astro";
 import { supabaseAdmin } from "../../../lib/supabaseAdmin";
-import { getProductShippingProfile } from "../../../lib/shippingPackingServer";
+import {
+  getProductShippingProfile,
+  getVariantShippingProfiles,
+} from "../../../lib/shippingPackingServer";
 
 const { id } = Astro.params;
 const saved = Astro.url.searchParams.get("saved") === "1";
@@ -100,9 +103,16 @@ function getProductImageUrl(imagePath: string): string {
   return `${supabaseUrl}/storage/v1/object/public/product-images/${imagePath}`;
 }
 
-const productVariants = [...(product.product_variants ?? [])].sort(
+const sortedProductVariants = [...(product.product_variants ?? [])].sort(
   (left, right) => Number(left.sort_order ?? 0) - Number(right.sort_order ?? 0),
 );
+const variantShippingProfiles = await getVariantShippingProfiles(
+  sortedProductVariants.map((variant) => String(variant.id)),
+);
+const productVariants = sortedProductVariants.map((variant) => ({
+  ...variant,
+  shipping_profile: variantShippingProfiles.get(String(variant.id)) ?? null,
+}));
 const shippingProfile = await getProductShippingProfile(product.id);
 ---
 

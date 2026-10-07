@@ -13,8 +13,10 @@ import {
 import { supabaseAdmin } from "../../../lib/supabaseAdmin";
 import {
   parseProductShippingProfileForm,
+  parseVariantShippingProfilesForm,
   ProductShippingProfileValidationError,
   saveProductShippingProfile,
+  saveVariantShippingProfile,
 } from "../../../lib/shippingPackingServer";
 
 export const prerender = false;
@@ -102,6 +104,10 @@ export const POST: APIRoute = async ({ request }) => {
     const selectedMaterials = formData.getAll("materials").map(String);
 
     const variants = parseProductVariants(formData);
+    const variantShippingProfiles = parseVariantShippingProfilesForm(
+      formData,
+      variants.length,
+    );
     const variantImages = getVariantImageFiles(formData, variants.length);
     const productImages = getProductImages(formData);
     const shippingProfile = parseProductShippingProfileForm(formData);
@@ -182,6 +188,7 @@ export const POST: APIRoute = async ({ request }) => {
     }
 
     const uploadedVariantImages: string[] = [];
+    const savedVariantIds: string[] = [];
 
     if (variants.length > 0) {
       try {
@@ -200,15 +207,37 @@ export const POST: APIRoute = async ({ request }) => {
           );
         }
 
-        const { error: variantError } = await supabaseAdmin
-          .from("product_variants")
-          .insert(variantRows);
+        const { data: createdVariants, error: variantError } =
+          await supabaseAdmin
+            .from("product_variants")
+            .insert(variantRows)
+            .select("id, sort_order");
 
         if (variantError) {
           throw new Error(variantError.message);
         }
+        const createdBySortOrder = new Map(
+          (createdVariants ?? []).map((variant) => [
+            Number(variant.sort_order),
+            String(variant.id),
+          ]),
+        );
+        savedVariantIds.push(...createdBySortOrder.values());
+        await Promise.all(
+          variantShippingProfiles.map((profile, index) => {
+            const variantId = createdBySortOrder.get(index);
+            if (!variantId)
+              throw new Error("Unable to identify a saved variant.");
+            return saveVariantShippingProfile(variantId, profile);
+          }),
+        );
       } catch (variantError) {
         await removeProductVariantImages(uploadedVariantImages);
+        await Promise.all(
+          savedVariantIds.map((variantId) =>
+            saveVariantShippingProfile(variantId, null),
+          ),
+        );
         await saveProductShippingProfile(product.id, null);
         await supabaseAdmin.from("products").delete().eq("id", product.id);
 
@@ -288,6 +317,11 @@ export const POST: APIRoute = async ({ request }) => {
         ...uploadedVariantImages,
         ...uploadedProductImages,
       ]);
+      await Promise.all(
+        savedVariantIds.map((variantId) =>
+          saveVariantShippingProfile(variantId, null),
+        ),
+      );
       await saveProductShippingProfile(product.id, null);
       await supabaseAdmin.from("products").delete().eq("id", product.id);
 

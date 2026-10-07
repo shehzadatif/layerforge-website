@@ -16,6 +16,7 @@ const DEFAULT_PACKAGING_WEIGHT_LBS = 0.25;
 const DEFAULT_PACKAGE_LENGTH_IN = 8;
 const DEFAULT_PACKAGE_WIDTH_IN = 6;
 const DEFAULT_PACKAGE_HEIGHT_IN = 4;
+const VARIANT_PROFILE_SETTING_PREFIX = "variant_shipping_profile:";
 
 function positiveNumber(value: string | undefined, fallback: number): number {
   const parsed = Number(value);
@@ -99,6 +100,59 @@ export function parseProductShippingProfileForm(
   };
 }
 
+export function parseVariantShippingProfilesForm(
+  formData: FormData,
+  variantCount: number,
+): Array<ProductShippingProfile | null> {
+  const fieldNames = [
+    "variant_shipping_unit_weight_lbs",
+    "variant_shipping_reference_quantity",
+    "variant_shipping_package_length_in",
+    "variant_shipping_package_width_in",
+    "variant_shipping_package_height_in",
+  ] as const;
+  const values = new Map(
+    fieldNames.map((name) => [
+      name,
+      formData.getAll(name).map((value) => String(value).trim()),
+    ]),
+  );
+
+  return Array.from({ length: variantCount }, (_, index) => {
+    const row = fieldNames.map((name) => values.get(name)?.[index] ?? "");
+    if (row.every((value) => !value)) return null;
+    if (row.some((value) => !value)) {
+      throw new ProductShippingProfileValidationError(
+        `Complete every Shipping Override field for variant ${index + 1}, or leave all five blank.`,
+      );
+    }
+
+    const parsed = row.map(Number);
+    if (
+      parsed.some(
+        (value) => !Number.isFinite(value) || value <= 0 || value > 200,
+      )
+    ) {
+      throw new ProductShippingProfileValidationError(
+        `Variant ${index + 1} shipping values must be greater than zero and no more than 200.`,
+      );
+    }
+    if (!Number.isInteger(parsed[1])) {
+      throw new ProductShippingProfileValidationError(
+        `Variant ${index + 1} packed quantity must be a whole number.`,
+      );
+    }
+
+    return {
+      unitWeightLbs: parsed[0],
+      referenceQuantity: parsed[1],
+      lengthIn: parsed[2],
+      widthIn: parsed[3],
+      heightIn: parsed[4],
+    };
+  });
+}
+
 export async function saveProductShippingProfile(
   productId: string,
   profile: ProductShippingProfile | null,
@@ -124,6 +178,60 @@ export async function saveProductShippingProfile(
   );
 
   if (error) throw new Error(error.message);
+}
+
+export async function saveVariantShippingProfile(
+  variantId: string,
+  profile: ProductShippingProfile | null,
+): Promise<void> {
+  const settingKey = `${VARIANT_PROFILE_SETTING_PREFIX}${variantId}`;
+  if (!profile) {
+    const { error } = await supabaseAdmin
+      .from("settings")
+      .delete()
+      .eq("setting_key", settingKey);
+    if (error) throw new Error(error.message);
+    return;
+  }
+
+  const { error } = await supabaseAdmin.from("settings").upsert(
+    {
+      setting_key: settingKey,
+      setting_value: JSON.stringify(profile),
+      updated_at: new Date().toISOString(),
+    },
+    { onConflict: "setting_key" },
+  );
+  if (error) throw new Error(error.message);
+}
+
+export async function getVariantShippingProfiles(
+  variantIds: string[],
+): Promise<Map<string, ProductShippingProfile>> {
+  const ids = [...new Set(variantIds.filter(Boolean))];
+  if (ids.length === 0) return new Map();
+  const { data, error } = await supabaseAdmin
+    .from("settings")
+    .select("setting_key, setting_value")
+    .in(
+      "setting_key",
+      ids.map((id) => `${VARIANT_PROFILE_SETTING_PREFIX}${id}`),
+    );
+  if (error) {
+    console.error("Unable to load variant shipping profiles.", { error });
+    return new Map();
+  }
+
+  const profiles = new Map<string, ProductShippingProfile>();
+  for (const row of data ?? []) {
+    const settingKey = String(row.setting_key ?? "");
+    const variantId = settingKey.startsWith(VARIANT_PROFILE_SETTING_PREFIX)
+      ? settingKey.slice(VARIANT_PROFILE_SETTING_PREFIX.length)
+      : "";
+    const profile = parseProductShippingProfile(row.setting_value);
+    if (variantId && profile) profiles.set(variantId, profile);
+  }
+  return profiles;
 }
 
 export async function getProductShippingProfiles(
@@ -194,11 +302,21 @@ export async function estimateShipmentPackageForItems(
 export async function estimateShipmentPackagesForItems(
   items: ShippingPackingItem[],
 ): Promise<ShippingPackage[]> {
-  const profiles = await getProductShippingProfiles(
-    items.map((item) => item.productId),
-  );
+  const [productProfiles, variantProfiles] = await Promise.all([
+    getProductShippingProfiles(items.map((item) => item.productId)),
+    getVariantShippingProfiles(items.map((item) => item.variantId ?? "")),
+  ]);
+  const resolvedProfiles = new Map<string, ProductShippingProfile>();
+  const resolvedItems = items.map((item, index) => {
+    const key = `line-${index}`;
+    const profile =
+      (item.variantId ? variantProfiles.get(item.variantId) : null) ??
+      productProfiles.get(item.productId);
+    if (profile) resolvedProfiles.set(key, profile);
+    return { productId: key, quantity: item.quantity };
+  });
 
-  return estimateShippingPackages(items, profiles, {
+  return estimateShippingPackages(resolvedItems, resolvedProfiles, {
     defaultItemWeightLbs: positiveNumber(
       process.env.STALLION_DEFAULT_ITEM_WEIGHT_LBS,
       DEFAULT_ITEM_WEIGHT_LBS,
