@@ -4,6 +4,7 @@ import { Resend } from "resend";
 import { isPickupDeliveryMethod } from "../../../lib/deliveryMethod";
 import { orderCompletedHtml } from "../../../lib/emailTemplates/orderCompleted";
 import { orderInProgressHtml } from "../../../lib/emailTemplates/orderInProgress";
+import { orderShippedHtml } from "../../../lib/emailTemplates/orderShipped";
 import { pickupReadyHtml } from "../../../lib/emailTemplates/pickupReady";
 import { ORDER_STATUS } from "../../../lib/orderStatus";
 import { getOrderStatusEmailKind } from "../../../lib/orderStatusEmail";
@@ -23,6 +24,7 @@ function logStatusEvent(
 
 export const POST: APIRoute = async ({ request }) => {
   let previousStatus = "";
+  let previousShippedAt: string | null = null;
   let updatedOrderId = "";
 
   try {
@@ -57,6 +59,7 @@ export const POST: APIRoute = async ({ request }) => {
     }
 
     previousStatus = String(order.order_status ?? "");
+    previousShippedAt = order.shipped_at ? String(order.shipped_at) : null;
 
     const orderNumber = `LF${String(order.order_number).padStart(6, "0")}`;
     const deliveryMethod = String(order.delivery_method ?? "").trim();
@@ -70,6 +73,9 @@ export const POST: APIRoute = async ({ request }) => {
     const shouldSendPickupReadyEmail = statusEmailKind === "pickup_ready";
     const shouldResendPickupReadyEmail =
       shouldSendPickupReadyEmail && previousStatus === ORDER_STATUS.READY;
+    const shouldSendShippedEmail = statusEmailKind === "shipped";
+    const shouldResendShippedEmail =
+      shouldSendShippedEmail && previousStatus === ORDER_STATUS.SHIPPED;
     const shouldSendCompletionEmail = statusEmailKind === "completed";
     const shouldSendStatusEmail = statusEmailKind !== null;
 
@@ -84,6 +90,8 @@ export const POST: APIRoute = async ({ request }) => {
       shouldSendInProgressEmail,
       shouldSendPickupReadyEmail,
       shouldResendPickupReadyEmail,
+      shouldSendShippedEmail,
+      shouldResendShippedEmail,
       shouldSendCompletionEmail,
     });
 
@@ -162,11 +170,15 @@ export const POST: APIRoute = async ({ request }) => {
     }
 
     if (status !== previousStatus) {
+      const now = new Date().toISOString();
       const { error: updateError } = await supabaseAdmin
         .from("orders")
         .update({
           order_status: status,
-          updated_at: new Date().toISOString(),
+          updated_at: now,
+          ...(status === ORDER_STATUS.SHIPPED
+            ? { shipped_at: previousShippedAt ?? now }
+            : {}),
         })
         .eq("id", orderId);
 
@@ -199,6 +211,16 @@ export const POST: APIRoute = async ({ request }) => {
           emailDetails.pickupAddress,
           emailDetails.pickupPhone,
           emailDetails.trackingUrl,
+        );
+      } else if (statusEmailKind === "shipped") {
+        subject = `Your order ${orderNumber} has shipped`;
+        html = orderShippedHtml(
+          order.customer_name || "Customer",
+          orderNumber,
+          emailDetails.trackingUrl,
+          String(order.shipping_carrier ?? ""),
+          String(order.shipping_tracking_number ?? ""),
+          String(order.shipping_tracking_url ?? ""),
         );
       } else if (statusEmailKind === "completed") {
         subject = `Your order ${orderNumber} is complete`;
@@ -233,6 +255,7 @@ export const POST: APIRoute = async ({ request }) => {
         deliveryMethod,
         statusEmailKind,
         pickupEmailResent: shouldResendPickupReadyEmail,
+        shippedEmailResent: shouldResendShippedEmail,
         resendEmailId,
       });
     }
@@ -243,6 +266,8 @@ export const POST: APIRoute = async ({ request }) => {
       inProgressEmailSent: shouldSendInProgressEmail,
       pickupEmailSent: shouldSendPickupReadyEmail,
       pickupEmailResent: shouldResendPickupReadyEmail,
+      shippedEmailSent: shouldSendShippedEmail,
+      shippedEmailResent: shouldResendShippedEmail,
       completionEmailSent: shouldSendCompletionEmail,
       resendEmailId,
       ...(status === ORDER_STATUS.READY && !isPickupOrder
@@ -258,6 +283,7 @@ export const POST: APIRoute = async ({ request }) => {
         .from("orders")
         .update({
           order_status: previousStatus,
+          shipped_at: previousShippedAt,
           updated_at: new Date().toISOString(),
         })
         .eq("id", updatedOrderId);
