@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import type { ShippingRate } from "../../../lib/stallion";
 import { useCheckout } from "../hooks/useCheckout";
-import { getCart } from "../../cart/cartStorage";
+import { getCart, updateQuantity, type CartItem } from "../../cart/cartStorage";
 import ContactForm from "./ContactForm";
 import DeliveryMethod from "./DeliveryMethod";
 import ShippingAddress from "./ShippingAddress";
@@ -28,11 +28,13 @@ interface Props {
   salesTaxConfig: SalesTaxConfig;
 }
 
+const MAX_CHECKOUT_QUANTITY = 100;
+
 export default function CheckoutPage({
   bulkDiscountConfig,
   salesTaxConfig,
 }: Props) {
-  const cart = getCart();
+  const [cart, setCart] = useState<CartItem[]>(getCart);
   const [termsAccepted, setTermsAccepted] = useState(false);
   const [selectedShippingRate, setSelectedShippingRate] =
     useState<ShippingRate | null>(null);
@@ -60,6 +62,21 @@ export default function CheckoutPage({
     new Date(),
     productionDays,
   );
+  const cartShippingKey = cart
+    .map(
+      (item) =>
+        `${item.id}:${item.variantId ?? "base"}:${item.materialId}:${item.quantity}`,
+    )
+    .join("|");
+
+  function changeQuantity(item: CartItem, quantity: number) {
+    const nextQuantity = Math.min(MAX_CHECKOUT_QUANTITY, Math.max(1, quantity));
+    if (nextQuantity === item.quantity) return;
+
+    updateQuantity(item.id, item.materialId, nextQuantity, item.variantId);
+    setCart(getCart());
+    setSelectedShippingRate(null);
+  }
 
   useEffect(() => {
     setSelectedShippingRate(null);
@@ -156,7 +173,7 @@ export default function CheckoutPage({
               updateField={updateField}
             />
             <ShippingRatePicker
-              key={`${form.address}|${form.unit}|${form.city}|${form.postalCode}|${form.province}`}
+              key={`${form.address}|${form.unit}|${form.city}|${form.postalCode}|${form.province}|${cartShippingKey}`}
               customer={form}
               items={cart}
               selectedRate={selectedShippingRate}
@@ -219,7 +236,35 @@ export default function CheckoutPage({
                     </p>
                   ) : null}
                   <p className="text-sm text-slate-500">{item.materialName}</p>
-                  <p className="text-sm text-slate-500">Qty {item.quantity}</p>
+                  <div
+                    className="mt-2 flex items-center gap-2"
+                    aria-label={`Quantity for ${item.name}`}
+                  >
+                    <button
+                      type="button"
+                      onClick={() => changeQuantity(item, item.quantity - 1)}
+                      disabled={item.quantity <= 1}
+                      aria-label={`Decrease ${item.name} quantity`}
+                      className="flex h-8 w-8 items-center justify-center rounded-lg border border-slate-300 bg-white font-bold text-slate-800 hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-40"
+                    >
+                      −
+                    </button>
+                    <span
+                      className="min-w-8 text-center text-sm font-bold"
+                      aria-live="polite"
+                    >
+                      {item.quantity}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => changeQuantity(item, item.quantity + 1)}
+                      disabled={item.quantity >= MAX_CHECKOUT_QUANTITY}
+                      aria-label={`Increase ${item.name} quantity`}
+                      className="flex h-8 w-8 items-center justify-center rounded-lg border border-slate-300 bg-white font-bold text-slate-800 hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-40"
+                    >
+                      +
+                    </button>
+                  </div>
 
                   <div className="mt-3 flex flex-wrap items-start justify-between gap-x-4 gap-y-1 border-t border-slate-100 pt-2">
                     <div>
