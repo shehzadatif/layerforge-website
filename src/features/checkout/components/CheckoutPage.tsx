@@ -270,10 +270,12 @@ export default function CheckoutPage({
 
           <div className="mb-3 flex justify-between gap-4">
             <span>
-              Subtotal before discount ({pricing.totalQuantity}{" "}
+              Original subtotal ({pricing.totalQuantity}{" "}
               {pricing.totalQuantity === 1 ? "piece" : "pieces"})
             </span>
-            <span>CAD ${(pricing.subtotalCents / 100).toFixed(2)}</span>
+            <span className="whitespace-nowrap">
+              CAD ${(pricing.subtotalCents / 100).toFixed(2)}
+            </span>
           </div>
 
           {pricing.discountPercentage > 0 ? (
