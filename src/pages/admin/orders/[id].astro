@@ -8,7 +8,7 @@ import {
   getOrderProductionDays,
 } from "../../../lib/productionEstimate";
 import { formatTaxRate } from "../../../lib/taxConfig";
-import { estimateShipmentPackageForItems } from "../../../lib/shippingPackingServer";
+import { estimateShipmentPackagesForItems } from "../../../lib/shippingPackingServer";
 
 const { id } = Astro.params;
 
@@ -45,7 +45,7 @@ const estimatedReadyDate = formatEstimatedReadyDate(
   order.created_at,
   productionDays,
 );
-const estimatedPackage = await estimateShipmentPackageForItems(
+const estimatedPackages = await estimateShipmentPackagesForItems(
   (order.order_items ?? []).map(
     (item: { product_id?: string; quantity?: number }) => ({
       productId: String(item.product_id ?? ""),
@@ -53,21 +53,57 @@ const estimatedPackage = await estimateShipmentPackageForItems(
     }),
   ),
 );
-const packageWeight = Number(
-  order.package_weight_lbs ?? estimatedPackage.weight,
-);
-const packageLength = Number(
-  order.package_length_in ?? estimatedPackage.length,
-);
-const packageWidth = Number(
-  order.package_width_in ?? estimatedPackage.width,
-);
-const packageHeight = Number(
-  order.package_height_in ?? estimatedPackage.height,
-);
+const savedPackages = Array.isArray(order.order_shipping_packages)
+  ? [...order.order_shipping_packages].sort(
+      (left, right) => Number(left.package_number) - Number(right.package_number),
+    )
+  : [];
+const legacyLabelExists = Boolean(order.stallion_label_path);
+const legacyPackage = {
+  weight: Number(order.package_weight_lbs ?? estimatedPackages[0]?.weight ?? 0.75),
+  length: Number(order.package_length_in ?? estimatedPackages[0]?.length ?? 8),
+  width: Number(order.package_width_in ?? estimatedPackages[0]?.width ?? 6),
+  height: Number(order.package_height_in ?? estimatedPackages[0]?.height ?? 4),
+};
+const shippingPackages = savedPackages.length > 0
+  ? savedPackages.map((parcel) => ({
+      packageNumber: Number(parcel.package_number),
+      weight: Number(parcel.weight_lbs),
+      length: Number(parcel.length_in),
+      width: Number(parcel.width_in),
+      height: Number(parcel.height_in),
+      trackingNumber: String(parcel.tracking_number ?? ""),
+      carrier: String(parcel.shipping_carrier ?? ""),
+      serviceName: String(parcel.shipping_service_name ?? ""),
+      shipmentCode: String(parcel.stallion_ship_code ?? parcel.stallion_shipment_id ?? ""),
+      cost: Number(parcel.label_cost ?? 0),
+      hasLabel: Boolean(parcel.label_path),
+    }))
+  : legacyLabelExists
+  ? [{
+      packageNumber: 1,
+      ...legacyPackage,
+      trackingNumber: String(order.shipping_tracking_number ?? ""),
+      carrier: String(order.shipping_carrier ?? ""),
+      serviceName: String(order.shipping_service_name ?? ""),
+      shipmentCode: String(order.stallion_ship_code ?? order.stallion_shipment_id ?? ""),
+      cost: Number(order.stallion_label_cost ?? 0),
+      hasLabel: true,
+    }]
+  : estimatedPackages.map((parcel, index) => ({
+      packageNumber: index + 1,
+      ...parcel,
+      trackingNumber: "",
+      carrier: "",
+      serviceName: "",
+      shipmentCode: "",
+      cost: 0,
+      hasLabel: false,
+    }));
 const isShippingOrder =
   String(order.delivery_method).toLowerCase() === "shipping";
-const hasStallionLabel = Boolean(order.stallion_label_path);
+const hasStallionLabel = shippingPackages.some((parcel) => parcel.hasLabel);
+const allPackagesLabelled = shippingPackages.length > 0 && shippingPackages.every((parcel) => parcel.hasLabel);
 const shippingService =
   order.shipping_service || "cheapest_tracked";
 ---
@@ -583,22 +619,19 @@ const shippingService =
 
   </div>
 
-  <!-- Stallion Label -->
+  <!-- Stallion Labels -->
 
   {
     order.payment_status === "Paid" && isShippingOrder && (
       <div class="mt-8 rounded-2xl border border-yellow-300 bg-yellow-50 p-8 shadow">
         <div class="flex flex-col gap-6 lg:flex-row lg:items-start lg:justify-between">
           <div>
-            <h2 class="text-2xl font-bold text-slate-950">
-              Stallion Shipping Label
-            </h2>
+            <h2 class="text-2xl font-bold text-slate-950">Stallion Shipping Labels</h2>
             <p class="mt-2 max-w-3xl text-slate-600">
-              Customer and address details are filled automatically. Confirm the
-              packed parcel measurements before purchasing postage.
+              Use one row for every physical box. Each box receives its own label
+              and tracking number. Confirm the packed measurements before purchase.
             </p>
           </div>
-
           {hasStallionLabel && (
             <a
               href={`/api/admin/orders/${order.id}/stallion-label`}
@@ -606,125 +639,83 @@ const shippingService =
               rel="noopener noreferrer"
               class="rounded-xl bg-slate-900 px-6 py-3 text-center font-semibold text-white hover:bg-slate-700"
             >
-              Print Label
+              Print All Labels
             </a>
           )}
         </div>
 
-        {hasStallionLabel ? (
-          <div class="mt-6 grid gap-4 rounded-xl border border-green-200 bg-white p-5 text-sm md:grid-cols-2 lg:grid-cols-4">
-            <div>
-              <div class="text-slate-500">Service</div>
-              <div class="mt-1 font-semibold">
-                {order.shipping_service_name || order.shipping_service}
+        <div id="stallionPackages" class="mt-6 space-y-4">
+          {shippingPackages.map((parcel) => (
+            <div class="stallion-package rounded-xl border border-slate-200 bg-white p-5" data-labelled={String(parcel.hasLabel)}>
+              <div class="mb-4 flex items-center justify-between gap-3">
+                <h3 class="font-bold text-slate-950">
+                  Package <span class="package-number">{parcel.packageNumber}</span> of <span class="package-total">{shippingPackages.length}</span>
+                </h3>
+                {!hasStallionLabel && shippingPackages.length > 1 && (
+                  <button type="button" class="remove-package text-sm font-semibold text-red-700 hover:text-red-900">
+                    Remove box
+                  </button>
+                )}
               </div>
-            </div>
-            <div>
-              <div class="text-slate-500">Tracking</div>
-              <div class="mt-1 font-semibold">
-                {order.shipping_tracking_number || "-"}
+              <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                {([[
+                  "weight", "Weight (lb)", parcel.weight
+                ], [
+                  "length", "Length (in)", parcel.length
+                ], [
+                  "width", "Width (in)", parcel.width
+                ], [
+                  "height", "Height (in)", parcel.height
+                ]] as const).map(([field, label, value]) => (
+                  <label class="block">
+                    <span class="mb-2 block text-sm font-semibold text-slate-700">{label}</span>
+                    <input
+                      class={`package-${field} w-full rounded-lg border border-slate-300 px-4 py-3 ${parcel.hasLabel ? "bg-slate-100" : "bg-white"}`}
+                      type="number"
+                      min="0.1"
+                      max="200"
+                      step="0.01"
+                      value={value}
+                      readonly={parcel.hasLabel}
+                    />
+                  </label>
+                ))}
               </div>
+              {parcel.hasLabel && (
+                <div class="mt-4 grid gap-3 border-t border-slate-200 pt-4 text-sm md:grid-cols-4">
+                  <div><span class="text-slate-500">Service</span><div class="font-semibold">{parcel.serviceName || order.shipping_service_name || order.shipping_service}</div></div>
+                  <div><span class="text-slate-500">Tracking</span><div class="font-semibold">{parcel.trackingNumber || "-"}</div></div>
+                  <div><span class="text-slate-500">Shipment</span><div class="font-semibold">{parcel.shipmentCode || "-"}</div></div>
+                  <div class="flex items-end justify-between gap-3">
+                    <div><span class="text-slate-500">Cost</span><div class="font-semibold">CAD ${parcel.cost.toFixed(2)}</div></div>
+                    <a href={`/api/admin/orders/${order.id}/stallion-label?package=${parcel.packageNumber}`} target="_blank" rel="noopener noreferrer" class="font-semibold text-blue-700 hover:text-blue-900">Print</a>
+                  </div>
+                </div>
+              )}
             </div>
-            <div>
-              <div class="text-slate-500">Stallion shipment</div>
-              <div class="mt-1 font-semibold">
-                {order.stallion_ship_code || order.stallion_shipment_id || "-"}
-              </div>
-            </div>
-            <div>
-              <div class="text-slate-500">Label cost</div>
-              <div class="mt-1 font-semibold">
-                CAD ${Number(order.stallion_label_cost ?? 0).toFixed(2)}
-              </div>
-            </div>
-          </div>
-        ) : (
-          <>
-            <div class="mt-6 grid gap-5 md:grid-cols-2 lg:grid-cols-5">
-              <label class="block lg:col-span-1">
-                <span class="mb-2 block font-semibold text-slate-700">
-                  Weight (lb)
-                </span>
-                <input
-                  id="stallionWeight"
-                  type="number"
-                  min="0.1"
-                  max="200"
-                  step="0.01"
-                  value={packageWeight}
-                  class="w-full rounded-lg border border-slate-300 bg-white px-4 py-3"
-                />
-              </label>
-              <label class="block">
-                <span class="mb-2 block font-semibold text-slate-700">
-                  Length (in)
-                </span>
-                <input
-                  id="stallionLength"
-                  type="number"
-                  min="0.1"
-                  max="200"
-                  step="0.01"
-                  value={packageLength}
-                  class="w-full rounded-lg border border-slate-300 bg-white px-4 py-3"
-                />
-              </label>
-              <label class="block">
-                <span class="mb-2 block font-semibold text-slate-700">
-                  Width (in)
-                </span>
-                <input
-                  id="stallionWidth"
-                  type="number"
-                  min="0.1"
-                  max="200"
-                  step="0.01"
-                  value={packageWidth}
-                  class="w-full rounded-lg border border-slate-300 bg-white px-4 py-3"
-                />
-              </label>
-              <label class="block">
-                <span class="mb-2 block font-semibold text-slate-700">
-                  Height (in)
-                </span>
-                <input
-                  id="stallionHeight"
-                  type="number"
-                  min="0.1"
-                  max="200"
-                  step="0.01"
-                  value={packageHeight}
-                  class="w-full rounded-lg border border-slate-300 bg-white px-4 py-3"
-                />
-              </label>
-              <label class="block">
-                <span class="mb-2 block font-semibold text-slate-700">
-                  Shipping service
-                </span>
-                <input
-                  id="stallionService"
-                  value={shippingService}
-                  readonly={Boolean(order.shipping_service)}
-                  class="w-full rounded-lg border border-slate-300 bg-white px-4 py-3 read-only:bg-slate-100"
-                />
-              </label>
-            </div>
+          ))}
+        </div>
 
+        {!hasStallionLabel && (
+          <button id="addStallionPackageButton" type="button" class="mt-4 rounded-lg border border-slate-400 bg-white px-4 py-2 font-semibold text-slate-800 hover:bg-slate-100">
+            + Add another box
+          </button>
+        )}
+
+        {!allPackagesLabelled && (
+          <>
+            <label class="mt-5 block max-w-md">
+              <span class="mb-2 block font-semibold text-slate-700">Shipping service</span>
+              <input id="stallionService" value={shippingService} readonly={Boolean(order.shipping_service)} class="w-full rounded-lg border border-slate-300 bg-white px-4 py-3 read-only:bg-slate-100" />
+            </label>
             {!order.shipping_service && (
               <p class="mt-3 text-sm text-amber-800">
-                This older order has no saved checkout service. Layerforge will
-                purchase the cheapest currently available tracked service.
+                This older order has no saved checkout service. Layerforge will purchase the cheapest currently available tracked service.
               </p>
             )}
-
             <div class="mt-6 flex flex-col gap-3 sm:flex-row sm:items-center">
-              <button
-                id="createStallionLabelButton"
-                type="button"
-                onclick="purchaseStallionLabel()"
-                class="rounded-xl bg-yellow-400 px-7 py-4 font-semibold text-slate-950 hover:bg-yellow-300 disabled:cursor-wait disabled:opacity-60"
-              >
-                Create &amp; Print Stallion Label
+              <button id="createStallionLabelButton" type="button" onclick="purchaseStallionLabel()" class="rounded-xl bg-yellow-400 px-7 py-4 font-semibold text-slate-950 hover:bg-yellow-300 disabled:cursor-wait disabled:opacity-60">
+                {hasStallionLabel ? "Purchase Remaining Labels" : `Purchase & Print ${shippingPackages.length} ${shippingPackages.length === 1 ? "Label" : "Labels"}`}
               </button>
               <p id="stallionLabelStatus" class="text-sm text-slate-600" aria-live="polite"></p>
             </div>
@@ -1021,35 +1012,61 @@ const shippingService =
       }
     };
 
-    window.purchaseStallionLabel = async function () {
-      const fields = {
-        weight: document.getElementById("stallionWeight"),
-        length: document.getElementById("stallionLength"),
-        width: document.getElementById("stallionWidth"),
-        height: document.getElementById("stallionHeight"),
-        service: document.getElementById("stallionService"),
-      };
-      const parcel = {
-        weight: Number(fields.weight?.value ?? 0),
-        length: Number(fields.length?.value ?? 0),
-        width: Number(fields.width?.value ?? 0),
-        height: Number(fields.height?.value ?? 0),
-        service: fields.service?.value.trim() ?? "",
-      };
+    function updatePackageNumbers() {
+      const rows = [...document.querySelectorAll(".stallion-package")];
+      rows.forEach((row, index) => {
+        row.querySelector(".package-number").textContent = String(index + 1);
+        row.querySelector(".package-total").textContent = String(rows.length);
+      });
+      const button = document.getElementById("createStallionLabelButton");
+      if (button && !rows.some((row) => row.dataset.labelled === "true")) {
+        button.textContent = `Purchase & Print ${rows.length} ${rows.length === 1 ? "Label" : "Labels"}`;
+      }
+      document.querySelectorAll(".remove-package").forEach((removeButton) => {
+        removeButton.hidden = rows.length <= 1;
+      });
+    }
 
-      if (
-        !parcel.service ||
+    document.getElementById("addStallionPackageButton")?.addEventListener("click", () => {
+      const container = document.getElementById("stallionPackages");
+      const source = container?.querySelector(".stallion-package:last-child");
+      if (!container || !source || container.children.length >= 20) return;
+      const copy = source.cloneNode(true);
+      copy.dataset.labelled = "false";
+      copy.querySelector(".remove-package")?.removeAttribute("hidden");
+      copy.querySelector("[class*='border-t']")?.remove();
+      container.appendChild(copy);
+      updatePackageNumbers();
+    });
+
+    document.getElementById("stallionPackages")?.addEventListener("click", (event) => {
+      const button = event.target.closest(".remove-package");
+      if (!button) return;
+      const rows = document.querySelectorAll(".stallion-package");
+      if (rows.length > 1) button.closest(".stallion-package")?.remove();
+      updatePackageNumbers();
+    });
+
+    window.purchaseStallionLabel = async function () {
+      const service = document.getElementById("stallionService")?.value.trim() ?? "";
+      const packages = [...document.querySelectorAll(".stallion-package")].map((row) => ({
+        weight: Number(row.querySelector(".package-weight")?.value ?? 0),
+        length: Number(row.querySelector(".package-length")?.value ?? 0),
+        width: Number(row.querySelector(".package-width")?.value ?? 0),
+        height: Number(row.querySelector(".package-height")?.value ?? 0),
+      }));
+
+      if (!service || packages.length === 0 || packages.some((parcel) =>
         [parcel.weight, parcel.length, parcel.width, parcel.height].some(
           (value) => !Number.isFinite(value) || value <= 0,
-        )
-      ) {
-        alert("Enter valid package measurements and a shipping service.");
+        ))) {
+        alert("Enter valid measurements for every package and select a shipping service.");
         return;
       }
 
       if (
         !confirm(
-          "Purchase this Stallion label now? The postage cost will be deducted from your Stallion balance.",
+          `Purchase ${packages.length} Stallion ${packages.length === 1 ? "label" : "labels"} now? The postage cost for every box will be deducted from your Stallion balance.`,
         )
       ) {
         return;
@@ -1060,7 +1077,7 @@ const shippingService =
       const status = document.getElementById("stallionLabelStatus");
 
       if (button) button.disabled = true;
-      if (status) status.textContent = "Creating shipment and purchasing label…";
+      if (status) status.textContent = `Creating ${packages.length} ${packages.length === 1 ? "shipment" : "shipments"} and purchasing labels…`;
 
       try {
         const response = await fetch(
@@ -1068,14 +1085,14 @@ const shippingService =
           {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(parcel),
+            body: JSON.stringify({ packages, service }),
           },
         );
         const result = await response.json();
 
         if (!response.ok || !result.success) {
           printWindow?.close();
-          alert(result.error || "Unable to create the Stallion label.");
+          alert(result.error || "Unable to create the Stallion labels.");
           return;
         }
 
@@ -1088,17 +1105,17 @@ const shippingService =
         }
 
         if (status) {
-          status.textContent = `Label ready · ${result.carrier} · ${result.trackingNumber}`;
+          status.textContent = `${result.packageCount} ${result.packageCount === 1 ? "label" : "labels"} ready · ${result.carrier}`;
         }
 
         alert(
-          `Label created. Tracking: ${result.trackingNumber}. The printable PDF opened in a new tab.`,
+          `${result.packageCount} ${result.packageCount === 1 ? "label was" : "labels were"} created. The printable PDF opened in a new tab.`,
         );
         location.reload();
       } catch (error) {
         console.error(error);
         printWindow?.close();
-        alert("Unable to create the Stallion label.");
+        alert("Unable to create the Stallion labels.");
       } finally {
         if (button) button.disabled = false;
       }

@@ -239,3 +239,86 @@ export function estimateShippingPackage(
 
   return { weight, length, width, height };
 }
+
+/**
+ * Build a parcel plan that favours repeating the smallest suitable box instead
+ * of continually moving an order into a much larger carton. This keeps the
+ * estimate aligned with how small products are actually packed (for example,
+ * twelve mounts in two six-piece cartons).
+ */
+export function estimateShippingPackages(
+  items: ShippingPackingItem[],
+  profiles: ReadonlyMap<string, ProductShippingProfile>,
+  options: ShippingPackingOptions,
+): ShippingPackage[] {
+  const normalizedItems = items.filter(
+    (item) =>
+      item.productId && Number.isInteger(item.quantity) && item.quantity > 0,
+  );
+  const configuredItems = normalizedItems.map((item) => ({
+    item,
+    profile: profiles.get(item.productId),
+  }));
+  const everyItemConfigured =
+    configuredItems.length > 0 &&
+    configuredItems.every(({ profile }) => Boolean(profile));
+
+  if (!everyItemConfigured) {
+    return [estimateShippingPackage(items, profiles, options)];
+  }
+
+  let requiredVolume = 0;
+  let productWeight = 0;
+  const minimumDimensions = [0, 0, 0];
+
+  for (const { item, profile } of configuredItems) {
+    const configuredProfile = profile as ProductShippingProfile;
+    const referenceBox = {
+      length: configuredProfile.lengthIn,
+      width: configuredProfile.widthIn,
+      height: configuredProfile.heightIn,
+    };
+    requiredVolume +=
+      (volume(referenceBox) / configuredProfile.referenceQuantity) *
+      item.quantity;
+    productWeight += configuredProfile.unitWeightLbs * item.quantity;
+
+    for (const [index, dimension] of sortedDimensions(referenceBox).entries()) {
+      minimumDimensions[index] = Math.max(minimumDimensions[index], dimension);
+    }
+  }
+
+  const boxes = [...options.standardBoxes].sort(
+    (left, right) => volume(left) - volume(right),
+  );
+  const selected = boxes.find(
+    (box) =>
+      dimensionsFit(box, minimumDimensions) &&
+      Math.ceil(requiredVolume / volume(box)) <= 20,
+  );
+
+  if (!selected) {
+    return [estimateShippingPackage(items, profiles, options)];
+  }
+
+  const packageCount = Math.max(
+    1,
+    Math.ceil(requiredVolume / volume(selected)),
+    Math.ceil(productWeight / Math.max(0.1, 200 - options.packagingWeightLbs)),
+  );
+  const baseProductWeight = productWeight / packageCount;
+
+  return Array.from({ length: packageCount }, (_, index) => {
+    const allocatedProductWeight =
+      index === packageCount - 1
+        ? productWeight - baseProductWeight * (packageCount - 1)
+        : baseProductWeight;
+
+    return {
+      weight: rounded(
+        Math.max(0.1, allocatedProductWeight + options.packagingWeightLbs),
+      ),
+      ...selected,
+    };
+  });
+}

@@ -1,5 +1,6 @@
 import {
   estimateShippingPackage,
+  estimateShippingPackages,
   parseProductShippingProfile,
   parseStandardBoxes,
   productIdFromShippingProfileSettingKey,
@@ -166,6 +167,38 @@ export async function estimateShipmentPackageForItems(
   );
 
   return estimateShippingPackage(items, profiles, {
+    defaultItemWeightLbs: positiveNumber(
+      process.env.STALLION_DEFAULT_ITEM_WEIGHT_LBS,
+      DEFAULT_ITEM_WEIGHT_LBS,
+    ),
+    packagingWeightLbs: positiveNumber(
+      process.env.STALLION_PACKAGING_WEIGHT_LBS,
+      DEFAULT_PACKAGING_WEIGHT_LBS,
+    ),
+    fallbackLengthIn: positiveNumber(
+      process.env.STALLION_DEFAULT_PACKAGE_LENGTH_IN,
+      DEFAULT_PACKAGE_LENGTH_IN,
+    ),
+    fallbackWidthIn: positiveNumber(
+      process.env.STALLION_DEFAULT_PACKAGE_WIDTH_IN,
+      DEFAULT_PACKAGE_WIDTH_IN,
+    ),
+    fallbackHeightIn: positiveNumber(
+      process.env.STALLION_DEFAULT_PACKAGE_HEIGHT_IN,
+      DEFAULT_PACKAGE_HEIGHT_IN,
+    ),
+    standardBoxes: parseStandardBoxes(process.env.STALLION_STANDARD_BOXES_IN),
+  });
+}
+
+export async function estimateShipmentPackagesForItems(
+  items: ShippingPackingItem[],
+): Promise<ShippingPackage[]> {
+  const profiles = await getProductShippingProfiles(
+    items.map((item) => item.productId),
+  );
+
+  return estimateShippingPackages(items, profiles, {
     defaultItemWeightLbs: positiveNumber(
       process.env.STALLION_DEFAULT_ITEM_WEIGHT_LBS,
       DEFAULT_ITEM_WEIGHT_LBS,

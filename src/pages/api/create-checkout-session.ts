@@ -9,7 +9,7 @@ import {
 } from "../../lib/orders";
 import { getShippingCost, SHIPPING_RATES } from "../../lib/shipping";
 import {
-  getShippingRates,
+  getMultiPackageShippingRates,
   StallionError,
   type StallionPackage,
   type ShippingRate,
@@ -29,7 +29,7 @@ import { getBulkDiscountConfig } from "../../lib/bulkDiscountServer";
 import { calculateSalesTaxes } from "../../lib/taxConfig";
 import { getSalesTaxConfig } from "../../lib/taxConfigServer";
 import { getCheckoutTaxRateIds } from "../../lib/stripeTaxRates";
-import { estimateShipmentPackageForItems } from "../../lib/shippingPackingServer";
+import { estimateShipmentPackagesForItems } from "../../lib/shippingPackingServer";
 
 export const prerender = false;
 
@@ -457,7 +457,7 @@ export const POST: APIRoute = async ({ request }) => {
     ].join(", ");
 
     let selectedShippingRate: ShippingRate | null = null;
-    let selectedShippingPackage: StallionPackage | null = null;
+    let selectedShippingPackages: StallionPackage[] = [];
 
     if (customer.deliveryMethod === "shipping") {
       const packingItems = checkoutItems.map((item) => ({
@@ -468,10 +468,10 @@ export const POST: APIRoute = async ({ request }) => {
         (total, item) => total + item.quantity,
         0,
       );
-      const shipmentPackage =
-        await estimateShipmentPackageForItems(packingItems);
-      selectedShippingPackage = shipmentPackage;
-      const shippingRates = await getShippingRates(
+      const shipmentPackages =
+        await estimateShipmentPackagesForItems(packingItems);
+      selectedShippingPackages = shipmentPackages;
+      const shippingRates = await getMultiPackageShippingRates(
         {
           name: `${customer.firstName} ${customer.lastName}`,
           address1: customer.address,
@@ -480,10 +480,8 @@ export const POST: APIRoute = async ({ request }) => {
           provinceCode: customer.province as keyof typeof SHIPPING_RATES,
           postalCode: customer.postalCode,
         },
-        {
-          totalQuantity,
-          package: shipmentPackage,
-        },
+        shipmentPackages,
+        totalQuantity,
       );
 
       selectedShippingRate =
@@ -552,7 +550,7 @@ export const POST: APIRoute = async ({ request }) => {
             serviceName: selectedShippingRate.serviceName,
           }
         : undefined,
-      selectedShippingPackage ?? undefined,
+      selectedShippingPackages,
     );
     await createOrderItems(order.id, checkoutItems);
 

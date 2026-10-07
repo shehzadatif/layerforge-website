@@ -3,11 +3,11 @@ import type { APIRoute } from "astro";
 import { isSameOriginRequest } from "../../lib/isSameOriginRequest";
 import { SHIPPING_RATES, type Province } from "../../lib/shipping";
 import {
-  getShippingRates,
+  getMultiPackageShippingRates,
   StallionError,
   type ShippingDestination,
 } from "../../lib/stallion";
-import { estimateShipmentPackageForItems } from "../../lib/shippingPackingServer";
+import { estimateShipmentPackagesForItems } from "../../lib/shippingPackingServer";
 
 export const prerender = false;
 
@@ -90,13 +90,15 @@ export const POST: APIRoute = async ({ request }) => {
       provinceCode: provinceCode as Province,
       postalCode,
     };
-    const shipmentPackage = await estimateShipmentPackageForItems(packingItems);
-    const rates = await getShippingRates(destination, {
+    const shipmentPackages =
+      await estimateShipmentPackagesForItems(packingItems);
+    const rates = await getMultiPackageShippingRates(
+      destination,
+      shipmentPackages,
       totalQuantity,
-      package: shipmentPackage,
-    });
+    );
 
-    return Response.json({ rates });
+    return Response.json({ rates, packageCount: shipmentPackages.length });
   } catch (error) {
     if (error instanceof StallionError) {
       return Response.json({ error: error.message }, { status: error.status });

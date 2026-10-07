@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import {
   DEFAULT_STANDARD_BOXES,
   estimateShippingPackage,
+  estimateShippingPackages,
   parseProductShippingProfile,
   parseStandardBoxes,
   type ProductShippingProfile,
@@ -101,6 +102,31 @@ describe("estimateShippingPackage", () => {
       width: 6,
       height: 4,
     });
+  });
+});
+
+describe("estimateShippingPackages", () => {
+  it("uses two reference cartons when the quantity doubles", () => {
+    expect(
+      estimateShippingPackages(
+        [{ productId: "mount", quantity: 12 }],
+        new Map([["mount", mountProfile]]),
+        options,
+      ),
+    ).toEqual([
+      { weight: 1.45, length: 4, width: 2, height: 2 },
+      { weight: 1.45, length: 4, width: 2, height: 2 },
+    ]);
+  });
+
+  it("keeps an unconfigured order on the legacy single-package fallback", () => {
+    expect(
+      estimateShippingPackages(
+        [{ productId: "unknown", quantity: 2 }],
+        new Map(),
+        options,
+      ),
+    ).toEqual([{ weight: 1.25, length: 8, width: 6, height: 4 }]);
   });
 });
 
