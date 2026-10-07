@@ -135,6 +135,43 @@ describe("getShippingRates", () => {
       }),
     ]);
   });
+
+  it("sends an estimated standard box to Stallion", async () => {
+    vi.stubEnv("STALLION_TOKEN", "runtime-token");
+    const fetchMock = vi.spyOn(globalThis, "fetch").mockResolvedValue(
+      Response.json({
+        data: [
+          {
+            service: "intelcom.standard",
+            carrier_name: "Intelcom",
+            service_name: "Standard",
+            total: 7.38,
+            currency: "CAD",
+          },
+        ],
+      }),
+    );
+
+    await getShippingRates(destination, {
+      totalQuantity: 6,
+      package: { weight: 1.45, length: 4, width: 2, height: 2 },
+    });
+
+    const request = fetchMock.mock.calls[0][1] as RequestInit;
+    expect(JSON.parse(String(request.body))).toEqual(
+      expect.objectContaining({
+        packages: [
+          expect.objectContaining({
+            weight: 1.45,
+            length: 4,
+            width: 2,
+            height: 2,
+          }),
+        ],
+        items: [expect.objectContaining({ quantity: 6 })],
+      }),
+    );
+  });
 });
 
 describe("createStallionLabel", () => {

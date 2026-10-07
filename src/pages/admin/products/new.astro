@@ -1,6 +1,7 @@
 ---
 import AdminLayout from "../../../layouts/AdminLayout.astro";
 import ProductVariantsField from "../../../components/admin/ProductVariantsField.astro";
+import ProductShippingProfileFields from "../../../components/admin/ProductShippingProfileFields.astro";
 import { supabaseAdmin } from "../../../lib/supabaseAdmin";
 
 const { data: categories } = await supabaseAdmin
@@ -271,6 +272,8 @@ const { data: materials } = await supabaseAdmin
         </label>
       </div>
     </section>
+
+    <ProductShippingProfileFields />
 
     <ProductVariantsField />
 

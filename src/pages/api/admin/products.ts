@@ -11,6 +11,11 @@ import {
   uploadProductVariantImage,
 } from "../../../lib/productVariantImages";
 import { supabaseAdmin } from "../../../lib/supabaseAdmin";
+import {
+  parseProductShippingProfileForm,
+  ProductShippingProfileValidationError,
+  saveProductShippingProfile,
+} from "../../../lib/shippingPackingServer";
 
 export const prerender = false;
 
@@ -99,6 +104,7 @@ export const POST: APIRoute = async ({ request }) => {
     const variants = parseProductVariants(formData);
     const variantImages = getVariantImageFiles(formData, variants.length);
     const productImages = getProductImages(formData);
+    const shippingProfile = parseProductShippingProfileForm(formData);
 
     if (!name || !category_id) {
       return new Response("Product name and category are required.", {
@@ -168,6 +174,13 @@ export const POST: APIRoute = async ({ request }) => {
       );
     }
 
+    try {
+      await saveProductShippingProfile(product.id, shippingProfile);
+    } catch (shippingProfileError) {
+      await supabaseAdmin.from("products").delete().eq("id", product.id);
+      throw shippingProfileError;
+    }
+
     const uploadedVariantImages: string[] = [];
 
     if (variants.length > 0) {
@@ -196,6 +209,7 @@ export const POST: APIRoute = async ({ request }) => {
         }
       } catch (variantError) {
         await removeProductVariantImages(uploadedVariantImages);
+        await saveProductShippingProfile(product.id, null);
         await supabaseAdmin.from("products").delete().eq("id", product.id);
 
         console.error("Unable to save product variants.", {
@@ -274,6 +288,7 @@ export const POST: APIRoute = async ({ request }) => {
         ...uploadedVariantImages,
         ...uploadedProductImages,
       ]);
+      await saveProductShippingProfile(product.id, null);
       await supabaseAdmin.from("products").delete().eq("id", product.id);
 
       console.error("Unable to save product images.", {
@@ -296,7 +311,8 @@ export const POST: APIRoute = async ({ request }) => {
     if (
       error instanceof ProductVariantValidationError ||
       error instanceof ProductVariantImageError ||
-      error instanceof ProductImageValidationError
+      error instanceof ProductImageValidationError ||
+      error instanceof ProductShippingProfileValidationError
     ) {
       return new Response(error.message, {
         status: 400,

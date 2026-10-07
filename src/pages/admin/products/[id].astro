@@ -1,7 +1,9 @@
 ---
 import AdminLayout from "../../../layouts/AdminLayout.astro";
 import ProductVariantsField from "../../../components/admin/ProductVariantsField.astro";
+import ProductShippingProfileFields from "../../../components/admin/ProductShippingProfileFields.astro";
 import { supabaseAdmin } from "../../../lib/supabaseAdmin";
+import { getProductShippingProfile } from "../../../lib/shippingPackingServer";
 
 const { id } = Astro.params;
 const saved = Astro.url.searchParams.get("saved") === "1";
@@ -101,6 +103,7 @@ function getProductImageUrl(imagePath: string): string {
 const productVariants = [...(product.product_variants ?? [])].sort(
   (left, right) => Number(left.sort_order ?? 0) - Number(right.sort_order ?? 0),
 );
+const shippingProfile = await getProductShippingProfile(product.id);
 ---
 
 <AdminLayout title="Edit Product" active="products">
@@ -379,6 +382,8 @@ const productVariants = [...(product.product_variants ?? [])].sort(
             </label>
           </div>
         </section>
+
+        <ProductShippingProfileFields profile={shippingProfile} />
 
         <ProductVariantsField
           variants={productVariants}

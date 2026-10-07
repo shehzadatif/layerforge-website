@@ -8,7 +8,7 @@ import {
   getOrderProductionDays,
 } from "../../../lib/productionEstimate";
 import { formatTaxRate } from "../../../lib/taxConfig";
-import { getEstimatedShipmentWeight } from "../../../lib/stallion";
+import { estimateShipmentPackageForItems } from "../../../lib/shippingPackingServer";
 
 const { id } = Astro.params;
 
@@ -45,28 +45,25 @@ const estimatedReadyDate = formatEstimatedReadyDate(
   order.created_at,
   productionDays,
 );
-const totalQuantity = (order.order_items ?? []).reduce(
-  (total: number, item: { quantity?: number }) =>
-    total + Number(item.quantity ?? 0),
-  0,
+const estimatedPackage = await estimateShipmentPackageForItems(
+  (order.order_items ?? []).map(
+    (item: { product_id?: string; quantity?: number }) => ({
+      productId: String(item.product_id ?? ""),
+      quantity: Number(item.quantity ?? 0),
+    }),
+  ),
 );
 const packageWeight = Number(
-  order.package_weight_lbs ?? getEstimatedShipmentWeight(totalQuantity),
+  order.package_weight_lbs ?? estimatedPackage.weight,
 );
 const packageLength = Number(
-  order.package_length_in ??
-    import.meta.env.STALLION_DEFAULT_PACKAGE_LENGTH_IN ??
-    8,
+  order.package_length_in ?? estimatedPackage.length,
 );
 const packageWidth = Number(
-  order.package_width_in ??
-    import.meta.env.STALLION_DEFAULT_PACKAGE_WIDTH_IN ??
-    6,
+  order.package_width_in ?? estimatedPackage.width,
 );
 const packageHeight = Number(
-  order.package_height_in ??
-    import.meta.env.STALLION_DEFAULT_PACKAGE_HEIGHT_IN ??
-    4,
+  order.package_height_in ?? estimatedPackage.height,
 );
 const isShippingOrder =
   String(order.delivery_method).toLowerCase() === "shipping";

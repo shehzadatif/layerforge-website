@@ -12,6 +12,11 @@ import {
   uploadProductVariantImage,
 } from "../../../lib/productVariantImages";
 import { supabaseAdmin } from "../../../lib/supabaseAdmin";
+import {
+  parseProductShippingProfileForm,
+  ProductShippingProfileValidationError,
+  saveProductShippingProfile,
+} from "../../../lib/shippingPackingServer";
 
 export const prerender = false;
 
@@ -166,6 +171,7 @@ export const POST: APIRoute = async ({ request }) => {
 
     const variants = parseProductVariants(formData);
     const variantImages = getVariantImageFiles(formData, variants.length);
+    const shippingProfile = parseProductShippingProfileForm(formData);
 
     if (!id || !name || !categoryId) {
       return new Response("Product ID, name, and category are required.", {
@@ -225,6 +231,8 @@ export const POST: APIRoute = async ({ request }) => {
       });
     }
 
+    await saveProductShippingProfile(id, shippingProfile);
+
     await syncProductVariants(id, variants, variantImages);
 
     const { error: deleteError } = await supabaseAdmin
@@ -274,7 +282,8 @@ export const POST: APIRoute = async ({ request }) => {
   } catch (error) {
     if (
       error instanceof ProductVariantValidationError ||
-      error instanceof ProductVariantImageError
+      error instanceof ProductVariantImageError ||
+      error instanceof ProductShippingProfileValidationError
     ) {
       return new Response(error.message, {
         status: 400,
