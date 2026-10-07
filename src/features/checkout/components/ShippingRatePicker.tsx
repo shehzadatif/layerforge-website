@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import type { ShippingRate } from "../../../lib/stallion";
 import type { CheckoutForm } from "../types";
@@ -7,7 +7,7 @@ interface Props {
   customer: CheckoutForm;
   items: Array<{ quantity: number }>;
   selectedRate: ShippingRate | null;
-  onSelect: (rate: ShippingRate) => void;
+  onSelect: (rate: ShippingRate | null) => void;
 }
 
 export default function ShippingRatePicker({
@@ -19,8 +19,14 @@ export default function ShippingRatePicker({
   const [rates, setRates] = useState<ShippingRate[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
+  const itemsSignature = items.map((item) => item.quantity).join("|");
+  const previousItemsSignature = useRef(itemsSignature);
+  const requestSequence = useRef(0);
 
-  async function loadRates() {
+  async function loadRates(
+    preferredService?: string,
+    requestId = ++requestSequence.current,
+  ) {
     if (
       !customer.address.trim() ||
       !customer.city.trim() ||
@@ -32,6 +38,7 @@ export default function ShippingRatePicker({
 
     setIsLoading(true);
     setError("");
+    setRates([]);
 
     try {
       const response = await fetch("/api/shipping-rates", {
@@ -47,13 +54,21 @@ export default function ShippingRatePicker({
       if (!response.ok || !Array.isArray(data.rates)) {
         throw new Error(data.error || "Unable to load shipping rates.");
       }
+      if (requestId !== requestSequence.current) return;
 
       setRates(data.rates);
 
-      if (data.rates.length === 1) {
+      const preferredRate = preferredService
+        ? data.rates.find((rate) => rate.service === preferredService)
+        : null;
+
+      if (preferredRate) {
+        onSelect(preferredRate);
+      } else if (data.rates.length === 1) {
         onSelect(data.rates[0]);
       }
     } catch (loadError) {
+      if (requestId !== requestSequence.current) return;
       setRates([]);
       setError(
         loadError instanceof Error
@@ -61,9 +76,28 @@ export default function ShippingRatePicker({
           : "Unable to load shipping rates.",
       );
     } finally {
-      setIsLoading(false);
+      if (requestId === requestSequence.current) setIsLoading(false);
     }
   }
+
+  useEffect(() => {
+    if (previousItemsSignature.current === itemsSignature) return;
+
+    previousItemsSignature.current = itemsSignature;
+    if (rates.length === 0 && !selectedRate) return;
+
+    const preferredService = selectedRate?.service;
+    onSelect(null);
+    setRates([]);
+    setError("");
+    setIsLoading(true);
+    const requestId = ++requestSequence.current;
+    const timeout = window.setTimeout(() => {
+      void loadRates(preferredService, requestId);
+    }, 350);
+
+    return () => window.clearTimeout(timeout);
+  }, [itemsSignature]);
 
   return (
     <section className="rounded-2xl bg-white p-8 shadow">

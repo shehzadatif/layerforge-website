@@ -62,20 +62,12 @@ export default function CheckoutPage({
     new Date(),
     productionDays,
   );
-  const cartShippingKey = cart
-    .map(
-      (item) =>
-        `${item.id}:${item.variantId ?? "base"}:${item.materialId}:${item.quantity}`,
-    )
-    .join("|");
-
   function changeQuantity(item: CartItem, quantity: number) {
     const nextQuantity = Math.min(MAX_CHECKOUT_QUANTITY, Math.max(1, quantity));
     if (nextQuantity === item.quantity) return;
 
     updateQuantity(item.id, item.materialId, nextQuantity, item.variantId);
     setCart(getCart());
-    setSelectedShippingRate(null);
   }
 
   useEffect(() => {
@@ -173,7 +165,7 @@ export default function CheckoutPage({
               updateField={updateField}
             />
             <ShippingRatePicker
-              key={`${form.address}|${form.unit}|${form.city}|${form.postalCode}|${form.province}|${cartShippingKey}`}
+              key={`${form.address}|${form.unit}|${form.city}|${form.postalCode}|${form.province}`}
               customer={form}
               items={cart}
               selectedRate={selectedShippingRate}
