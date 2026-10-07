@@ -35,6 +35,11 @@ export interface StallionPackage {
   height: number;
 }
 
+export interface StallionRateShipment {
+  totalQuantity: number;
+  package: StallionPackage;
+}
+
 export interface StallionLabelRequest {
   destination: ShippingDestination;
   orderReference: string;
@@ -160,7 +165,7 @@ export function stallionIsConfigured(): boolean {
 
 export async function getShippingRates(
   destination: ShippingDestination,
-  totalQuantity: number,
+  shipment: number | StallionRateShipment,
 ): Promise<ShippingRate[]> {
   const token = process.env.STALLION_TOKEN?.trim();
 
@@ -168,19 +173,26 @@ export async function getShippingRates(
     return [fallbackRate(destination.provinceCode)];
   }
 
-  const weight = getEstimatedShipmentWeight(totalQuantity);
-  const length = positiveNumber(
-    process.env.STALLION_DEFAULT_PACKAGE_LENGTH_IN,
-    DEFAULT_PACKAGE_LENGTH_IN,
-  );
-  const width = positiveNumber(
-    process.env.STALLION_DEFAULT_PACKAGE_WIDTH_IN,
-    DEFAULT_PACKAGE_WIDTH_IN,
-  );
-  const height = positiveNumber(
-    process.env.STALLION_DEFAULT_PACKAGE_HEIGHT_IN,
-    DEFAULT_PACKAGE_HEIGHT_IN,
-  );
+  const totalQuantity =
+    typeof shipment === "number" ? shipment : shipment.totalQuantity;
+  const parcel =
+    typeof shipment === "number"
+      ? {
+          weight: getEstimatedShipmentWeight(totalQuantity),
+          length: positiveNumber(
+            process.env.STALLION_DEFAULT_PACKAGE_LENGTH_IN,
+            DEFAULT_PACKAGE_LENGTH_IN,
+          ),
+          width: positiveNumber(
+            process.env.STALLION_DEFAULT_PACKAGE_WIDTH_IN,
+            DEFAULT_PACKAGE_WIDTH_IN,
+          ),
+          height: positiveNumber(
+            process.env.STALLION_DEFAULT_PACKAGE_HEIGHT_IN,
+            DEFAULT_PACKAGE_HEIGHT_IN,
+          ),
+        }
+      : shipment.package;
   const baseUrl = (
     process.env.STALLION_BASE_URL?.trim() || DEFAULT_BASE_URL
   ).replace(/\/+$/, "");
@@ -209,11 +221,11 @@ export async function getShippingRates(
         },
         packages: [
           {
-            weight,
+            weight: parcel.weight,
             weight_unit: "lbs",
-            length,
-            width,
-            height,
+            length: parcel.length,
+            width: parcel.width,
+            height: parcel.height,
             size_unit: "in",
             package_contents: "Layer Forge Canada order",
           },

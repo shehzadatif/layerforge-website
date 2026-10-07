@@ -7,6 +7,7 @@ import {
   StallionError,
   type ShippingDestination,
 } from "../../lib/stallion";
+import { estimateShipmentPackageForItems } from "../../lib/shippingPackingServer";
 
 export const prerender = false;
 
@@ -52,19 +53,24 @@ export const POST: APIRoute = async ({ request }) => {
       );
     }
 
-    const totalQuantity = items.reduce((total: number, item: unknown) => {
-      const quantity = Number(
-        item && typeof item === "object"
-          ? (item as Record<string, unknown>).quantity
-          : 0,
-      );
-      return (
-        total +
-        (Number.isInteger(quantity) && quantity > 0 && quantity <= 100
-          ? quantity
-          : 0)
-      );
-    }, 0);
+    const packingItems = items.flatMap((item: unknown) => {
+      if (!item || typeof item !== "object") return [];
+
+      const cartItem = item as Record<string, unknown>;
+      const productId = stringValue(cartItem.id, 100);
+      const quantity = Number(cartItem.quantity);
+
+      return productId &&
+        Number.isInteger(quantity) &&
+        quantity > 0 &&
+        quantity <= 100
+        ? [{ productId, quantity }]
+        : [];
+    });
+    const totalQuantity = packingItems.reduce(
+      (total, item) => total + item.quantity,
+      0,
+    );
 
     if (totalQuantity < 1 || totalQuantity > 5_000) {
       return Response.json({ error: "Your cart is empty." }, { status: 400 });
@@ -84,7 +90,11 @@ export const POST: APIRoute = async ({ request }) => {
       provinceCode: provinceCode as Province,
       postalCode,
     };
-    const rates = await getShippingRates(destination, totalQuantity);
+    const shipmentPackage = await estimateShipmentPackageForItems(packingItems);
+    const rates = await getShippingRates(destination, {
+      totalQuantity,
+      package: shipmentPackage,
+    });
 
     return Response.json({ rates });
   } catch (error) {

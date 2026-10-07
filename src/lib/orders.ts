@@ -35,6 +35,13 @@ export interface OrderShippingSelection {
   serviceName: string;
 }
 
+export interface OrderShippingPackage {
+  weight: number;
+  length: number;
+  width: number;
+  height: number;
+}
+
 /**
  * Create a new order
  */
@@ -42,6 +49,7 @@ export async function createOrder(
   customer: CustomerInfo,
   subtotal: number,
   shippingSelection?: OrderShippingSelection,
+  shippingPackage?: OrderShippingPackage,
 ) {
   const trackingToken = generateTrackingToken();
 
@@ -68,6 +76,10 @@ export async function createOrder(
       shipping_carrier: shippingSelection?.carrier ?? null,
       shipping_service: shippingSelection?.service ?? null,
       shipping_service_name: shippingSelection?.serviceName ?? null,
+      package_weight_lbs: shippingPackage?.weight ?? null,
+      package_length_in: shippingPackage?.length ?? null,
+      package_width_in: shippingPackage?.width ?? null,
+      package_height_in: shippingPackage?.height ?? null,
 
       material_summary: customer.materialSummary ?? "",
 

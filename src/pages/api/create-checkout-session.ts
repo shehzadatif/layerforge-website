@@ -11,6 +11,7 @@ import { getShippingCost, SHIPPING_RATES } from "../../lib/shipping";
 import {
   getShippingRates,
   StallionError,
+  type StallionPackage,
   type ShippingRate,
 } from "../../lib/stallion";
 import { stripe } from "../../lib/stripe";
@@ -28,6 +29,7 @@ import { getBulkDiscountConfig } from "../../lib/bulkDiscountServer";
 import { calculateSalesTaxes } from "../../lib/taxConfig";
 import { getSalesTaxConfig } from "../../lib/taxConfigServer";
 import { getCheckoutTaxRateIds } from "../../lib/stripeTaxRates";
+import { estimateShipmentPackageForItems } from "../../lib/shippingPackingServer";
 
 export const prerender = false;
 
@@ -455,8 +457,20 @@ export const POST: APIRoute = async ({ request }) => {
     ].join(", ");
 
     let selectedShippingRate: ShippingRate | null = null;
+    let selectedShippingPackage: StallionPackage | null = null;
 
     if (customer.deliveryMethod === "shipping") {
+      const packingItems = checkoutItems.map((item) => ({
+        productId: item.id,
+        quantity: item.quantity,
+      }));
+      const totalQuantity = packingItems.reduce(
+        (total, item) => total + item.quantity,
+        0,
+      );
+      const shipmentPackage =
+        await estimateShipmentPackageForItems(packingItems);
+      selectedShippingPackage = shipmentPackage;
       const shippingRates = await getShippingRates(
         {
           name: `${customer.firstName} ${customer.lastName}`,
@@ -466,7 +480,10 @@ export const POST: APIRoute = async ({ request }) => {
           provinceCode: customer.province as keyof typeof SHIPPING_RATES,
           postalCode: customer.postalCode,
         },
-        checkoutItems.reduce((total, item) => total + item.quantity, 0),
+        {
+          totalQuantity,
+          package: shipmentPackage,
+        },
       );
 
       selectedShippingRate =
@@ -535,6 +552,7 @@ export const POST: APIRoute = async ({ request }) => {
             serviceName: selectedShippingRate.serviceName,
           }
         : undefined,
+      selectedShippingPackage ?? undefined,
     );
     await createOrderItems(order.id, checkoutItems);
 

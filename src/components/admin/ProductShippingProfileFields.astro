@@ -1,0 +1,105 @@
+---
+import type { ProductShippingProfile } from "../../lib/shippingPacking";
+
+interface Props {
+  profile?: ProductShippingProfile | null;
+}
+
+const { profile = null } = Astro.props;
+---
+
+<section class="rounded-xl border border-blue-200 bg-blue-50 p-5">
+  <h2 class="text-lg font-bold text-slate-950">Shipping &amp; Packing</h2>
+  <p class="mt-2 text-sm leading-6 text-slate-600">
+    Enter one test-packed example. Checkout scales its volume by the ordered
+    quantity and selects the smallest configured box that fits. Example: if six
+    pieces fit in a 4 × 2 × 2 inch box, enter 6, 4, 2, and 2 below.
+  </p>
+
+  <div class="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
+    <label class="block">
+      <span class="mb-2 block text-sm font-semibold text-slate-700">
+        Unit weight (lb)
+      </span>
+      <input
+        type="number"
+        name="shipping_unit_weight_lbs"
+        min="0.01"
+        max="200"
+        step="0.01"
+        value={profile?.unitWeightLbs ?? ""}
+        placeholder="0.50"
+        class="w-full rounded-lg border border-slate-300 bg-white p-3"
+      />
+    </label>
+
+    <label class="block">
+      <span class="mb-2 block text-sm font-semibold text-slate-700">
+        Packed quantity
+      </span>
+      <input
+        type="number"
+        name="shipping_reference_quantity"
+        min="1"
+        max="200"
+        step="1"
+        value={profile?.referenceQuantity ?? ""}
+        placeholder="6"
+        class="w-full rounded-lg border border-slate-300 bg-white p-3"
+      />
+    </label>
+
+    <label class="block">
+      <span class="mb-2 block text-sm font-semibold text-slate-700">
+        Box length (in)
+      </span>
+      <input
+        type="number"
+        name="shipping_package_length_in"
+        min="0.1"
+        max="200"
+        step="0.1"
+        value={profile?.lengthIn ?? ""}
+        placeholder="4"
+        class="w-full rounded-lg border border-slate-300 bg-white p-3"
+      />
+    </label>
+
+    <label class="block">
+      <span class="mb-2 block text-sm font-semibold text-slate-700">
+        Box width (in)
+      </span>
+      <input
+        type="number"
+        name="shipping_package_width_in"
+        min="0.1"
+        max="200"
+        step="0.1"
+        value={profile?.widthIn ?? ""}
+        placeholder="2"
+        class="w-full rounded-lg border border-slate-300 bg-white p-3"
+      />
+    </label>
+
+    <label class="block">
+      <span class="mb-2 block text-sm font-semibold text-slate-700">
+        Box height (in)
+      </span>
+      <input
+        type="number"
+        name="shipping_package_height_in"
+        min="0.1"
+        max="200"
+        step="0.1"
+        value={profile?.heightIn ?? ""}
+        placeholder="2"
+        class="w-full rounded-lg border border-slate-300 bg-white p-3"
+      />
+    </label>
+  </div>
+
+  <p class="mt-3 text-xs leading-5 text-slate-500">
+    Leave all fields blank to use the conservative default package. At label
+    time, confirm the final packed weight and measurements before purchase.
+  </p>
+</section>
