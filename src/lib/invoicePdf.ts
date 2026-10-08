@@ -157,6 +157,22 @@ export async function generateInvoicePdf(
     });
   };
 
+  const drawRightAlignedText = (
+    text: string,
+    rightX: number,
+    size = 11,
+    font: PDFFont = regular,
+    targetPage: PDFPage = page,
+  ) => {
+    drawText(
+      text,
+      rightX - font.widthOfTextAtSize(text, size),
+      size,
+      font,
+      targetPage,
+    );
+  };
+
   /*
    * Header and logo
    */
@@ -268,6 +284,10 @@ export async function generateInvoicePdf(
   /*
    * Order items table
    */
+  const quantityRight = 355;
+  const unitPriceRight = 455;
+  const totalRight = PAGE_WIDTH - RIGHT_MARGIN;
+
   page.drawRectangle({
     x: LEFT_MARGIN,
     y: y - 5,
@@ -277,9 +297,9 @@ export async function generateInvoicePdf(
   });
 
   drawText("Item", 60, 10, bold);
-  drawText("Qty", 330, 10, bold);
-  drawText("Unit", 390, 10, bold);
-  drawText("Total", 490, 10, bold);
+  drawRightAlignedText("Qty", quantityRight, 10, bold);
+  drawRightAlignedText("Unit", unitPriceRight, 10, bold);
+  drawRightAlignedText("Total", totalRight, 10, bold);
 
   y -= 32;
 
@@ -291,11 +311,11 @@ export async function generateInvoicePdf(
 
     drawText(truncateText(itemName, regular, 10, 250), 60, 10);
 
-    drawText(String(item.quantity), 330, 10);
+    drawRightAlignedText(String(item.quantity), quantityRight, 10);
 
-    drawText(formatCurrency(item.unit_price), 390, 10);
+    drawRightAlignedText(formatCurrency(item.unit_price), unitPriceRight, 10);
 
-    drawText(formatCurrency(item.total_price), 490, 10);
+    drawRightAlignedText(formatCurrency(item.total_price), totalRight, 10);
 
     y -= 24;
   }
@@ -306,12 +326,12 @@ export async function generateInvoicePdf(
    * Totals
    */
   drawText("Subtotal", 390, 11, bold);
-  drawText(formatCurrency(order.subtotal), 490, 11);
+  drawRightAlignedText(formatCurrency(order.subtotal), totalRight, 11);
 
   y -= 20;
 
   drawText("Shipping", 390, 11, bold);
-  drawText(formatCurrency(order.shipping), 490, 11);
+  drawRightAlignedText(formatCurrency(order.shipping), totalRight, 11);
 
   y -= 20;
 
@@ -325,20 +345,20 @@ export async function generateInvoicePdf(
   if (hasTaxBreakdown) {
     if (gstRate > 0 || gstAmount > 0) {
       drawText(`GST (${formatTaxRate(gstRate)}%)`, 390, 11, bold);
-      drawText(formatCurrency(gstAmount), 490, 11);
+      drawRightAlignedText(formatCurrency(gstAmount), totalRight, 11);
 
       y -= 20;
     }
 
     if (pstRate > 0 || pstAmount > 0) {
       drawText(`PST (${formatTaxRate(pstRate)}%)`, 390, 11, bold);
-      drawText(formatCurrency(pstAmount), 490, 11);
+      drawRightAlignedText(formatCurrency(pstAmount), totalRight, 11);
 
       y -= 20;
     }
   } else {
     drawText("Tax", 390, 11, bold);
-    drawText(formatCurrency(order.tax), 490, 11);
+    drawRightAlignedText(formatCurrency(order.tax), totalRight, 11);
 
     y -= 20;
   }
@@ -359,7 +379,12 @@ export async function generateInvoicePdf(
   });
 
   drawText("Total Paid", 390, 14, bold);
-  drawText(`${formatCurrency(order.total)} CAD`, 480, 14, bold);
+  drawRightAlignedText(
+    `${formatCurrency(order.total)} CAD`,
+    totalRight,
+    14,
+    bold,
+  );
 
   y -= 55;
 
