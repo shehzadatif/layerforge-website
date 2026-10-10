@@ -28,7 +28,10 @@ import {
   normalizeProductionDays,
 } from "../../../../lib/productionEstimate";
 import type { BulkDiscountConfig } from "../../../../lib/bulkDiscount";
-import { getGarmentMockupImage } from "../../../../lib/apparelMockup";
+import {
+  getGarmentMockupImage,
+  getGarmentPrintArea,
+} from "../../../../lib/apparelMockup";
 
 type Material = {
   id: string;
@@ -867,6 +870,10 @@ export default function ApparelDesigner({
     colorName: selectedColor.name,
     frontImage: selectedBlankShirtImage,
   });
+  const garmentPrintArea = getGarmentPrintArea({
+    garmentType: isHoodie ? "hoodie" : "t-shirt",
+    size,
+  });
   const availableStock = usesInventory
     ? Number(selectedVariant?.inventory_quantity ?? 0)
     : 100;
@@ -952,7 +959,12 @@ export default function ApparelDesigner({
 
           <div
             ref={printAreaRef}
-            className="absolute left-[30%] top-[24%] h-[50%] w-[40%] touch-none border border-dashed border-yellow-500/90"
+            className="absolute left-1/2 top-[24%] touch-none border border-dashed border-yellow-500/90"
+            style={{
+              width: `${garmentPrintArea.widthPercent}%`,
+              height: `${garmentPrintArea.heightPercent}%`,
+              transform: "translateX(-50%)",
+            }}
             onPointerDown={positionArtwork}
             onPointerMove={(event) => {
               if (event.buttons === 1) positionArtwork(event);
