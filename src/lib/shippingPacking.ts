@@ -47,6 +47,23 @@ export interface ApparelShippingPlan {
   bulkReviewRecommended: boolean;
 }
 
+export type ShippingPackageType =
+  "poly-mailer" | "apparel-carton" | "standard-box" | "mixed";
+
+export interface ShipmentPackingPlan {
+  packages: ShippingPackage[];
+  packageType: ShippingPackageType;
+  bulkReviewRecommended: boolean;
+}
+
+export interface ResolvedShippingPackingItem extends ShippingPackingItem {
+  shippingProfile?: ProductShippingProfile;
+  apparel?: {
+    garmentType: "t-shirt" | "hoodie";
+    size: string;
+  };
+}
+
 interface ApparelPackageProfile extends ShippingBox {
   packagingWeightLbs: number;
   capacityUnits: number;
@@ -493,4 +510,56 @@ export function estimateShippingPackages(
       ...selected,
     };
   });
+}
+
+/**
+ * Build the complete parcel plan after product, variant and apparel details
+ * have been resolved. Soft apparel is kept in mailers/cartons and rigid goods
+ * are packed in their configured boxes. Mixed carts therefore quote every
+ * parcel instead of collapsing into the legacy single-box fallback.
+ */
+export function estimateResolvedShipmentPackingPlan(
+  items: ResolvedShippingPackingItem[],
+  options: ShippingPackingOptions,
+): ShipmentPackingPlan {
+  const apparelItems = items.filter((item) => item.apparel);
+  const rigidItems = items.filter((item) => !item.apparel);
+  const apparelPlan = apparelItems.length
+    ? estimateApparelShippingPlan(
+        apparelItems.map((item) => ({
+          garmentType: item.apparel!.garmentType,
+          size: item.apparel!.size,
+          quantity: item.quantity,
+          ...(item.shippingProfile?.unitWeightLbs
+            ? { unitWeightLbs: item.shippingProfile.unitWeightLbs }
+            : {}),
+        })),
+      )
+    : null;
+
+  const rigidProfiles = new Map<string, ProductShippingProfile>();
+  const resolvedRigidItems = rigidItems.map((item, index) => {
+    const key = `rigid-line-${index}`;
+    if (item.shippingProfile) rigidProfiles.set(key, item.shippingProfile);
+    return { productId: key, quantity: item.quantity };
+  });
+  const rigidPackages = resolvedRigidItems.length
+    ? estimateShippingPackages(resolvedRigidItems, rigidProfiles, options)
+    : [];
+
+  if (apparelPlan && rigidPackages.length > 0) {
+    return {
+      packages: [...rigidPackages, ...apparelPlan.packages],
+      packageType: "mixed",
+      bulkReviewRecommended: apparelPlan.bulkReviewRecommended,
+    };
+  }
+
+  if (apparelPlan) return apparelPlan;
+
+  return {
+    packages: rigidPackages,
+    packageType: "standard-box",
+    bulkReviewRecommended: false,
+  };
 }
