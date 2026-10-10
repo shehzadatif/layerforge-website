@@ -13,6 +13,7 @@ const front = {
   heightIn: 8,
   xPercent: 50,
   yPercent: 45,
+  productionNotes: "  Keep the logo exactly 2 inches below the collar.  ",
 };
 
 describe("apparel designer", () => {
@@ -27,6 +28,9 @@ describe("apparel designer", () => {
     expect(design.size).toBe("XL");
     expect(design.colorName).toBe("Black");
     expect(design.sides.front?.widthIn).toBe(10);
+    expect(design.sides.front?.productionNotes).toBe(
+      "Keep the logo exactly 2 inches below the collar.",
+    );
   });
 
   it("charges the configured extra amount only for two printed sides", () => {

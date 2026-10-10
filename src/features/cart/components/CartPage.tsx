@@ -119,6 +119,14 @@ export default function CartPage({ bulkDiscountConfig }: Props) {
                     <div>
                       Printed: {Object.keys(item.design.sides).join(" + ")}
                     </div>
+                    {Object.entries(item.design.sides).map(([side, artwork]) =>
+                      artwork?.productionNotes ? (
+                        <div key={side}>
+                          {side === "front" ? "Front" : "Back"} note:{" "}
+                          {artwork.productionNotes}
+                        </div>
+                      ) : null,
+                    )}
                   </div>
                 ) : null}
 

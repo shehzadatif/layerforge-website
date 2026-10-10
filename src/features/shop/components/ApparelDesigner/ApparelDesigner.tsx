@@ -28,7 +28,10 @@ import {
   normalizeProductionDays,
 } from "../../../../lib/productionEstimate";
 import type { BulkDiscountConfig } from "../../../../lib/bulkDiscount";
-import { getGarmentMockupImage } from "../../../../lib/apparelMockup";
+import {
+  getGarmentMockupImage,
+  getGarmentPrintArea,
+} from "../../../../lib/apparelMockup";
 
 type Material = {
   id: string;
@@ -78,6 +81,7 @@ type LocalArtwork = {
   heightIn: number;
   xPercent: number;
   yPercent: number;
+  productionNotes: string;
 };
 
 type UploadedArtwork = {
@@ -457,6 +461,7 @@ export default function ApparelDesigner({
               heightIn: artwork.heightIn,
               xPercent: artwork.xPercent,
               yPercent: artwork.yPercent,
+              productionNotes: artwork.productionNotes.trim() || undefined,
             }
           : undefined,
       ]),
@@ -526,6 +531,7 @@ export default function ApparelDesigner({
           heightIn: roundDimension(heightIn),
           xPercent: preset.xPercent,
           yPercent: preset.yPercent,
+          productionNotes: "",
         },
       }));
     } catch {
@@ -813,6 +819,7 @@ export default function ApparelDesigner({
           heightIn: artwork.heightIn,
           xPercent: roundDimension(artwork.xPercent),
           yPercent: roundDimension(artwork.yPercent),
+          productionNotes: artwork.productionNotes.trim() || undefined,
         };
         sides[side] = placement;
       }
@@ -866,6 +873,10 @@ export default function ApparelDesigner({
     garmentType: isHoodie ? "hoodie" : "t-shirt",
     colorName: selectedColor.name,
     frontImage: selectedBlankShirtImage,
+  });
+  const garmentPrintArea = getGarmentPrintArea({
+    garmentType: isHoodie ? "hoodie" : "t-shirt",
+    size,
   });
   const availableStock = usesInventory
     ? Number(selectedVariant?.inventory_quantity ?? 0)
@@ -952,7 +963,12 @@ export default function ApparelDesigner({
 
           <div
             ref={printAreaRef}
-            className="absolute left-[30%] top-[24%] h-[50%] w-[40%] touch-none border border-dashed border-yellow-500/90"
+            className="absolute left-1/2 top-[24%] touch-none border border-dashed border-yellow-500/90"
+            style={{
+              width: `${garmentPrintArea.widthPercent}%`,
+              height: `${garmentPrintArea.heightPercent}%`,
+              transform: "translateX(-50%)",
+            }}
             onPointerDown={positionArtwork}
             onPointerMove={(event) => {
               if (event.buttons === 1) positionArtwork(event);
@@ -999,8 +1015,10 @@ export default function ApparelDesigner({
           </div>
         </div>
         <p className="mt-4 text-center text-xs leading-5 text-slate-400">
-          Mockup is an approximate placement guide. Your original
-          full-resolution file is retained for production.
+          Mockup is a visual placement guide. On-screen size and scale may
+          differ slightly from the actual print. The width and height you enter
+          are the production dimensions, and your original full-resolution file
+          is retained for production.
         </p>
       </section>
 
@@ -1110,15 +1128,30 @@ export default function ApparelDesigner({
           <div className="mb-3 font-bold text-slate-900">
             4. Artwork and placement
           </div>
+          <div className="mb-3 rounded-xl border border-blue-200 bg-blue-50 p-3 text-sm leading-6 text-blue-950">
+            Front and back are configured separately. Select a side, upload its
+            image, then set the width, height, placement, and production notes
+            for that side. Switch sides to upload a different image with its own
+            sizing.
+          </div>
           <div className="grid grid-cols-2 rounded-xl bg-slate-100 p-1">
             {(["front", "back"] as const).map((side) => (
               <button
                 key={side}
                 type="button"
                 onClick={() => setActiveSide(side)}
-                className={`rounded-lg px-4 py-3 font-bold capitalize ${activeSide === side ? "bg-slate-950 text-white shadow" : "text-slate-600"}`}
+                className={`rounded-lg px-4 py-3 text-left font-bold capitalize ${activeSide === side ? "bg-slate-950 text-white shadow" : "text-slate-600"}`}
               >
-                {side} {artworks[side] ? "✓" : ""}
+                <span className="block">
+                  {side} {artworks[side] ? "✓" : ""}
+                </span>
+                <span
+                  className={`mt-0.5 block text-xs font-medium normal-case ${activeSide === side ? "text-slate-300" : "text-slate-500"}`}
+                >
+                  {artworks[side]
+                    ? `${artworks[side].widthIn.toFixed(1)} × ${artworks[side].heightIn.toFixed(1)} in configured`
+                    : "Upload a separate image"}
+                </span>
               </button>
             ))}
           </div>
@@ -1282,6 +1315,24 @@ export default function ApparelDesigner({
                 onChange={(event) => updateHeight(Number(event.target.value))}
                 className="mt-2 w-full accent-yellow-500"
               />
+            </label>
+            <label className="block text-sm font-bold text-slate-700">
+              Print size / production notes for {activeSide} (optional)
+              <textarea
+                value={activeArtwork.productionNotes}
+                maxLength={500}
+                rows={3}
+                onChange={(event) =>
+                  updateActiveArtwork({ productionNotes: event.target.value })
+                }
+                placeholder="Example: Make logo exactly 4 inches wide and keep it 2 inches below the collar."
+                className="mt-2 w-full resize-y rounded-xl border border-slate-300 bg-white px-3 py-2 font-normal text-slate-900 outline-none focus:border-yellow-400 focus:ring-2 focus:ring-yellow-200"
+              />
+              <span className="mt-1 block text-xs font-normal text-slate-500">
+                Example: “Print my logo exactly 4 in wide × 3 in high,
+                positioned 2 in below the collar.” Your entered width and height
+                remain the production dimensions.
+              </span>
             </label>
             <div className="grid gap-4 sm:grid-cols-2">
               <label className="text-sm font-bold text-slate-700">

@@ -235,10 +235,24 @@ export default function CheckoutPage({
                   ) : null}
                   <p className="text-sm text-slate-500">{item.materialName}</p>
                   {item.design ? (
-                    <p className="mt-1 text-sm font-medium text-slate-700">
-                      {item.design.colorName} · Size {item.design.size} ·{" "}
-                      {Object.keys(item.design.sides).join(" + ")}
-                    </p>
+                    <div className="mt-1 text-sm font-medium text-slate-700">
+                      <p>
+                        {item.design.colorName} · Size {item.design.size} ·{" "}
+                        {Object.keys(item.design.sides).join(" + ")}
+                      </p>
+                      {Object.entries(item.design.sides).map(
+                        ([side, artwork]) =>
+                          artwork?.productionNotes ? (
+                            <p
+                              key={side}
+                              className="mt-1 text-xs text-slate-500"
+                            >
+                              {side === "front" ? "Front" : "Back"} note:{" "}
+                              {artwork.productionNotes}
+                            </p>
+                          ) : null,
+                      )}
+                    </div>
                   ) : null}
                   <div
                     className="mt-2 flex items-center gap-2"
