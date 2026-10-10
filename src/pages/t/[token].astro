@@ -1,5 +1,6 @@
 ---
 import MainLayout from "../../layouts/MainLayout.astro";
+import { isPickupDeliveryMethod } from "../../lib/deliveryMethod";
 import { supabaseAdmin } from "../../lib/supabaseAdmin";
 import { formatPacificDateTime } from "../../lib/dateUtils";
 import {
@@ -14,7 +15,8 @@ const { data: order, error } = await supabaseAdmin
   .from("orders")
   .select(`
     *,
-    order_items(*)
+    order_items(*),
+    order_shipping_packages(*)
   `)
   .eq("tracking_token", token)
   .maybeSingle();
@@ -23,14 +25,45 @@ const orderNumber = order
   ? "LF" + String(order.order_number).padStart(6, "0")
   : "";
 
-const isLocalPickup =
-  String(order?.delivery_method ?? "").toLowerCase() ===
-  "pickup";
+const isLocalPickup = isPickupDeliveryMethod(order?.delivery_method);
 
 const productionDays = getOrderProductionDays(order?.order_items);
 const estimatedReadyDate = order
   ? formatEstimatedReadyDate(order.created_at, productionDays)
   : null;
+const carrierTrackingUrl = (() => {
+  const value = String(order?.shipping_tracking_url ?? "").trim();
+  if (!value) return "";
+
+  try {
+    const parsed = new URL(value);
+    return parsed.protocol === "https:" ? parsed.toString() : "";
+  } catch {
+    return "";
+  }
+})();
+const parcelTracking = order
+  ? (Array.isArray(order.order_shipping_packages) &&
+      order.order_shipping_packages.length > 0
+      ? [...order.order_shipping_packages]
+          .sort(
+            (left: any, right: any) =>
+              Number(left.package_number) - Number(right.package_number),
+          )
+          .map((parcel: any) => ({
+            packageNumber: Number(parcel.package_number),
+            carrier: String(parcel.shipping_carrier ?? order.shipping_carrier ?? ""),
+            trackingNumber: String(parcel.tracking_number ?? ""),
+          }))
+      : String(order.shipping_tracking_number ?? "")
+          .split(",")
+          .map((trackingNumber: string, index: number) => ({
+            packageNumber: index + 1,
+            carrier: String(order.shipping_carrier ?? ""),
+            trackingNumber: trackingNumber.trim(),
+          })))
+      .filter((parcel: { trackingNumber: string }) => parcel.trackingNumber)
+  : [];
 ---
 
 <MainLayout title="Track Order | Layer Forge Canada">
@@ -119,7 +152,7 @@ const estimatedReadyDate = order
       }`}
     ></div>
     <span>
-      {isLocalPickup ? "Ready for Pickup" : "Ready for Shipping"}
+      {isLocalPickup ? "Ready for Pickup" : "Production Complete"}
     </span>
   </div>
 
@@ -150,6 +183,41 @@ const estimatedReadyDate = order
   </div>
 
 </div>
+
+          {
+            !isLocalPickup &&
+              ["Shipped", "Completed"].includes(order.order_status) &&
+              parcelTracking.length > 0 && (
+                <div class="mt-10 rounded-2xl border border-blue-200 bg-blue-50 p-6">
+                  <h2 class="text-2xl font-bold">Shipment Tracking</h2>
+                  <div class="mt-4 space-y-4">
+                    {parcelTracking.map((parcel: any) => (
+                      <div class="rounded-xl bg-white p-4 shadow-sm">
+                        <div class="text-sm font-semibold text-slate-500">
+                          Package {parcel.packageNumber}
+                        </div>
+                        <div class="mt-1 font-semibold">
+                          {parcel.carrier || "Carrier"}
+                        </div>
+                        <div class="mt-1 break-all text-slate-700">
+                          {parcel.trackingNumber}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                  {carrierTrackingUrl && (
+                    <a
+                      href={carrierTrackingUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      class="mt-5 inline-block rounded-xl bg-slate-950 px-5 py-3 font-semibold text-white hover:bg-slate-800"
+                    >
+                      Track with Carrier
+                    </a>
+                  )}
+                </div>
+              )
+          }
 
           <h2 class="mt-10 mb-4 text-2xl font-bold">
             Payment

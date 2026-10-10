@@ -1,10 +1,7 @@
 import { ORDER_STATUS } from "./orderStatus";
 
 export type OrderStatusEmailKind =
-  | "in_progress"
-  | "pickup_ready"
-  | "completed"
-  | null;
+  "in_progress" | "pickup_ready" | "production_complete" | "completed" | null;
 
 interface OrderStatusEmailDecision {
   previousStatus: string;
@@ -24,8 +21,8 @@ export function getOrderStatusEmailKind({
     return "in_progress";
   }
 
-  if (requestedStatus === ORDER_STATUS.READY && isPickupOrder) {
-    return "pickup_ready";
+  if (requestedStatus === ORDER_STATUS.READY) {
+    return isPickupOrder ? "pickup_ready" : "production_complete";
   }
 
   if (

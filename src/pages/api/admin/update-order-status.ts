@@ -5,6 +5,7 @@ import { isPickupDeliveryMethod } from "../../../lib/deliveryMethod";
 import { orderCompletedHtml } from "../../../lib/emailTemplates/orderCompleted";
 import { orderInProgressHtml } from "../../../lib/emailTemplates/orderInProgress";
 import { pickupReadyHtml } from "../../../lib/emailTemplates/pickupReady";
+import { productionCompleteHtml } from "../../../lib/emailTemplates/productionComplete";
 import { ORDER_STATUS } from "../../../lib/orderStatus";
 import { getOrderStatusEmailKind } from "../../../lib/orderStatusEmail";
 import { supabaseAdmin } from "../../../lib/supabaseAdmin";
@@ -40,6 +41,17 @@ export const POST: APIRoute = async ({ request }) => {
       );
     }
 
+    if (status === ORDER_STATUS.SHIPPED) {
+      return Response.json(
+        {
+          success: false,
+          error:
+            "Use the Shipping Details section so a carrier and tracking number are recorded before the customer is notified.",
+        },
+        { status: 400 },
+      );
+    }
+
     const { data: order, error: orderError } = await supabaseAdmin
       .from("orders")
       .select("*")
@@ -61,6 +73,31 @@ export const POST: APIRoute = async ({ request }) => {
     const orderNumber = `LF${String(order.order_number).padStart(6, "0")}`;
     const deliveryMethod = String(order.delivery_method ?? "").trim();
     const isPickupOrder = isPickupDeliveryMethod(deliveryMethod);
+    const isSameStatus = status === previousStatus;
+    const isAllowedTransition =
+      isSameStatus ||
+      status === ORDER_STATUS.CANCELLED ||
+      (previousStatus === ORDER_STATUS.NEW &&
+        status === ORDER_STATUS.IN_PROGRESS) ||
+      (previousStatus === ORDER_STATUS.IN_PROGRESS &&
+        status === ORDER_STATUS.READY) ||
+      (isPickupOrder &&
+        previousStatus === ORDER_STATUS.READY &&
+        status === ORDER_STATUS.COMPLETED) ||
+      (!isPickupOrder &&
+        previousStatus === ORDER_STATUS.SHIPPED &&
+        status === ORDER_STATUS.COMPLETED);
+
+    if (!isAllowedTransition) {
+      return Response.json(
+        {
+          success: false,
+          error: `Order cannot move directly from ${previousStatus} to ${status}. Complete each workflow step in order.`,
+        },
+        { status: 409 },
+      );
+    }
+
     const statusEmailKind = getOrderStatusEmailKind({
       previousStatus,
       requestedStatus: status,
@@ -68,6 +105,8 @@ export const POST: APIRoute = async ({ request }) => {
     });
     const shouldSendInProgressEmail = statusEmailKind === "in_progress";
     const shouldSendPickupReadyEmail = statusEmailKind === "pickup_ready";
+    const shouldSendProductionCompleteEmail =
+      statusEmailKind === "production_complete";
     const shouldResendPickupReadyEmail =
       shouldSendPickupReadyEmail && previousStatus === ORDER_STATUS.READY;
     const shouldSendCompletionEmail = statusEmailKind === "completed";
@@ -83,18 +122,10 @@ export const POST: APIRoute = async ({ request }) => {
       statusEmailKind,
       shouldSendInProgressEmail,
       shouldSendPickupReadyEmail,
+      shouldSendProductionCompleteEmail,
       shouldResendPickupReadyEmail,
       shouldSendCompletionEmail,
     });
-
-    if (status === ORDER_STATUS.READY && !isPickupOrder) {
-      logStatusEvent("warn", "Pickup-ready email skipped", {
-        orderId,
-        orderNumber,
-        deliveryMethod,
-        reason: "delivery_method_not_recognized_as_pickup",
-      });
-    }
 
     let emailDetails:
       | {
@@ -108,7 +139,10 @@ export const POST: APIRoute = async ({ request }) => {
 
     if (shouldSendStatusEmail) {
       const apiKey = import.meta.env.RESEND_API_KEY?.trim();
-      const siteUrl = import.meta.env.PUBLIC_SITE_URL?.trim().replace(/\/+$/, "");
+      const siteUrl = import.meta.env.PUBLIC_SITE_URL?.trim().replace(
+        /\/+$/,
+        "",
+      );
 
       const { data: settings, error: settingsError } = await supabaseAdmin
         .from("settings")
@@ -200,6 +234,13 @@ export const POST: APIRoute = async ({ request }) => {
           emailDetails.pickupPhone,
           emailDetails.trackingUrl,
         );
+      } else if (statusEmailKind === "production_complete") {
+        subject = `Production is complete for your order ${orderNumber}`;
+        html = productionCompleteHtml(
+          order.customer_name || "Customer",
+          orderNumber,
+          emailDetails.trackingUrl,
+        );
       } else if (statusEmailKind === "completed") {
         subject = `Your order ${orderNumber} is complete`;
         html = orderCompletedHtml(
@@ -243,14 +284,9 @@ export const POST: APIRoute = async ({ request }) => {
       inProgressEmailSent: shouldSendInProgressEmail,
       pickupEmailSent: shouldSendPickupReadyEmail,
       pickupEmailResent: shouldResendPickupReadyEmail,
+      productionCompleteEmailSent: shouldSendProductionCompleteEmail,
       completionEmailSent: shouldSendCompletionEmail,
       resendEmailId,
-      ...(status === ORDER_STATUS.READY && !isPickupOrder
-        ? {
-            pickupEmailSkippedReason:
-              "The order delivery method is not recognized as local pickup.",
-          }
-        : {}),
     });
   } catch (error) {
     if (updatedOrderId && previousStatus) {
@@ -281,9 +317,7 @@ export const POST: APIRoute = async ({ request }) => {
       {
         success: false,
         error:
-          error instanceof Error
-            ? error.message
-            : "Unable to update status.",
+          error instanceof Error ? error.message : "Unable to update status.",
       },
       { status: 500 },
     );

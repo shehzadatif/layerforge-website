@@ -8,6 +8,8 @@ import {
   getOrderProductionDays,
 } from "../../../lib/productionEstimate";
 import { formatTaxRate } from "../../../lib/taxConfig";
+import { isPickupDeliveryMethod } from "../../../lib/deliveryMethod";
+import { getOrderStatusDisplayLabel } from "../../../lib/orderStatus";
 import { estimateShipmentPackagesForItems } from "../../../lib/shippingPackingServer";
 import { supabaseAdmin } from "../../../lib/supabaseAdmin";
 import {
@@ -125,8 +127,12 @@ const shippingPackages = savedPackages.length > 0
       cost: 0,
       hasLabel: false,
     }));
-const isShippingOrder =
-  String(order.delivery_method).toLowerCase() === "shipping";
+const isPickupOrder = isPickupDeliveryMethod(order.delivery_method);
+const isShippingOrder = !isPickupOrder;
+const orderStatusLabel = getOrderStatusDisplayLabel(
+  order.order_status,
+  isPickupOrder,
+);
 const hasStallionLabel = shippingPackages.some((parcel) => parcel.hasLabel);
 const allPackagesLabelled = shippingPackages.length > 0 && shippingPackages.every((parcel) => parcel.hasLabel);
 const shippingService =
@@ -379,7 +385,7 @@ const shippingService =
                 : "bg-slate-100 text-slate-700"
             }`}
           >
-            {order.order_status}
+            {orderStatusLabel}
           </span>
 
         </div>
@@ -394,53 +400,58 @@ const shippingService =
 
           <div class="grid grid-cols-2 gap-3">
 
-            <button
-              type="button"
-              onclick="updateStatus('New')"
-              class="rounded-lg bg-yellow-400 px-4 py-3 font-semibold text-slate-950 hover:bg-yellow-300"
-            >
-              🆕 New
-            </button>
+            {
+              order.order_status === "New" && (
+                <button
+                  type="button"
+                  onclick="updateStatus('In Progress')"
+                  class="rounded-lg bg-blue-600 px-4 py-3 font-semibold text-white hover:bg-blue-700"
+                >
+                  🔨 Start Production
+                </button>
+              )
+            }
 
-            <button
-              type="button"
-              onclick="updateStatus('In Progress')"
-              class="rounded-lg bg-blue-600 px-4 py-3 font-semibold text-white hover:bg-blue-700"
-            >
-              🔨 In Progress
-            </button>
+            {
+              order.order_status === "In Progress" && (
+                <button
+                  type="button"
+                  onclick="updateStatus('Ready')"
+                  class="rounded-lg bg-green-600 px-4 py-3 font-semibold text-white hover:bg-green-700"
+                >
+                  {isPickupOrder
+                    ? "📦 Mark Ready for Pickup"
+                    : "📦 Mark Production Complete"}
+                </button>
+              )
+            }
 
-            <button
-              type="button"
-              onclick="updateStatus('Ready')"
-              class="rounded-lg bg-green-600 px-4 py-3 font-semibold text-white hover:bg-green-700"
-            >
-              📦 Ready
-            </button>
+            {
+              ((isPickupOrder && order.order_status === "Ready") ||
+                (!isPickupOrder && order.order_status === "Shipped") ||
+                order.order_status === "Completed") && (
+                <button
+                  type="button"
+                  onclick="updateStatus('Completed')"
+                  class="rounded-lg bg-emerald-700 px-4 py-3 font-semibold text-white hover:bg-emerald-800"
+                >
+                  ✅ {isPickupOrder ? "Pickup Completed" : "Complete Order"}
+                </button>
+              )
+            }
 
-            <button
-              type="button"
-              onclick="updateStatus('Shipped')"
-              class="rounded-lg bg-indigo-600 px-4 py-3 font-semibold text-white hover:bg-indigo-700"
-            >
-              🚚 Shipped
-            </button>
-
-            <button
-              type="button"
-              onclick="updateStatus('Completed')"
-              class="rounded-lg bg-emerald-700 px-4 py-3 font-semibold text-white hover:bg-emerald-800"
-            >
-              ✅ Completed
-            </button>
-
-            <button
-              type="button"
-              onclick="updateStatus('Cancelled')"
-              class="rounded-lg bg-red-600 px-4 py-3 font-semibold text-white hover:bg-red-700"
-            >
-              ❌ Cancelled
-            </button>
+            {
+              order.order_status !== "Completed" &&
+                order.order_status !== "Cancelled" && (
+                  <button
+                    type="button"
+                    onclick="updateStatus('Cancelled')"
+                    class="rounded-lg bg-red-600 px-4 py-3 font-semibold text-white hover:bg-red-700"
+                  >
+                    ❌ Cancel Order
+                  </button>
+                )
+            }
 
           </div>
 
@@ -803,15 +814,26 @@ const shippingService =
 
   <!-- Shipping Details -->
 
-  <div class="mt-8 rounded-2xl bg-white p-8 shadow">
+  {
+    isShippingOrder && (
+      <div class="mt-8 rounded-2xl bg-white p-8 shadow">
 
     <h2 class="mb-2 text-2xl font-bold">
       Shipping Details
     </h2>
 
     <p class="mb-6 text-slate-500">
-      Enter the carrier information and notify the customer when the order ships.
+      Stallion label details appear here automatically. Confirm the carrier and
+      tracking number, then notify the customer when the parcel leaves Layer Forge.
     </p>
+
+    {
+      order.order_status !== "Ready" && order.order_status !== "Shipped" && (
+        <div class="mb-6 rounded-xl border border-amber-300 bg-amber-50 p-4 text-amber-900">
+          Mark production complete before shipping this order.
+        </div>
+      )
+    }
 
     <div class="grid gap-6 md:grid-cols-2">
 
@@ -883,12 +905,15 @@ const shippingService =
     <button
       type="button"
       onclick="markOrderShipped()"
-      class="mt-8 rounded-xl bg-green-600 px-8 py-4 font-semibold text-white hover:bg-green-700"
+      disabled={order.order_status !== "Ready" && order.order_status !== "Shipped"}
+      class="mt-8 rounded-xl bg-green-600 px-8 py-4 font-semibold text-white hover:bg-green-700 disabled:cursor-not-allowed disabled:opacity-50"
     >
       🚚 Mark as Shipped and Email Customer
     </button>
 
-  </div>
+      </div>
+    )
+  }
 
   <script define:vars={{ orderId: order.id }}>
 
