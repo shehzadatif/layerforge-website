@@ -1,0 +1,798 @@
+import {
+  useMemo,
+  useRef,
+  useState,
+  type ChangeEvent,
+  type PointerEvent as ReactPointerEvent,
+} from "react";
+import { toast } from "sonner";
+import { addToCart } from "../../../cart/cartStorage";
+import {
+  APPAREL_COLORS,
+  APPAREL_MAX_PRINT_HEIGHT_IN,
+  APPAREL_MAX_PRINT_WIDTH_IN,
+  APPAREL_SIZES,
+  getApparelUnitPriceCents,
+  type ApparelArtworkPlacement,
+  type ApparelDesignData,
+  type ApparelSide,
+} from "../../../../lib/apparelDesigner";
+import {
+  formatProductionDuration,
+  normalizeProductionDays,
+} from "../../../../lib/productionEstimate";
+import type { BulkDiscountConfig } from "../../../../lib/bulkDiscount";
+
+type Material = {
+  id: string;
+  name: string;
+  markup_percent: number;
+  default_production_days?: number | string | null;
+};
+
+type ProductMaterial = {
+  material_id: string;
+  materials: Material;
+};
+
+type ProductVariant = {
+  id: string;
+  option_value: string;
+  price: number | string;
+  active?: boolean | null;
+  sort_order?: number | string | null;
+};
+
+type Product = {
+  id: string;
+  name: string;
+  price: number | string;
+  sale_price?: number | string | null;
+  apparel_back_print_price?: number | string | null;
+  bulk_discount_eligible?: boolean | null;
+  allow_bulk_discount_on_sale?: boolean | null;
+  product_materials: ProductMaterial[];
+  product_variants?: ProductVariant[] | null;
+};
+
+type LocalArtwork = {
+  file: File;
+  previewUrl: string;
+  pixelWidth: number;
+  pixelHeight: number;
+  aspectRatio: number;
+  widthIn: number;
+  heightIn: number;
+  xPercent: number;
+  yPercent: number;
+};
+
+type UploadedArtwork = {
+  path: string;
+  originalName: string;
+  mimeType: string;
+};
+
+interface Props {
+  product: Product;
+  bulkDiscountConfig: BulkDiscountConfig;
+}
+
+const ACCEPTED_TYPES = new Set(["image/png", "image/jpeg", "image/webp"]);
+const MAX_ARTWORK_SIZE = 20 * 1024 * 1024;
+
+function roundDimension(value: number): number {
+  return Math.round(value * 10) / 10;
+}
+
+async function getImageDimensions(file: File): Promise<{
+  width: number;
+  height: number;
+}> {
+  const url = URL.createObjectURL(file);
+  try {
+    const image = new Image();
+    image.src = url;
+    await image.decode();
+    return { width: image.naturalWidth, height: image.naturalHeight };
+  } finally {
+    URL.revokeObjectURL(url);
+  }
+}
+
+async function createCartThumbnail(file: File): Promise<string> {
+  const url = URL.createObjectURL(file);
+  try {
+    const image = new Image();
+    image.src = url;
+    await image.decode();
+    const scale = Math.min(
+      1,
+      500 / Math.max(image.naturalWidth, image.naturalHeight),
+    );
+    const canvas = document.createElement("canvas");
+    canvas.width = Math.max(1, Math.round(image.naturalWidth * scale));
+    canvas.height = Math.max(1, Math.round(image.naturalHeight * scale));
+    canvas
+      .getContext("2d")
+      ?.drawImage(image, 0, 0, canvas.width, canvas.height);
+    return canvas.toDataURL("image/webp", 0.78);
+  } finally {
+    URL.revokeObjectURL(url);
+  }
+}
+
+async function uploadArtwork(
+  side: ApparelSide,
+  artwork: LocalArtwork,
+): Promise<UploadedArtwork> {
+  const formData = new FormData();
+  formData.set("side", side);
+  formData.set("file", artwork.file);
+  const response = await fetch("/api/apparel-artwork", {
+    method: "POST",
+    body: formData,
+  });
+  const result = await response.json();
+
+  if (!response.ok) {
+    throw new Error(result.error || `Unable to upload ${side} artwork.`);
+  }
+  return {
+    path: String(result.path),
+    originalName: String(result.originalName),
+    mimeType: String(result.mimeType),
+  };
+}
+
+export default function ApparelDesigner({
+  product,
+  bulkDiscountConfig,
+}: Props) {
+  const variants = useMemo(
+    () =>
+      [...(product.product_variants ?? [])]
+        .filter(
+          (variant) =>
+            variant.active !== false &&
+            Number.isFinite(Number(variant.price)) &&
+            Number(variant.price) > 0,
+        )
+        .sort(
+          (left, right) =>
+            Number(left.sort_order ?? 0) - Number(right.sort_order ?? 0),
+        ),
+    [product.product_variants],
+  );
+  const material = product.product_materials?.[0];
+  const [selectedVariantId, setSelectedVariantId] = useState(
+    variants[0]?.id ?? "",
+  );
+  const [colorId, setColorId] = useState("black");
+  const [size, setSize] = useState("M");
+  const [quantity, setQuantity] = useState(1);
+  const [activeSide, setActiveSide] = useState<ApparelSide>("front");
+  const [artworks, setArtworks] = useState<
+    Partial<Record<ApparelSide, LocalArtwork>>
+  >({});
+  const [lockRatio, setLockRatio] = useState(true);
+  const [isAdding, setIsAdding] = useState(false);
+  const printAreaRef = useRef<HTMLDivElement | null>(null);
+
+  const selectedColor =
+    APPAREL_COLORS.find((color) => color.id === colorId) ?? APPAREL_COLORS[0];
+  const selectedVariant = variants.find(
+    (variant) => variant.id === selectedVariantId,
+  );
+  const activeArtwork = artworks[activeSide];
+  const rawBasePrice = selectedVariant
+    ? Number(selectedVariant.price)
+    : Number(product.sale_price) > 0
+      ? Number(product.sale_price)
+      : Number(product.price);
+  const markupPercent = Number(material?.materials.markup_percent ?? 0);
+  const basePriceCents = Math.round(
+    rawBasePrice * (1 + markupPercent / 100) * 100,
+  );
+  const backPrintPriceCents = Math.round(
+    Number(product.apparel_back_print_price ?? 8) * 100,
+  );
+  const previewDesign: ApparelDesignData = {
+    version: 1,
+    size,
+    colorId: selectedColor.id,
+    colorName: selectedColor.name,
+    colorHex: selectedColor.hex,
+    quality: selectedVariant?.option_value ?? "Standard",
+    sides: Object.fromEntries(
+      Object.entries(artworks).map(([side, artwork]) => [
+        side,
+        artwork
+          ? {
+              artworkPath:
+                "incoming/00000000-0000-0000-0000-000000000000/preview.png",
+              originalName: artwork.file.name,
+              mimeType: artwork.file.type,
+              widthIn: artwork.widthIn,
+              heightIn: artwork.heightIn,
+              xPercent: artwork.xPercent,
+              yPercent: artwork.yPercent,
+            }
+          : undefined,
+      ]),
+    ) as ApparelDesignData["sides"],
+  };
+  const unitPriceCents = getApparelUnitPriceCents(
+    basePriceCents,
+    backPrintPriceCents,
+    previewDesign,
+  );
+  const productionDays = normalizeProductionDays(
+    material?.materials.default_production_days,
+  );
+  const usesSalePrice = !selectedVariant && Number(product.sale_price) > 0;
+  const bulkDiscountEligible =
+    bulkDiscountConfig.enabled &&
+    product.bulk_discount_eligible === true &&
+    (!usesSalePrice || product.allow_bulk_discount_on_sale === true);
+
+  async function selectArtwork(event: ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0];
+    event.target.value = "";
+    if (!file) return;
+    if (!ACCEPTED_TYPES.has(file.type)) {
+      toast.error("Use a PNG, JPG, or WebP image.");
+      return;
+    }
+    if (file.size > MAX_ARTWORK_SIZE) {
+      toast.error("Artwork must be 20 MB or smaller.");
+      return;
+    }
+
+    try {
+      const dimensions = await getImageDimensions(file);
+      if (dimensions.width < 900 || dimensions.height < 900) {
+        toast.warning("This image may print blurry at larger sizes.", {
+          description: "For best results, use artwork at least 1500 px wide.",
+        });
+      }
+      const aspectRatio = dimensions.width / dimensions.height;
+      const widthIn = Math.min(10, APPAREL_MAX_PRINT_WIDTH_IN);
+      const heightIn = Math.min(
+        APPAREL_MAX_PRINT_HEIGHT_IN,
+        Math.max(1, widthIn / aspectRatio),
+      );
+      const previous = artworks[activeSide];
+      if (previous) URL.revokeObjectURL(previous.previewUrl);
+      setArtworks((current) => ({
+        ...current,
+        [activeSide]: {
+          file,
+          previewUrl: URL.createObjectURL(file),
+          pixelWidth: dimensions.width,
+          pixelHeight: dimensions.height,
+          aspectRatio,
+          widthIn: roundDimension(widthIn),
+          heightIn: roundDimension(heightIn),
+          xPercent: 50,
+          yPercent: 45,
+        },
+      }));
+    } catch {
+      toast.error("Unable to read that image.");
+    }
+  }
+
+  function updateActiveArtwork(changes: Partial<LocalArtwork>) {
+    setArtworks((current) => {
+      const artwork = current[activeSide];
+      if (!artwork) return current;
+      return { ...current, [activeSide]: { ...artwork, ...changes } };
+    });
+  }
+
+  function updateWidth(widthIn: number) {
+    if (!activeArtwork) return;
+    const halfWidthPercent = (widthIn / APPAREL_MAX_PRINT_WIDTH_IN) * 50;
+    const changes: Partial<LocalArtwork> = {
+      widthIn: roundDimension(widthIn),
+      xPercent: Math.max(
+        halfWidthPercent,
+        Math.min(100 - halfWidthPercent, activeArtwork.xPercent),
+      ),
+    };
+    if (lockRatio) {
+      changes.heightIn = roundDimension(
+        Math.min(
+          APPAREL_MAX_PRINT_HEIGHT_IN,
+          Math.max(1, widthIn / activeArtwork.aspectRatio),
+        ),
+      );
+    }
+    updateActiveArtwork(changes);
+  }
+
+  function updateHeight(heightIn: number) {
+    if (!activeArtwork) return;
+    const halfHeightPercent = (heightIn / APPAREL_MAX_PRINT_HEIGHT_IN) * 50;
+    const changes: Partial<LocalArtwork> = {
+      heightIn: roundDimension(heightIn),
+      yPercent: Math.max(
+        halfHeightPercent,
+        Math.min(100 - halfHeightPercent, activeArtwork.yPercent),
+      ),
+    };
+    if (lockRatio) {
+      changes.widthIn = roundDimension(
+        Math.min(
+          APPAREL_MAX_PRINT_WIDTH_IN,
+          Math.max(1, heightIn * activeArtwork.aspectRatio),
+        ),
+      );
+    }
+    updateActiveArtwork(changes);
+  }
+
+  function positionArtwork(event: ReactPointerEvent<HTMLDivElement>) {
+    if (!activeArtwork || !printAreaRef.current) return;
+    event.currentTarget.setPointerCapture(event.pointerId);
+    const rect = printAreaRef.current.getBoundingClientRect();
+    const halfWidthPercent =
+      (activeArtwork.widthIn / APPAREL_MAX_PRINT_WIDTH_IN) * 50;
+    const halfHeightPercent =
+      (activeArtwork.heightIn / APPAREL_MAX_PRINT_HEIGHT_IN) * 50;
+    updateActiveArtwork({
+      xPercent: Math.max(
+        halfWidthPercent,
+        Math.min(
+          100 - halfWidthPercent,
+          ((event.clientX - rect.left) / rect.width) * 100,
+        ),
+      ),
+      yPercent: Math.max(
+        halfHeightPercent,
+        Math.min(
+          100 - halfHeightPercent,
+          ((event.clientY - rect.top) / rect.height) * 100,
+        ),
+      ),
+    });
+  }
+
+  async function handleAddToCart() {
+    if (!material) {
+      toast.error("This product needs an available printing material.");
+      return;
+    }
+    if (!artworks.front && !artworks.back) {
+      toast.error("Upload artwork for the front, back, or both sides.");
+      return;
+    }
+    if (isAdding) return;
+
+    setIsAdding(true);
+    try {
+      const uploadedEntries = await Promise.all(
+        (Object.entries(artworks) as [ApparelSide, LocalArtwork][]).map(
+          async ([side, artwork]) =>
+            [side, await uploadArtwork(side, artwork)] as const,
+        ),
+      );
+      const uploaded = Object.fromEntries(uploadedEntries) as Partial<
+        Record<ApparelSide, UploadedArtwork>
+      >;
+      const sides: ApparelDesignData["sides"] = {};
+
+      for (const side of ["front", "back"] as const) {
+        const artwork = artworks[side];
+        const stored = uploaded[side];
+        if (!artwork || !stored) continue;
+        const placement: ApparelArtworkPlacement = {
+          artworkPath: stored.path,
+          originalName: stored.originalName,
+          mimeType: stored.mimeType,
+          widthIn: artwork.widthIn,
+          heightIn: artwork.heightIn,
+          xPercent: roundDimension(artwork.xPercent),
+          yPercent: roundDimension(artwork.yPercent),
+        };
+        sides[side] = placement;
+      }
+
+      const design: ApparelDesignData = { ...previewDesign, sides };
+      const thumbnailSource = artworks.front ?? artworks.back;
+      const thumbnail = thumbnailSource
+        ? await createCartThumbnail(thumbnailSource.file)
+        : "";
+
+      addToCart({
+        id: product.id,
+        name: product.name,
+        variantId: selectedVariant?.id,
+        variantName: selectedVariant?.option_value,
+        materialId: material.material_id,
+        materialName: material.materials.name,
+        quantity,
+        price: unitPriceCents / 100,
+        image: thumbnail,
+        productionDays,
+        bulkDiscountEligible,
+        configurationId: crypto.randomUUID(),
+        design,
+      });
+
+      toast.success("Custom T-shirt added to cart", {
+        description: `${selectedColor.name} · ${size} · ${Object.keys(sides).join(" + ")}`,
+      });
+    } catch (error) {
+      toast.error(
+        error instanceof Error ? error.message : "Unable to save the design.",
+      );
+    } finally {
+      setIsAdding(false);
+    }
+  }
+
+  const shirtStroke = selectedColor.id === "white" ? "#94a3b8" : "#0f172a";
+
+  return (
+    <div className="grid gap-8 xl:grid-cols-[minmax(0,1.12fr)_minmax(22rem,0.88fr)]">
+      <section className="rounded-3xl bg-slate-950 p-5 shadow-2xl sm:p-8">
+        <div className="mb-5 flex items-center justify-between gap-4 text-white">
+          <div>
+            <p className="text-xs font-bold uppercase tracking-[0.2em] text-yellow-400">
+              Live mockup
+            </p>
+            <h2 className="mt-1 text-2xl font-bold">
+              {activeSide === "front" ? "Front" : "Back"} view
+            </h2>
+          </div>
+          <div className="rounded-full border border-white/20 px-3 py-1 text-xs text-slate-300">
+            Drag artwork to position
+          </div>
+        </div>
+
+        <div className="relative mx-auto aspect-[6/7] max-w-xl overflow-hidden rounded-2xl bg-gradient-to-b from-slate-200 to-slate-400 p-4">
+          <svg
+            viewBox="0 0 600 700"
+            className="absolute inset-0 h-full w-full"
+            aria-label={`${selectedColor.name} T-shirt ${activeSide} mockup`}
+          >
+            <path
+              d="M205 70 92 126 20 266l91 51 50-76v389h278V241l50 76 91-51-72-140-113-56c-25 41-165 41-190 0Z"
+              fill={selectedColor.hex}
+              stroke={shirtStroke}
+              strokeWidth="5"
+              strokeLinejoin="round"
+            />
+            {activeSide === "front" ? (
+              <path
+                d="M205 70c18 100 172 100 190 0-34-16-53-25-67-31-17 33-39 50-28 50s-11-17-28-50c-14 6-33 15-67 31Z"
+                fill="#020617"
+                fillOpacity=".18"
+                stroke={shirtStroke}
+                strokeWidth="4"
+              />
+            ) : (
+              <path
+                d="M220 77c30 30 130 30 160 0"
+                fill="none"
+                stroke={shirtStroke}
+                strokeWidth="4"
+                opacity=".55"
+              />
+            )}
+          </svg>
+
+          <div
+            ref={printAreaRef}
+            className="absolute left-[29%] top-[23%] h-[52%] w-[42%] touch-none border border-dashed border-yellow-400/80"
+            onPointerDown={positionArtwork}
+            onPointerMove={(event) => {
+              if (event.buttons === 1) positionArtwork(event);
+            }}
+          >
+            {activeArtwork ? (
+              <img
+                src={activeArtwork.previewUrl}
+                alt={`${activeSide} artwork preview`}
+                draggable={false}
+                className="pointer-events-none absolute object-fill drop-shadow-lg"
+                style={{
+                  width: `${(activeArtwork.widthIn / APPAREL_MAX_PRINT_WIDTH_IN) * 100}%`,
+                  height: `${(activeArtwork.heightIn / APPAREL_MAX_PRINT_HEIGHT_IN) * 100}%`,
+                  left: `${activeArtwork.xPercent}%`,
+                  top: `${activeArtwork.yPercent}%`,
+                  transform: "translate(-50%, -50%)",
+                }}
+              />
+            ) : (
+              <div className="flex h-full items-center justify-center px-4 text-center text-sm font-semibold text-yellow-950/70">
+                Upload {activeSide} artwork
+              </div>
+            )}
+          </div>
+        </div>
+        <p className="mt-4 text-center text-xs leading-5 text-slate-400">
+          Mockup is an approximate placement guide. Your original
+          full-resolution file is retained for production.
+        </p>
+      </section>
+
+      <section className="space-y-6 rounded-3xl bg-white p-6 shadow-xl sm:p-8">
+        <div>
+          <p className="text-xs font-bold uppercase tracking-[0.18em] text-yellow-600">
+            Design your shirt
+          </p>
+          <h2 className="mt-2 text-3xl font-bold text-slate-950">
+            Make it yours
+          </h2>
+        </div>
+
+        {variants.length > 0 ? (
+          <fieldset>
+            <legend className="mb-3 font-bold text-slate-900">
+              1. Quality
+            </legend>
+            <div className="grid gap-2 sm:grid-cols-2">
+              {variants.map((variant) => (
+                <button
+                  key={variant.id}
+                  type="button"
+                  onClick={() => setSelectedVariantId(variant.id)}
+                  className={`rounded-xl border-2 p-3 text-left transition ${selectedVariantId === variant.id ? "border-yellow-400 bg-yellow-50" : "border-slate-200 hover:border-slate-400"}`}
+                >
+                  <span className="block font-bold">
+                    {variant.option_value}
+                  </span>
+                  <span className="text-sm text-slate-500">
+                    CAD ${Number(variant.price).toFixed(2)}
+                  </span>
+                </button>
+              ))}
+            </div>
+          </fieldset>
+        ) : null}
+
+        <fieldset>
+          <legend className="mb-3 font-bold text-slate-900">
+            2. Shirt colour
+          </legend>
+          <div className="flex flex-wrap gap-3">
+            {APPAREL_COLORS.map((color) => (
+              <button
+                key={color.id}
+                type="button"
+                onClick={() => setColorId(color.id)}
+                aria-label={color.name}
+                title={color.name}
+                className={`h-11 w-11 rounded-full border-4 shadow-sm transition ${colorId === color.id ? "border-yellow-400 scale-110" : "border-white ring-1 ring-slate-300"}`}
+                style={{ backgroundColor: color.hex }}
+              />
+            ))}
+          </div>
+          <p className="mt-2 text-sm font-medium text-slate-600">
+            {selectedColor.name}
+          </p>
+        </fieldset>
+
+        <div className="grid gap-4 sm:grid-cols-2">
+          <label className="font-bold text-slate-900">
+            3. Size
+            <select
+              value={size}
+              onChange={(event) => setSize(event.target.value)}
+              className="mt-2 w-full rounded-xl border border-slate-300 p-3 font-normal"
+            >
+              {APPAREL_SIZES.map((option) => (
+                <option key={option}>{option}</option>
+              ))}
+            </select>
+          </label>
+          <label className="font-bold text-slate-900">
+            Quantity
+            <input
+              type="number"
+              min="1"
+              max="100"
+              value={quantity}
+              onChange={(event) =>
+                setQuantity(
+                  Math.min(100, Math.max(1, Number(event.target.value) || 1)),
+                )
+              }
+              className="mt-2 w-full rounded-xl border border-slate-300 p-3 font-normal"
+            />
+          </label>
+        </div>
+
+        <div>
+          <div className="mb-3 font-bold text-slate-900">
+            4. Artwork and placement
+          </div>
+          <div className="grid grid-cols-2 rounded-xl bg-slate-100 p-1">
+            {(["front", "back"] as const).map((side) => (
+              <button
+                key={side}
+                type="button"
+                onClick={() => setActiveSide(side)}
+                className={`rounded-lg px-4 py-3 font-bold capitalize ${activeSide === side ? "bg-slate-950 text-white shadow" : "text-slate-600"}`}
+              >
+                {side} {artworks[side] ? "✓" : ""}
+              </button>
+            ))}
+          </div>
+
+          <label className="mt-4 block cursor-pointer rounded-xl border-2 border-dashed border-slate-300 p-5 text-center hover:border-yellow-400 hover:bg-yellow-50">
+            <span className="block font-bold text-slate-900">
+              Upload {activeSide} artwork
+            </span>
+            <span className="mt-1 block text-sm text-slate-500">
+              PNG recommended · JPG or WebP · Maximum 20 MB
+            </span>
+            <input
+              type="file"
+              accept="image/png,image/jpeg,image/webp"
+              onChange={selectArtwork}
+              className="sr-only"
+            />
+          </label>
+        </div>
+
+        {activeArtwork ? (
+          <div className="space-y-4 rounded-2xl border border-slate-200 bg-slate-50 p-5">
+            <div className="flex items-center justify-between gap-4">
+              <div className="min-w-0">
+                <div className="truncate font-bold text-slate-900">
+                  {activeArtwork.file.name}
+                </div>
+                <div className="text-xs text-slate-500">
+                  Exact production dimensions
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  URL.revokeObjectURL(activeArtwork.previewUrl);
+                  setArtworks((current) => {
+                    const next = { ...current };
+                    delete next[activeSide];
+                    return next;
+                  });
+                }}
+                className="text-sm font-bold text-red-600"
+              >
+                Remove
+              </button>
+            </div>
+
+            {Math.min(
+              activeArtwork.pixelWidth / activeArtwork.widthIn,
+              activeArtwork.pixelHeight / activeArtwork.heightIn,
+            ) < 150 ? (
+              <div className="rounded-lg border border-amber-300 bg-amber-50 p-3 text-sm font-medium text-amber-900">
+                Low-resolution warning: approximately{" "}
+                {Math.round(
+                  Math.min(
+                    activeArtwork.pixelWidth / activeArtwork.widthIn,
+                    activeArtwork.pixelHeight / activeArtwork.heightIn,
+                  ),
+                )}{" "}
+                DPI at this print size. Reduce the dimensions or upload a larger
+                image.
+              </div>
+            ) : (
+              <div className="text-sm font-medium text-emerald-700">
+                Resolution looks suitable for this print size.
+              </div>
+            )}
+
+            <label className="flex items-center gap-3 text-sm font-medium text-slate-700">
+              <input
+                type="checkbox"
+                checked={lockRatio}
+                onChange={(event) => setLockRatio(event.target.checked)}
+                className="h-4 w-4 accent-yellow-500"
+              />
+              Lock artwork proportions
+            </label>
+
+            <label className="block text-sm font-bold text-slate-700">
+              Width: {activeArtwork.widthIn.toFixed(1)} in
+              <input
+                type="range"
+                min="1"
+                max={APPAREL_MAX_PRINT_WIDTH_IN}
+                step="0.1"
+                value={activeArtwork.widthIn}
+                onChange={(event) => updateWidth(Number(event.target.value))}
+                className="mt-2 w-full accent-yellow-500"
+              />
+            </label>
+            <label className="block text-sm font-bold text-slate-700">
+              Height: {activeArtwork.heightIn.toFixed(1)} in
+              <input
+                type="range"
+                min="1"
+                max={APPAREL_MAX_PRINT_HEIGHT_IN}
+                step="0.1"
+                value={activeArtwork.heightIn}
+                onChange={(event) => updateHeight(Number(event.target.value))}
+                className="mt-2 w-full accent-yellow-500"
+              />
+            </label>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <label className="text-sm font-bold text-slate-700">
+                Horizontal
+                <input
+                  type="range"
+                  min="0"
+                  max="100"
+                  step="1"
+                  value={activeArtwork.xPercent}
+                  onChange={(event) =>
+                    updateActiveArtwork({
+                      xPercent: Number(event.target.value),
+                    })
+                  }
+                  className="mt-2 w-full accent-yellow-500"
+                />
+              </label>
+              <label className="text-sm font-bold text-slate-700">
+                Vertical
+                <input
+                  type="range"
+                  min="0"
+                  max="100"
+                  step="1"
+                  value={activeArtwork.yPercent}
+                  onChange={(event) =>
+                    updateActiveArtwork({
+                      yPercent: Number(event.target.value),
+                    })
+                  }
+                  className="mt-2 w-full accent-yellow-500"
+                />
+              </label>
+            </div>
+          </div>
+        ) : null}
+
+        <div className="rounded-2xl bg-slate-950 p-5 text-white">
+          <div className="flex items-end justify-between gap-4">
+            <div>
+              <div className="text-sm text-slate-400">Live total</div>
+              <div className="text-3xl font-bold">
+                CAD ${((unitPriceCents * quantity) / 100).toFixed(2)}
+              </div>
+            </div>
+            <div className="text-right text-sm text-slate-300">
+              ${(unitPriceCents / 100).toFixed(2)} each
+            </div>
+          </div>
+          {artworks.front && artworks.back ? (
+            <p className="mt-2 text-xs text-yellow-300">
+              Includes CAD ${(backPrintPriceCents / 100).toFixed(2)} per shirt
+              for the second print side.
+            </p>
+          ) : null}
+          {productionDays > 0 ? (
+            <p className="mt-2 text-xs text-slate-400">
+              Estimated {formatProductionDuration(productionDays)} production
+              after payment.
+            </p>
+          ) : null}
+        </div>
+
+        <button
+          type="button"
+          onClick={() => void handleAddToCart()}
+          disabled={isAdding || !material}
+          className="w-full rounded-xl bg-yellow-400 py-4 text-lg font-bold text-slate-950 hover:bg-yellow-300 disabled:cursor-not-allowed disabled:opacity-60"
+        >
+          {isAdding ? "Saving Design..." : "Add Custom T-shirt to Cart"}
+        </button>
+      </section>
+    </div>
+  );
+}

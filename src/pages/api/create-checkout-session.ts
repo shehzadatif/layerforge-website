@@ -30,6 +30,12 @@ import { calculateSalesTaxes } from "../../lib/taxConfig";
 import { getSalesTaxConfig } from "../../lib/taxConfigServer";
 import { getCheckoutTaxRateIds } from "../../lib/stripeTaxRates";
 import { estimateShipmentPackagesForItems } from "../../lib/shippingPackingServer";
+import {
+  ApparelDesignValidationError,
+  getApparelUnitPriceCents,
+  parseApparelDesignData,
+  type ApparelDesignData,
+} from "../../lib/apparelDesigner";
 
 export const prerender = false;
 
@@ -42,6 +48,7 @@ interface RequestedCheckoutItem {
   materialId?: unknown;
   quantity?: unknown;
   price?: unknown;
+  design?: unknown;
 }
 
 interface MaterialRecord {
@@ -71,6 +78,8 @@ interface ProductRecord {
   status: string | null;
   bulk_discount_eligible: boolean | null;
   allow_bulk_discount_on_sale: boolean | null;
+  apparel_designer_enabled: boolean | null;
+  apparel_back_print_price: number | string | null;
   product_materials: ProductMaterialRecord[] | null;
   product_variants: ProductVariantRecord[] | null;
 }
@@ -87,6 +96,7 @@ interface TrustedCheckoutItem {
   productionDays: number;
   unitPriceCents: number;
   bulkDiscountEligible: boolean;
+  designData?: ApparelDesignData;
 }
 
 class CheckoutRequestError extends Error {
@@ -218,6 +228,7 @@ async function buildTrustedItems(
       materialId,
       quantity,
       displayedPriceCents: Math.round(displayedPrice * 100),
+      design: item?.design,
     };
   });
 
@@ -234,6 +245,8 @@ async function buildTrustedItems(
       status,
       bulk_discount_eligible,
       allow_bulk_discount_on_sale,
+      apparel_designer_enabled,
+      apparel_back_print_price,
       product_variants(
         id,
         option_value,
@@ -334,9 +347,54 @@ async function buildTrustedItems(
       );
     }
 
-    const unitPriceCents = Math.round(
+    const standardUnitPriceCents = Math.round(
       basePrice * (1 + markupPercent / 100) * 100,
     );
+
+    let designData: ApparelDesignData | undefined;
+    if (product.apparel_designer_enabled === true) {
+      try {
+        designData = parseApparelDesignData(requestedItem.design);
+      } catch (error) {
+        if (error instanceof ApparelDesignValidationError) {
+          throw new CheckoutRequestError(error.message);
+        }
+        throw error;
+      }
+
+      const expectedQuality = selectedVariant?.option_value ?? "Standard";
+      if (designData.quality !== expectedQuality) {
+        throw new CheckoutRequestError(
+          `The selected quality is invalid for ${product.name}.`,
+          409,
+          "VARIANT_UNAVAILABLE",
+        );
+      }
+    } else if (requestedItem.design) {
+      throw new CheckoutRequestError(
+        `${product.name} does not support custom artwork.`,
+      );
+    }
+
+    const backPrintPrice = Number(product.apparel_back_print_price ?? 8);
+    if (
+      designData &&
+      (!Number.isFinite(backPrintPrice) || backPrintPrice < 0)
+    ) {
+      throw new CheckoutRequestError(
+        `Pricing is unavailable for ${product.name}.`,
+        409,
+        "PRICING_UNAVAILABLE",
+      );
+    }
+
+    const unitPriceCents = designData
+      ? getApparelUnitPriceCents(
+          standardUnitPriceCents,
+          Math.round(backPrintPrice * 100),
+          designData,
+        )
+      : standardUnitPriceCents;
 
     if (unitPriceCents <= 0) {
       throw new CheckoutRequestError(
@@ -362,9 +420,23 @@ async function buildTrustedItems(
       ...(selectedVariant
         ? {
             variantId: String(selectedVariant.id),
-            variantName: String(selectedVariant.option_value ?? "Variant"),
+            variantName: designData
+              ? [
+                  String(selectedVariant.option_value ?? "Variant"),
+                  designData.colorName,
+                  `Size ${designData.size}`,
+                ].join(" · ")
+              : String(selectedVariant.option_value ?? "Variant"),
           }
-        : {}),
+        : designData
+          ? {
+              variantName: [
+                "Standard",
+                designData.colorName,
+                `Size ${designData.size}`,
+              ].join(" · "),
+            }
+          : {}),
       materialId: String(material.id),
       materialName: String(material.name),
       quantity: requestedItem.quantity,
@@ -377,6 +449,7 @@ async function buildTrustedItems(
       bulkDiscountEligible:
         product.bulk_discount_eligible === true &&
         (!usesSalePrice || product.allow_bulk_discount_on_sale === true),
+      designData,
     };
   });
 }

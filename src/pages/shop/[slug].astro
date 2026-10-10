@@ -5,6 +5,7 @@ import { supabaseAdmin } from "../../lib/supabaseAdmin";
 import ProductGallery from "../../features/shop/components/ProductGallery/ProductGallery";
 import ProductConfiguratorWithProvider from "../../features/shop/components/ProductConfigurator/ProductConfiguratorWithProvider";
 import ProductVariantSelector from "../../features/shop/components/ProductConfigurator/ProductVariantSelector";
+import ApparelDesigner from "../../features/shop/components/ApparelDesigner/ApparelDesigner";
 import { getBulkDiscountConfig } from "../../lib/bulkDiscountServer";
 import {
   buildProductStructuredData,
@@ -147,30 +148,41 @@ const categoryPath = [parentCategory?.name, product.categories?.name]
 
       <!-- Product Gallery -->
 
-      <div class="space-y-6">
-        <ProductGallery
-          client:load
-          images={galleryImageUrls}
-          productName={product.name}
-        />
+      <div class:list={["space-y-6", product.apparel_designer_enabled && "lg:col-span-2"]}>
+        {
+          product.apparel_designer_enabled ? (
+            <ApparelDesigner
+              client:load
+              product={storefrontProduct}
+              bulkDiscountConfig={bulkDiscountConfig}
+            />
+          ) : (
+            <>
+              <ProductGallery
+                client:load
+                images={galleryImageUrls}
+                productName={product.name}
+              />
 
-        <ProductVariantSelector
-          client:load
-          product={storefrontProduct}
-        />
+              <ProductVariantSelector
+                client:load
+                product={storefrontProduct}
+              />
 
-        <ProductConfiguratorWithProvider
-          client:load
-          product={storefrontProduct}
-          image={cover}
-          bulkDiscountConfig={bulkDiscountConfig}
-        />
-
+              <ProductConfiguratorWithProvider
+                client:load
+                product={storefrontProduct}
+                image={cover}
+                bulkDiscountConfig={bulkDiscountConfig}
+              />
+            </>
+          )
+        }
       </div>
 
       <!-- Product Information -->
 
-      <div>
+      <div class:list={[product.apparel_designer_enabled && "lg:col-span-2"]}>
 
         <p class="mb-2 text-sm uppercase text-slate-500">
           {categoryPath}

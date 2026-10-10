@@ -1,3 +1,5 @@
+import type { ApparelDesignData } from "../../lib/apparelDesigner";
+
 export type CartItem = {
   id: string;
   name: string;
@@ -10,6 +12,8 @@ export type CartItem = {
   quantity: number;
   productionDays?: number;
   bulkDiscountEligible?: boolean;
+  configurationId?: string;
+  design?: ApparelDesignData;
 };
 
 const STORAGE_KEY = "lf-cart";
@@ -46,7 +50,8 @@ export function addToCart(item: CartItem) {
     (i) =>
       i.id === item.id &&
       i.materialId === item.materialId &&
-      (i.variantId ?? "") === (item.variantId ?? ""),
+      (i.variantId ?? "") === (item.variantId ?? "") &&
+      (i.configurationId ?? "") === (item.configurationId ?? ""),
   );
 
   if (existing) {
@@ -62,6 +67,7 @@ export function removeFromCart(
   id: string,
   materialId: string,
   variantId?: string,
+  configurationId?: string,
 ) {
   saveCart(
     getCart().filter(
@@ -69,7 +75,8 @@ export function removeFromCart(
         !(
           i.id === id &&
           i.materialId === materialId &&
-          (i.variantId ?? "") === (variantId ?? "")
+          (i.variantId ?? "") === (variantId ?? "") &&
+          (i.configurationId ?? "") === (configurationId ?? "")
         ),
     ),
   );
@@ -80,6 +87,7 @@ export function updateQuantity(
   materialId: string,
   quantity: number,
   variantId?: string,
+  configurationId?: string,
 ) {
   const cart = getCart();
 
@@ -87,7 +95,8 @@ export function updateQuantity(
     (i) =>
       i.id === id &&
       i.materialId === materialId &&
-      (i.variantId ?? "") === (variantId ?? ""),
+      (i.variantId ?? "") === (variantId ?? "") &&
+      (i.configurationId ?? "") === (configurationId ?? ""),
   );
 
   if (item) {

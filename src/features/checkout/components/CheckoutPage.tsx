@@ -66,7 +66,13 @@ export default function CheckoutPage({
     const nextQuantity = Math.min(MAX_CHECKOUT_QUANTITY, Math.max(1, quantity));
     if (nextQuantity === item.quantity) return;
 
-    updateQuantity(item.id, item.materialId, nextQuantity, item.variantId);
+    updateQuantity(
+      item.id,
+      item.materialId,
+      nextQuantity,
+      item.variantId,
+      item.configurationId,
+    );
     setCart(getCart());
   }
 
@@ -201,7 +207,7 @@ export default function CheckoutPage({
           <div className="mb-6 space-y-5">
             {cart.map((item) => (
               <div
-                key={`${item.id}-${item.variantId ?? "base"}-${item.materialId}`}
+                key={`${item.id}-${item.variantId ?? "base"}-${item.materialId}-${item.configurationId ?? "standard"}`}
                 className="grid grid-cols-[5rem_minmax(0,1fr)] gap-4 border-b pb-4"
               >
                 <div className="h-20 w-20 overflow-hidden rounded-lg bg-slate-100">
@@ -228,6 +234,12 @@ export default function CheckoutPage({
                     </p>
                   ) : null}
                   <p className="text-sm text-slate-500">{item.materialName}</p>
+                  {item.design ? (
+                    <p className="mt-1 text-sm font-medium text-slate-700">
+                      {item.design.colorName} · Size {item.design.size} ·{" "}
+                      {Object.keys(item.design.sides).join(" + ")}
+                    </p>
+                  ) : null}
                   <div
                     className="mt-2 flex items-center gap-2"
                     aria-label={`Quantity for ${item.name}`}

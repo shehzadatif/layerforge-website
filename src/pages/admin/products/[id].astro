@@ -2,6 +2,7 @@
 import AdminLayout from "../../../layouts/AdminLayout.astro";
 import ProductVariantsField from "../../../components/admin/ProductVariantsField.astro";
 import ProductShippingProfileFields from "../../../components/admin/ProductShippingProfileFields.astro";
+import ApparelDesignerFields from "../../../components/admin/ApparelDesignerFields.astro";
 import { supabaseAdmin } from "../../../lib/supabaseAdmin";
 import {
   getProductShippingProfile,
@@ -392,6 +393,11 @@ const shippingProfile = await getProductShippingProfile(product.id);
             </label>
           </div>
         </section>
+
+        <ApparelDesignerFields
+          enabled={product.apparel_designer_enabled === true}
+          backPrintPrice={product.apparel_back_print_price}
+        />
 
         <ProductShippingProfileFields profile={shippingProfile} />
 

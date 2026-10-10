@@ -98,6 +98,11 @@ export const POST: APIRoute = async ({ request }) => {
     const allow_bulk_discount_on_sale =
       bulk_discount_eligible &&
       formData.get("allow_bulk_discount_on_sale") === "on";
+    const apparel_designer_enabled =
+      formData.get("apparel_designer_enabled") === "on";
+    const apparel_back_print_price = Number(
+      formData.get("apparel_back_print_price") ?? 8,
+    );
 
     const status = formData.get("active") === "on" ? "Active" : "Inactive";
 
@@ -139,6 +144,16 @@ export const POST: APIRoute = async ({ request }) => {
       });
     }
 
+    if (
+      !Number.isFinite(apparel_back_print_price) ||
+      apparel_back_print_price < 0 ||
+      apparel_back_print_price > 500
+    ) {
+      return new Response("Enter a valid additional back print price.", {
+        status: 400,
+      });
+    }
+
     const slug = name
       .toLowerCase()
       .trim()
@@ -159,6 +174,8 @@ export const POST: APIRoute = async ({ request }) => {
         featured,
         bulk_discount_eligible,
         allow_bulk_discount_on_sale,
+        apparel_designer_enabled,
+        apparel_back_print_price,
         status,
       })
       .select()

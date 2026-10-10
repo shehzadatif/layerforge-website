@@ -1,6 +1,7 @@
 import { supabaseAdmin } from "./supabaseAdmin";
 import { generateTrackingToken } from "./tracking";
 import { ORDER_STATUS } from "./orderStatus";
+import type { ApparelDesignData } from "./apparelDesigner";
 
 export interface CustomerInfo {
   firstName: string;
@@ -27,6 +28,7 @@ export interface OrderItem {
   price: number;
   image?: string;
   productionDays?: number;
+  designData?: ApparelDesignData;
 }
 
 export interface OrderShippingSelection {
@@ -134,6 +136,7 @@ export async function createOrderItems(orderId: string, items: OrderItem[]) {
     total_price: item.price * item.quantity,
     material: item.materialName,
     production_days: item.productionDays ?? 0,
+    design_data: item.designData ?? null,
   }));
 
   const { error } = await supabaseAdmin.from("order_items").insert(rows);

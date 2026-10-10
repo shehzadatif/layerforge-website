@@ -75,7 +75,7 @@ export default function CartPage({ bulkDiscountConfig }: Props) {
       <div className="space-y-6 lg:col-span-2">
         {cart.map((item) => (
           <div
-            key={`${item.id}-${item.variantId ?? "base"}-${item.materialId}`}
+            key={`${item.id}-${item.variantId ?? "base"}-${item.materialId}-${item.configurationId ?? "standard"}`}
             className="rounded-2xl bg-white p-6 shadow"
           >
             <div className="flex gap-6">
@@ -110,6 +110,18 @@ export default function CartPage({ bulkDiscountConfig }: Props) {
                   Material: {item.materialName}
                 </p>
 
+                {item.design ? (
+                  <div className="mt-3 rounded-lg bg-slate-50 p-3 text-sm leading-6 text-slate-600">
+                    <div>
+                      {item.design.colorName} · Size {item.design.size} ·{" "}
+                      {item.design.quality}
+                    </div>
+                    <div>
+                      Printed: {Object.keys(item.design.sides).join(" + ")}
+                    </div>
+                  </div>
+                ) : null}
+
                 {item.productionDays ? (
                   <p className="mt-1 text-sm font-medium text-amber-700">
                     Estimated production:{" "}
@@ -135,6 +147,7 @@ export default function CartPage({ bulkDiscountConfig }: Props) {
                         item.materialId,
                         Math.max(1, item.quantity - 1),
                         item.variantId,
+                        item.configurationId,
                       );
                       refreshCart();
                     }}
@@ -154,6 +167,7 @@ export default function CartPage({ bulkDiscountConfig }: Props) {
                         item.materialId,
                         item.quantity + 1,
                         item.variantId,
+                        item.configurationId,
                       );
                       refreshCart();
                     }}
@@ -164,7 +178,12 @@ export default function CartPage({ bulkDiscountConfig }: Props) {
 
                   <button
                     onClick={() => {
-                      removeFromCart(item.id, item.materialId, item.variantId);
+                      removeFromCart(
+                        item.id,
+                        item.materialId,
+                        item.variantId,
+                        item.configurationId,
+                      );
                       refreshCart();
                     }}
                     className="ml-auto text-sm font-medium text-red-600 hover:text-red-700"

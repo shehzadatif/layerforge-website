@@ -184,6 +184,11 @@ export const POST: APIRoute = async ({ request }) => {
     const allowBulkDiscountOnSale =
       bulkDiscountEligible &&
       formData.get("allow_bulk_discount_on_sale") === "on";
+    const apparelDesignerEnabled =
+      formData.get("apparel_designer_enabled") === "on";
+    const apparelBackPrintPrice = Number(
+      formData.get("apparel_back_print_price") ?? 8,
+    );
 
     const status = formData.get("active") === "on" ? "Active" : "Inactive";
 
@@ -221,6 +226,16 @@ export const POST: APIRoute = async ({ request }) => {
       });
     }
 
+    if (
+      !Number.isFinite(apparelBackPrintPrice) ||
+      apparelBackPrintPrice < 0 ||
+      apparelBackPrintPrice > 500
+    ) {
+      return new Response("Enter a valid additional back print price.", {
+        status: 400,
+      });
+    }
+
     const slug = name
       .toLowerCase()
       .replace(/[^a-z0-9]+/g, "-")
@@ -240,6 +255,8 @@ export const POST: APIRoute = async ({ request }) => {
         featured,
         bulk_discount_eligible: bulkDiscountEligible,
         allow_bulk_discount_on_sale: allowBulkDiscountOnSale,
+        apparel_designer_enabled: apparelDesignerEnabled,
+        apparel_back_print_price: apparelBackPrintPrice,
         status,
       })
       .eq("id", id);
