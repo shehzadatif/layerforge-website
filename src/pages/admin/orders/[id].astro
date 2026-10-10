@@ -10,7 +10,11 @@ import {
 import { formatTaxRate } from "../../../lib/taxConfig";
 import { estimateShipmentPackagesForItems } from "../../../lib/shippingPackingServer";
 import { supabaseAdmin } from "../../../lib/supabaseAdmin";
-import { APPAREL_ARTWORK_BUCKET } from "../../../lib/apparelDesigner";
+import {
+  APPAREL_ARTWORK_BUCKET,
+  APPAREL_PRINT_CLASS_DETAILS,
+  getApparelPrintClass,
+} from "../../../lib/apparelDesigner";
 
 const { id } = Astro.params;
 
@@ -562,6 +566,7 @@ const shippingService =
                                 <div class="rounded-lg border border-yellow-200 bg-white p-3">
                                   <div class="font-bold capitalize text-slate-950">{side}</div>
                                   <div class="mt-1 text-xs leading-5 text-slate-600">
+                                    <strong>{APPAREL_PRINT_CLASS_DETAILS[getApparelPrintClass(artwork)].label}</strong><br />
                                     {Number(artwork.widthIn).toFixed(1)} × {Number(artwork.heightIn).toFixed(1)} in<br />
                                     Position: {Number(artwork.xPercent).toFixed(0)}% horizontal, {Number(artwork.yPercent).toFixed(0)}% vertical
                                   </div>

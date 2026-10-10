@@ -36,7 +36,7 @@ const { enabled = false, backPrintPrice = 8, dedicated = false } = Astro.props;
 
   <div class="mt-5 max-w-sm">
     <label for="apparel_back_print_price" class="mb-2 block font-semibold">
-      Additional back print (CAD per shirt)
+      Additional second print side (CAD per shirt)
     </label>
     <input
       id="apparel_back_print_price"
@@ -49,7 +49,7 @@ const { enabled = false, backPrintPrice = 8, dedicated = false } = Astro.props;
       class="w-full rounded-lg border p-3"
     />
     <p class="mt-2 text-sm leading-5 text-slate-500">
-      Charged only when the customer prints both the front and back. A single printed side is included in the product or quality-variant price.
+      Charged when the customer prints both the front and back. Print-size surcharges are calculated separately for every printed side.
     </p>
   </div>
 </section>
