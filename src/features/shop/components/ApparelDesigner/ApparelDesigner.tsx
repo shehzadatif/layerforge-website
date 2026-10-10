@@ -1128,15 +1128,30 @@ export default function ApparelDesigner({
           <div className="mb-3 font-bold text-slate-900">
             4. Artwork and placement
           </div>
+          <div className="mb-3 rounded-xl border border-blue-200 bg-blue-50 p-3 text-sm leading-6 text-blue-950">
+            Front and back are configured separately. Select a side, upload its
+            image, then set the width, height, placement, and production notes
+            for that side. Switch sides to upload a different image with its own
+            sizing.
+          </div>
           <div className="grid grid-cols-2 rounded-xl bg-slate-100 p-1">
             {(["front", "back"] as const).map((side) => (
               <button
                 key={side}
                 type="button"
                 onClick={() => setActiveSide(side)}
-                className={`rounded-lg px-4 py-3 font-bold capitalize ${activeSide === side ? "bg-slate-950 text-white shadow" : "text-slate-600"}`}
+                className={`rounded-lg px-4 py-3 text-left font-bold capitalize ${activeSide === side ? "bg-slate-950 text-white shadow" : "text-slate-600"}`}
               >
-                {side} {artworks[side] ? "✓" : ""}
+                <span className="block">
+                  {side} {artworks[side] ? "✓" : ""}
+                </span>
+                <span
+                  className={`mt-0.5 block text-xs font-medium normal-case ${activeSide === side ? "text-slate-300" : "text-slate-500"}`}
+                >
+                  {artworks[side]
+                    ? `${artworks[side].widthIn.toFixed(1)} × ${artworks[side].heightIn.toFixed(1)} in configured`
+                    : "Upload a separate image"}
+                </span>
               </button>
             ))}
           </div>
