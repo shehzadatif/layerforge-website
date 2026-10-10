@@ -30,6 +30,7 @@ import { calculateSalesTaxes } from "../../lib/taxConfig";
 import { getSalesTaxConfig } from "../../lib/taxConfigServer";
 import { getCheckoutTaxRateIds } from "../../lib/stripeTaxRates";
 import { estimateShipmentPackagesForItems } from "../../lib/shippingPackingServer";
+import { getApparelPrintPricingConfig } from "../../lib/apparelPrintPricingServer";
 import {
   ApparelDesignValidationError,
   getApparelUnitPriceCents,
@@ -199,6 +200,7 @@ function getMaterial(relation: ProductMaterialRecord): MaterialRecord | null {
 async function buildTrustedItems(
   requestedItems: RequestedCheckoutItem[],
 ): Promise<TrustedCheckoutItem[]> {
+  const apparelPrintPricing = await getApparelPrintPricingConfig();
   if (requestedItems.length === 0 || requestedItems.length > MAX_CART_LINES) {
     throw new CheckoutRequestError(
       "The cart must contain between 1 and 50 items.",
@@ -305,19 +307,6 @@ async function buildTrustedItems(
       );
     }
 
-    const relation = (product.product_materials ?? []).find(
-      (item) => String(item.material_id) === requestedItem.materialId,
-    );
-    const material = relation ? getMaterial(relation) : null;
-
-    if (!material) {
-      throw new CheckoutRequestError(
-        `The selected material is unavailable for ${product.name}.`,
-        409,
-        "MATERIAL_UNAVAILABLE",
-      );
-    }
-
     const regularPrice = Number(product.price);
     const salePrice = Number(product.sale_price);
     const selectedVariant = requestedItem.variantId
@@ -347,6 +336,30 @@ async function buildTrustedItems(
     const isApparelInventoryVariant = Boolean(
       selectedVariant?.apparel_garment_type,
     );
+    const relation = (product.product_materials ?? []).find(
+      (item) => String(item.material_id) === requestedItem.materialId,
+    );
+    const relatedMaterial = relation ? getMaterial(relation) : null;
+    const isDedicatedApparelPrint =
+      product.apparel_designer_enabled === true &&
+      isApparelInventoryVariant &&
+      requestedItem.materialId === "apparel-dtf-print";
+    const material = isDedicatedApparelPrint
+      ? {
+          id: "apparel-dtf-print",
+          name: "DTF apparel print",
+          markup_percent: 0,
+          default_production_days: 3,
+        }
+      : relatedMaterial;
+
+    if (!material) {
+      throw new CheckoutRequestError(
+        `The selected material is unavailable for ${product.name}.`,
+        409,
+        "MATERIAL_UNAVAILABLE",
+      );
+    }
     const markupPercent = isApparelInventoryVariant
       ? 0
       : Number(material.markup_percent ?? 0);
@@ -438,6 +451,7 @@ async function buildTrustedItems(
           standardUnitPriceCents,
           Math.round(backPrintPrice * 100),
           designData,
+          apparelPrintPricing,
         )
       : standardUnitPriceCents;
 

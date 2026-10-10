@@ -12,10 +12,15 @@ import {
   APPAREL_COLORS,
   APPAREL_MAX_PRINT_HEIGHT_IN,
   APPAREL_MAX_PRINT_WIDTH_IN,
+  APPAREL_PRINT_CLASS_DETAILS,
   APPAREL_SIZES,
+  getApparelPrintClass,
+  getApparelPrintSurchargeCents,
   getApparelUnitPriceCents,
   type ApparelArtworkPlacement,
   type ApparelDesignData,
+  type ApparelPrintClass,
+  type ApparelPrintPricingConfig,
   type ApparelSide,
 } from "../../../../lib/apparelDesigner";
 import {
@@ -83,7 +88,79 @@ type UploadedArtwork = {
 interface Props {
   product: Product;
   bulkDiscountConfig: BulkDiscountConfig;
+  printPricing: ApparelPrintPricingConfig;
 }
+
+type ApparelPlacementPreset = {
+  id: ApparelPrintClass;
+  label: string;
+  description: string;
+  widthIn: number;
+  heightIn: number;
+  xPercent: number;
+  yPercent: number;
+};
+
+const PRINT_PRESETS: Record<ApparelSide, ApparelPlacementPreset[]> = {
+  front: [
+    {
+      id: "small",
+      label: "Left-chest logo",
+      description: "Compact logo up to 4.5 × 4.5 in",
+      widthIn: 4,
+      heightIn: 4,
+      xPercent: 31,
+      yPercent: 25,
+    },
+    {
+      id: "standard",
+      label: "Across the chest",
+      description: "Logo, design or text up to 10 × 5.5 in",
+      widthIn: 10,
+      heightIn: 4,
+      xPercent: 50,
+      yPercent: 28,
+    },
+    {
+      id: "large",
+      label: "Large front design",
+      description: "Large artwork such as 10 × 8 in",
+      widthIn: 10,
+      heightIn: 8,
+      xPercent: 50,
+      yPercent: 45,
+    },
+  ],
+  back: [
+    {
+      id: "small",
+      label: "Upper-back logo",
+      description: "Compact logo up to 4.5 × 4.5 in",
+      widthIn: 4,
+      heightIn: 4,
+      xPercent: 50,
+      yPercent: 23,
+    },
+    {
+      id: "standard",
+      label: "Across the upper back",
+      description: "Logo, design or text up to 10 × 5.5 in",
+      widthIn: 10,
+      heightIn: 4,
+      xPercent: 50,
+      yPercent: 28,
+    },
+    {
+      id: "large",
+      label: "Large back design",
+      description: "Large artwork such as 10 × 8 in",
+      widthIn: 10,
+      heightIn: 8,
+      xPercent: 50,
+      yPercent: 45,
+    },
+  ],
+};
 
 const ACCEPTED_TYPES = new Set(["image/png", "image/jpeg", "image/webp"]);
 const MAX_ARTWORK_SIZE = 20 * 1024 * 1024;
@@ -155,6 +232,7 @@ async function uploadArtwork(
 export default function ApparelDesigner({
   product,
   bulkDiscountConfig,
+  printPricing,
 }: Props) {
   const variants = useMemo(
     () =>
@@ -196,6 +274,9 @@ export default function ApparelDesigner({
   const [size, setSize] = useState(inventoryVariants[0]?.apparel_size ?? "M");
   const [quantity, setQuantity] = useState(1);
   const [activeSide, setActiveSide] = useState<ApparelSide>("front");
+  const [selectedPresetIds, setSelectedPresetIds] = useState<
+    Record<ApparelSide, ApparelPrintClass>
+  >({ front: "small", back: "small" });
   const [artworks, setArtworks] = useState<
     Partial<Record<ApparelSide, LocalArtwork>>
   >({});
@@ -333,6 +414,7 @@ export default function ApparelDesigner({
     basePriceCents,
     backPrintPriceCents,
     previewDesign,
+    printPricing,
   );
   const productionDays = normalizeProductionDays(
     material?.materials.default_production_days,
@@ -364,13 +446,22 @@ export default function ApparelDesigner({
         });
       }
       const aspectRatio = dimensions.width / dimensions.height;
-      const widthIn = Math.min(10, APPAREL_MAX_PRINT_WIDTH_IN);
+      const preset =
+        PRINT_PRESETS[activeSide].find(
+          (option) => option.id === selectedPresetIds[activeSide],
+        ) ?? PRINT_PRESETS[activeSide][0];
+      const widthIn = Math.min(preset.widthIn, APPAREL_MAX_PRINT_WIDTH_IN);
       const heightIn = Math.min(
+        preset.heightIn,
         APPAREL_MAX_PRINT_HEIGHT_IN,
         Math.max(1, widthIn / aspectRatio),
       );
       const previous = artworks[activeSide];
       if (previous) URL.revokeObjectURL(previous.previewUrl);
+      setSelectedPresetIds((current) => ({
+        ...current,
+        [activeSide]: getApparelPrintClass({ widthIn, heightIn }),
+      }));
       setArtworks((current) => ({
         ...current,
         [activeSide]: {
@@ -381,8 +472,8 @@ export default function ApparelDesigner({
           aspectRatio,
           widthIn: roundDimension(widthIn),
           heightIn: roundDimension(heightIn),
-          xPercent: 50,
-          yPercent: 45,
+          xPercent: preset.xPercent,
+          yPercent: preset.yPercent,
         },
       }));
     } catch {
@@ -396,6 +487,38 @@ export default function ApparelDesigner({
       if (!artwork) return current;
       return { ...current, [activeSide]: { ...artwork, ...changes } };
     });
+  }
+
+  function applyPlacementPreset(preset: ApparelPlacementPreset) {
+    if (!activeArtwork) {
+      setSelectedPresetIds((current) => ({
+        ...current,
+        [activeSide]: preset.id,
+      }));
+      return;
+    }
+
+    const heightIn = lockRatio
+      ? Math.min(
+          preset.heightIn,
+          APPAREL_MAX_PRINT_HEIGHT_IN,
+          Math.max(1, preset.widthIn / activeArtwork.aspectRatio),
+        )
+      : preset.heightIn;
+
+    updateActiveArtwork({
+      widthIn: preset.widthIn,
+      heightIn: roundDimension(heightIn),
+      xPercent: preset.xPercent,
+      yPercent: preset.yPercent,
+    });
+    setSelectedPresetIds((current) => ({
+      ...current,
+      [activeSide]: getApparelPrintClass({
+        widthIn: preset.widthIn,
+        heightIn,
+      }),
+    }));
   }
 
   function updateWidth(widthIn: number) {
@@ -416,6 +539,13 @@ export default function ApparelDesigner({
         ),
       );
     }
+    setSelectedPresetIds((current) => ({
+      ...current,
+      [activeSide]: getApparelPrintClass({
+        widthIn: changes.widthIn ?? activeArtwork.widthIn,
+        heightIn: changes.heightIn ?? activeArtwork.heightIn,
+      }),
+    }));
     updateActiveArtwork(changes);
   }
 
@@ -437,6 +567,13 @@ export default function ApparelDesigner({
         ),
       );
     }
+    setSelectedPresetIds((current) => ({
+      ...current,
+      [activeSide]: getApparelPrintClass({
+        widthIn: changes.widthIn ?? activeArtwork.widthIn,
+        heightIn: changes.heightIn ?? activeArtwork.heightIn,
+      }),
+    }));
     updateActiveArtwork(changes);
   }
 
@@ -467,10 +604,6 @@ export default function ApparelDesigner({
   }
 
   async function handleAddToCart() {
-    if (!material) {
-      toast.error("This product needs an available printing material.");
-      return;
-    }
     if (!artworks.front && !artworks.back) {
       toast.error("Upload artwork for the front, back, or both sides.");
       return;
@@ -521,8 +654,12 @@ export default function ApparelDesigner({
         name: product.name,
         variantId: selectedVariant?.id,
         variantName: selectedVariant?.option_value,
-        materialId: material.material_id,
-        materialName: material.materials.name,
+        materialId: usesInventory
+          ? "apparel-dtf-print"
+          : material?.material_id ?? "apparel-dtf-print",
+        materialName: usesInventory
+          ? "DTF apparel print"
+          : material?.materials.name ?? "DTF apparel print",
         quantity,
         price: unitPriceCents / 100,
         image: thumbnail,
@@ -778,6 +915,51 @@ export default function ApparelDesigner({
             ))}
           </div>
 
+          <div className="mt-4">
+            <div className="mb-2 text-sm font-bold text-slate-700">
+              Choose {activeSide} print type
+            </div>
+            <div className="grid gap-2">
+              {PRINT_PRESETS[activeSide].map((preset) => {
+                const surchargeCents = getApparelPrintSurchargeCents(
+                  preset,
+                  printPricing,
+                );
+                const selected = selectedPresetIds[activeSide] === preset.id;
+
+                return (
+                  <button
+                    key={`${activeSide}-${preset.id}`}
+                    type="button"
+                    onClick={() => applyPlacementPreset(preset)}
+                    className={`flex items-center justify-between gap-4 rounded-xl border-2 p-3 text-left transition ${selected ? "border-yellow-400 bg-yellow-50" : "border-slate-200 hover:border-slate-400"}`}
+                  >
+                    <span>
+                      <span className="block font-bold text-slate-900">
+                        {preset.label}
+                      </span>
+                      <span className="mt-0.5 block text-xs text-slate-500">
+                        {preset.description}
+                      </span>
+                    </span>
+                    <span className="shrink-0 text-sm font-bold text-slate-700">
+                      {surchargeCents > 0
+                        ? `+ CAD $${(surchargeCents / 100).toFixed(2)}`
+                        : "Included"}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+            {artworks.front && artworks.back ? (
+              <p className="mt-2 text-xs font-medium text-slate-500">
+                Front and back selected: an additional CAD $
+                {(backPrintPriceCents / 100).toFixed(2)} per shirt is added for
+                the second printed side.
+              </p>
+            ) : null}
+          </div>
+
           <label className="mt-4 block cursor-pointer rounded-xl border-2 border-dashed border-slate-300 p-5 text-center hover:border-yellow-400 hover:bg-yellow-50">
             <span className="block font-bold text-slate-900">
               Upload {activeSide} artwork
@@ -819,6 +1001,23 @@ export default function ApparelDesigner({
               >
                 Remove
               </button>
+            </div>
+
+            <div className="rounded-lg border border-slate-200 bg-white p-3 text-sm">
+              <span className="font-bold text-slate-900">
+                {
+                  APPAREL_PRINT_CLASS_DETAILS[
+                    getApparelPrintClass(activeArtwork)
+                  ].label
+                }
+              </span>
+              <span className="ml-2 text-slate-500">
+                {
+                  APPAREL_PRINT_CLASS_DETAILS[
+                    getApparelPrintClass(activeArtwork)
+                  ].description
+                }
+              </span>
             </div>
 
             {Math.min(
@@ -928,7 +1127,11 @@ export default function ApparelDesigner({
           {artworks.front && artworks.back ? (
             <p className="mt-2 text-xs text-yellow-300">
               Includes CAD ${(backPrintPriceCents / 100).toFixed(2)} per shirt
-              for the second print side.
+              for the second print side, plus the selected print-size charges.
+            </p>
+          ) : Object.values(artworks).some(Boolean) ? (
+            <p className="mt-2 text-xs text-yellow-300">
+              Price includes the selected print-size class.
             </p>
           ) : null}
           {productionDays > 0 ? (

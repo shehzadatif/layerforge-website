@@ -2,6 +2,41 @@ export const APPAREL_ARTWORK_BUCKET = "customer-artwork";
 export const APPAREL_MAX_PRINT_WIDTH_IN = 12;
 export const APPAREL_MAX_PRINT_HEIGHT_IN = 16;
 
+export const APPAREL_PRINT_PRICING_SETTING_KEYS = [
+  "apparel_standard_print_surcharge",
+  "apparel_large_print_surcharge",
+] as const;
+
+export type ApparelPrintClass = "small" | "standard" | "large";
+
+export type ApparelPrintPricingConfig = {
+  standardSurchargeCents: number;
+  largeSurchargeCents: number;
+};
+
+export const DEFAULT_APPAREL_PRINT_PRICING: ApparelPrintPricingConfig = {
+  standardSurchargeCents: 400,
+  largeSurchargeCents: 800,
+};
+
+export const APPAREL_PRINT_CLASS_DETAILS: Record<
+  ApparelPrintClass,
+  { label: string; description: string }
+> = {
+  small: {
+    label: "Small logo",
+    description: "Up to 4.5 × 4.5 in",
+  },
+  standard: {
+    label: "Standard chest",
+    description: "Up to 10 × 5.5 in",
+  },
+  large: {
+    label: "Large print",
+    description: "Up to 12 × 16 in",
+  },
+};
+
 export const APPAREL_SIZES = ["XS", "S", "M", "L", "XL", "2XL", "3XL"] as const;
 
 export const APPAREL_COLORS = [
@@ -37,6 +72,35 @@ export type ApparelDesignData = {
   quality: string;
   sides: Partial<Record<ApparelSide, ApparelArtworkPlacement>>;
 };
+
+function priceSetting(
+  settings: ReadonlyMap<string, string | null | undefined>,
+  key: string,
+  fallbackCents: number,
+): number {
+  const value = Number(settings.get(key));
+  if (!Number.isFinite(value) || value < 0 || value > 500) {
+    return fallbackCents;
+  }
+  return Math.round(value * 100);
+}
+
+export function parseApparelPrintPricingConfig(
+  settings: ReadonlyMap<string, string | null | undefined>,
+): ApparelPrintPricingConfig {
+  return {
+    standardSurchargeCents: priceSetting(
+      settings,
+      "apparel_standard_print_surcharge",
+      DEFAULT_APPAREL_PRINT_PRICING.standardSurchargeCents,
+    ),
+    largeSurchargeCents: priceSetting(
+      settings,
+      "apparel_large_print_surcharge",
+      DEFAULT_APPAREL_PRINT_PRICING.largeSurchargeCents,
+    ),
+  };
+}
 
 export class ApparelDesignValidationError extends Error {}
 
@@ -173,13 +237,43 @@ export function getApparelPrintedSideCount(design: ApparelDesignData): number {
   );
 }
 
+export function getApparelPrintClass(
+  placement: Pick<ApparelArtworkPlacement, "widthIn" | "heightIn">,
+): ApparelPrintClass {
+  if (placement.widthIn <= 4.5 && placement.heightIn <= 4.5) return "small";
+  if (placement.widthIn <= 10 && placement.heightIn <= 5.5) return "standard";
+  return "large";
+}
+
+export function getApparelPrintSurchargeCents(
+  placement: Pick<ApparelArtworkPlacement, "widthIn" | "heightIn">,
+  pricing: ApparelPrintPricingConfig,
+): number {
+  const printClass = getApparelPrintClass(placement);
+  if (printClass === "standard") return pricing.standardSurchargeCents;
+  if (printClass === "large") return pricing.largeSurchargeCents;
+  return 0;
+}
+
 export function getApparelUnitPriceCents(
   basePriceCents: number,
-  backPrintPriceCents: number,
+  additionalSidePriceCents: number,
   design: ApparelDesignData,
+  pricing: ApparelPrintPricingConfig = DEFAULT_APPAREL_PRINT_PRICING,
 ): number {
+  const placements = Object.values(design.sides).filter(
+    (placement): placement is ApparelArtworkPlacement => Boolean(placement),
+  );
+
+  const printSizeSurcharges = placements.reduce(
+    (total, placement) =>
+      total + getApparelPrintSurchargeCents(placement, pricing),
+    0,
+  );
+
   return (
     basePriceCents +
-    Math.max(0, getApparelPrintedSideCount(design) - 1) * backPrintPriceCents
+    printSizeSurcharges +
+    Math.max(0, placements.length - 1) * additionalSidePriceCents
   );
 }

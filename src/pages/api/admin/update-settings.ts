@@ -26,6 +26,20 @@ function rateSetting(formData: FormData, key: string, label: string): number {
   return Math.round(value * 10_000) / 10_000;
 }
 
+function currencySetting(
+  formData: FormData,
+  key: string,
+  label: string,
+): number {
+  const value = Number(formData.get(key));
+
+  if (!Number.isFinite(value) || value < 0 || value > 500) {
+    throw new Error(`${label} must be between $0 and $500.`);
+  }
+
+  return Math.round(value * 100) / 100;
+}
+
 function integerSetting(
   formData: FormData,
   key: string,
@@ -86,6 +100,16 @@ export const POST: APIRoute = async ({ request, redirect }) => {
     const updatedAt = new Date().toISOString();
     const gstRate = rateSetting(formData, "gst_rate", "GST rate");
     const pstRate = rateSetting(formData, "pst_rate", "PST rate");
+    const apparelStandardPrintSurcharge = currencySetting(
+      formData,
+      "apparel_standard_print_surcharge",
+      "Standard chest print surcharge",
+    );
+    const apparelLargePrintSurcharge = currencySetting(
+      formData,
+      "apparel_large_print_surcharge",
+      "Large print surcharge",
+    );
     const rows: Array<{
       setting_key: string;
       setting_value: string;
@@ -122,6 +146,16 @@ export const POST: APIRoute = async ({ request, redirect }) => {
       {
         setting_key: "pst_rate",
         setting_value: String(pstRate),
+        updated_at: updatedAt,
+      },
+      {
+        setting_key: "apparel_standard_print_surcharge",
+        setting_value: String(apparelStandardPrintSurcharge),
+        updated_at: updatedAt,
+      },
+      {
+        setting_key: "apparel_large_print_surcharge",
+        setting_value: String(apparelLargePrintSurcharge),
         updated_at: updatedAt,
       },
     );
