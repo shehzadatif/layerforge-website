@@ -582,6 +582,13 @@ const shippingService =
                                     Position: {Number(artwork.xPercent).toFixed(0)}% horizontal, {Number(artwork.yPercent).toFixed(0)}% vertical
                                   </div>
                                   {
+                                    artwork.productionNotes && (
+                                      <div class="mt-2 rounded-lg border border-amber-200 bg-amber-50 p-2 text-xs leading-5 text-slate-700">
+                                        <strong>Customer print note:</strong> {artwork.productionNotes}
+                                      </div>
+                                    )
+                                  }
+                                  {
                                     item.artwork_urls?.[side] && (
                                       <a
                                         href={item.artwork_urls[side]}

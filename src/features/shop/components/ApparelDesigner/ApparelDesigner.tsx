@@ -81,6 +81,7 @@ type LocalArtwork = {
   heightIn: number;
   xPercent: number;
   yPercent: number;
+  productionNotes: string;
 };
 
 type UploadedArtwork = {
@@ -460,6 +461,7 @@ export default function ApparelDesigner({
               heightIn: artwork.heightIn,
               xPercent: artwork.xPercent,
               yPercent: artwork.yPercent,
+              productionNotes: artwork.productionNotes.trim() || undefined,
             }
           : undefined,
       ]),
@@ -529,6 +531,7 @@ export default function ApparelDesigner({
           heightIn: roundDimension(heightIn),
           xPercent: preset.xPercent,
           yPercent: preset.yPercent,
+          productionNotes: "",
         },
       }));
     } catch {
@@ -816,6 +819,7 @@ export default function ApparelDesigner({
           heightIn: artwork.heightIn,
           xPercent: roundDimension(artwork.xPercent),
           yPercent: roundDimension(artwork.yPercent),
+          productionNotes: artwork.productionNotes.trim() || undefined,
         };
         sides[side] = placement;
       }
@@ -1296,6 +1300,24 @@ export default function ApparelDesigner({
                 onChange={(event) => updateHeight(Number(event.target.value))}
                 className="mt-2 w-full accent-yellow-500"
               />
+            </label>
+            <label className="block text-sm font-bold text-slate-700">
+              Print size / production notes for {activeSide} (optional)
+              <textarea
+                value={activeArtwork.productionNotes}
+                maxLength={500}
+                rows={3}
+                onChange={(event) =>
+                  updateActiveArtwork({ productionNotes: event.target.value })
+                }
+                placeholder="Example: Make logo exactly 4 inches wide and keep it 2 inches below the collar."
+                className="mt-2 w-full resize-y rounded-xl border border-slate-300 bg-white px-3 py-2 font-normal text-slate-900 outline-none focus:border-yellow-400 focus:ring-2 focus:ring-yellow-200"
+              />
+              <span className="mt-1 block text-xs font-normal text-slate-500">
+                Example: “Print my logo exactly 4 in wide × 3 in high,
+                positioned 2 in below the collar.” Your entered width and height
+                remain the production dimensions.
+              </span>
             </label>
             <div className="grid gap-4 sm:grid-cols-2">
               <label className="text-sm font-bold text-slate-700">

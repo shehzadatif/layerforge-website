@@ -60,6 +60,7 @@ export type ApparelArtworkPlacement = {
   heightIn: number;
   xPercent: number;
   yPercent: number;
+  productionNotes?: string;
 };
 
 export type ApparelDesignData = {
@@ -132,6 +133,20 @@ function boundedNumber(
   return Math.round(number * 100) / 100;
 }
 
+function optionalText(
+  value: unknown,
+  label: string,
+  maxLength: number,
+): string | undefined {
+  if (typeof value !== "string") return undefined;
+  const text = value.trim();
+  if (!text) return undefined;
+  if (text.length > maxLength) {
+    throw new ApparelDesignValidationError(`${label} is too long.`);
+  }
+  return text;
+}
+
 function parsePlacement(
   value: unknown,
   side: ApparelSide,
@@ -174,6 +189,11 @@ function parsePlacement(
       `${side} vertical position`,
       0,
       100,
+    ),
+    productionNotes: optionalText(
+      input.productionNotes,
+      `${side} production notes`,
+      500,
     ),
   };
 }
