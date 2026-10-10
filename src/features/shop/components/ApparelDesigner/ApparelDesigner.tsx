@@ -611,6 +611,84 @@ export default function ApparelDesigner({
     });
   }
 
+  function resizeArtwork(event: ReactPointerEvent<HTMLButtonElement>) {
+    if (!activeArtwork || !printAreaRef.current) return;
+    event.preventDefault();
+    event.stopPropagation();
+    event.currentTarget.setPointerCapture(event.pointerId);
+
+    const rect = printAreaRef.current.getBoundingClientRect();
+    const pointerX = ((event.clientX - rect.left) / rect.width) * 100;
+    const pointerY = ((event.clientY - rect.top) / rect.height) * 100;
+    const widthFromPointer = Math.max(
+      1,
+      Math.min(
+        APPAREL_MAX_PRINT_WIDTH_IN,
+        (Math.abs(pointerX - activeArtwork.xPercent) *
+          2 *
+          APPAREL_MAX_PRINT_WIDTH_IN) /
+          100,
+      ),
+    );
+    const heightFromPointer = Math.max(
+      1,
+      Math.min(
+        APPAREL_MAX_PRINT_HEIGHT_IN,
+        (Math.abs(pointerY - activeArtwork.yPercent) *
+          2 *
+          APPAREL_MAX_PRINT_HEIGHT_IN) /
+          100,
+      ),
+    );
+
+    let widthIn = widthFromPointer;
+    let heightIn = heightFromPointer;
+
+    if (lockRatio) {
+      const widthChange =
+        Math.abs(widthFromPointer - activeArtwork.widthIn) /
+        activeArtwork.widthIn;
+      const heightChange =
+        Math.abs(heightFromPointer - activeArtwork.heightIn) /
+        activeArtwork.heightIn;
+
+      if (widthChange >= heightChange) {
+        widthIn = widthFromPointer;
+        heightIn = Math.min(
+          APPAREL_MAX_PRINT_HEIGHT_IN,
+          Math.max(1, widthIn / activeArtwork.aspectRatio),
+        );
+      } else {
+        heightIn = heightFromPointer;
+        widthIn = Math.min(
+          APPAREL_MAX_PRINT_WIDTH_IN,
+          Math.max(1, heightIn * activeArtwork.aspectRatio),
+        );
+      }
+    }
+
+    const halfWidthPercent = (widthIn / APPAREL_MAX_PRINT_WIDTH_IN) * 50;
+    const halfHeightPercent = (heightIn / APPAREL_MAX_PRINT_HEIGHT_IN) * 50;
+    const nextArtwork = {
+      widthIn: roundDimension(widthIn),
+      heightIn: roundDimension(heightIn),
+      xPercent: Math.max(
+        halfWidthPercent,
+        Math.min(100 - halfWidthPercent, activeArtwork.xPercent),
+      ),
+      yPercent: Math.max(
+        halfHeightPercent,
+        Math.min(100 - halfHeightPercent, activeArtwork.yPercent),
+      ),
+    };
+
+    setSelectedPresetIds((current) => ({
+      ...current,
+      [activeSide]: getApparelPrintClass(nextArtwork),
+    }));
+    updateActiveArtwork(nextArtwork);
+  }
+
   async function handleAddToCart() {
     if (!artworks.front && !artworks.back) {
       toast.error("Upload artwork for the front, back, or both sides.");
@@ -664,10 +742,10 @@ export default function ApparelDesigner({
         variantName: selectedVariant?.option_value,
         materialId: usesInventory
           ? "apparel-dtf-print"
-          : material?.material_id ?? "apparel-dtf-print",
+          : (material?.material_id ?? "apparel-dtf-print"),
         materialName: usesInventory
           ? "DTF apparel print"
-          : material?.materials.name ?? "DTF apparel print",
+          : (material?.materials.name ?? "DTF apparel print"),
         quantity,
         price: unitPriceCents / 100,
         image: thumbnail,
@@ -716,73 +794,79 @@ export default function ApparelDesigner({
           </div>
         </div>
 
-        <div className="relative mx-auto aspect-[6/7] max-w-xl overflow-hidden rounded-2xl bg-gradient-to-b from-slate-200 to-slate-400 p-4">
-          <svg
-            viewBox="0 0 600 700"
-            className="absolute inset-0 h-full w-full"
-            aria-label={`${selectedColor.name} ${isHoodie ? "hoodie" : "T-shirt"} ${activeSide} mockup`}
-          >
-            <path
-              d={
-                isHoodie
-                  ? "M203 102 88 151 18 292l93 49 49-73v362h280V268l49 73 93-49-70-141-115-49c-15-45-51-78-97-78s-82 33-97 78Z"
-                  : "M205 70 92 126 20 266l91 51 50-76v389h278V241l50 76 91-51-72-140-113-56c-25 41-165 41-190 0Z"
-              }
-              fill={selectedColor.hex}
-              stroke={shirtStroke}
-              strokeWidth="5"
-              strokeLinejoin="round"
+        <div className="relative mx-auto aspect-square max-w-xl overflow-hidden rounded-2xl bg-white p-4">
+          {selectedBlankShirtImage ? (
+            <img
+              src={selectedBlankShirtImage}
+              alt={`${selectedColor.name} ${isHoodie ? "hoodie" : "T-shirt"} ${activeSide} mockup`}
+              draggable={false}
+              className="pointer-events-none absolute inset-0 h-full w-full select-none object-contain p-3"
             />
-            {isHoodie && activeSide === "front" ? (
-              <>
+          ) : (
+            <svg
+              viewBox="0 0 600 700"
+              className="absolute inset-0 h-full w-full"
+              aria-label={`${selectedColor.name} ${isHoodie ? "hoodie" : "T-shirt"} ${activeSide} mockup`}
+            >
+              <path
+                d={
+                  isHoodie
+                    ? "M203 102 88 151 18 292l93 49 49-73v362h280V268l49 73 93-49-70-141-115-49c-15-45-51-78-97-78s-82 33-97 78Z"
+                    : "M205 70 92 126 20 266l91 51 50-76v389h278V241l50 76 91-51-72-140-113-56c-25 41-165 41-190 0Z"
+                }
+                fill={selectedColor.hex}
+                stroke={shirtStroke}
+                strokeWidth="5"
+                strokeLinejoin="round"
+              />
+              {isHoodie && activeSide === "front" ? (
+                <>
+                  <path
+                    d="M215 105c22-72 148-72 170 0-38 28-132 28-170 0Z"
+                    fill="#020617"
+                    fillOpacity=".2"
+                    stroke={shirtStroke}
+                    strokeWidth="4"
+                  />
+                  <path
+                    d="M218 470h164v96H218c-24-28-24-68 0-96Z"
+                    fill="#020617"
+                    fillOpacity=".12"
+                    stroke={shirtStroke}
+                    strokeWidth="3"
+                  />
+                </>
+              ) : activeSide === "front" ? (
                 <path
-                  d="M215 105c22-72 148-72 170 0-38 28-132 28-170 0Z"
+                  d="M205 70c18 100 172 100 190 0-34-16-53-25-67-31-17 33-39 50-28 50s-11-17-28-50c-14 6-33 15-67 31Z"
                   fill="#020617"
-                  fillOpacity=".2"
+                  fillOpacity=".18"
                   stroke={shirtStroke}
                   strokeWidth="4"
                 />
+              ) : (
                 <path
-                  d="M218 470h164v96H218c-24-28-24-68 0-96Z"
-                  fill="#020617"
-                  fillOpacity=".12"
+                  d="M220 77c30 30 130 30 160 0"
+                  fill="none"
                   stroke={shirtStroke}
-                  strokeWidth="3"
+                  strokeWidth="4"
+                  opacity=".55"
                 />
-              </>
-            ) : activeSide === "front" ? (
-              <path
-                d="M205 70c18 100 172 100 190 0-34-16-53-25-67-31-17 33-39 50-28 50s-11-17-28-50c-14 6-33 15-67 31Z"
-                fill="#020617"
-                fillOpacity=".18"
-                stroke={shirtStroke}
-                strokeWidth="4"
-              />
-            ) : (
-              <path
-                d="M220 77c30 30 130 30 160 0"
-                fill="none"
-                stroke={shirtStroke}
-                strokeWidth="4"
-                opacity=".55"
-              />
-            )}
-          </svg>
+              )}
+            </svg>
+          )}
 
           <div
             ref={printAreaRef}
-            className="absolute left-[29%] top-[23%] h-[52%] w-[42%] touch-none border border-dashed border-yellow-400/80"
+            className="absolute left-[30%] top-[24%] h-[50%] w-[40%] touch-none border border-dashed border-yellow-500/90"
             onPointerDown={positionArtwork}
             onPointerMove={(event) => {
               if (event.buttons === 1) positionArtwork(event);
             }}
           >
             {activeArtwork ? (
-              <img
-                src={activeArtwork.previewUrl}
-                alt={`${activeSide} artwork preview`}
-                draggable={false}
-                className="pointer-events-none absolute object-fill drop-shadow-lg"
+              <div
+                className="pointer-events-none absolute"
                 style={{
                   width: `${(activeArtwork.widthIn / APPAREL_MAX_PRINT_WIDTH_IN) * 100}%`,
                   height: `${(activeArtwork.heightIn / APPAREL_MAX_PRINT_HEIGHT_IN) * 100}%`,
@@ -790,7 +874,32 @@ export default function ApparelDesigner({
                   top: `${activeArtwork.yPercent}%`,
                   transform: "translate(-50%, -50%)",
                 }}
-              />
+              >
+                <img
+                  src={activeArtwork.previewUrl}
+                  alt={`${activeSide} artwork preview`}
+                  draggable={false}
+                  className="h-full w-full select-none object-fill drop-shadow-lg"
+                />
+                {[
+                  ["top-0 left-0", "Top left"],
+                  ["top-0 right-0", "Top right"],
+                  ["bottom-0 left-0", "Bottom left"],
+                  ["bottom-0 right-0", "Bottom right"],
+                ].map(([position, label]) => (
+                  <button
+                    key={label}
+                    type="button"
+                    aria-label={`${label} resize handle`}
+                    title="Drag to resize artwork"
+                    className={`pointer-events-auto absolute ${position} h-5 w-5 -translate-x-1/2 -translate-y-1/2 cursor-nwse-resize rounded-full border-2 border-slate-950 bg-yellow-400 shadow-lg`}
+                    onPointerDown={resizeArtwork}
+                    onPointerMove={(event) => {
+                      if (event.buttons === 1) resizeArtwork(event);
+                    }}
+                  />
+                ))}
+              </div>
             ) : (
               <div className="flex h-full items-center justify-center px-4 text-center text-sm font-semibold text-yellow-950/70">
                 Upload {activeSide} artwork
@@ -1184,7 +1293,7 @@ export default function ApparelDesigner({
           onClick={() => void handleAddToCart()}
           disabled={
             isAdding ||
-            !material ||
+            (!usesInventory && !material) ||
             (usesInventory && (!selectedVariant || availableStock < 1))
           }
           className="w-full rounded-xl bg-yellow-400 py-4 text-lg font-bold text-slate-950 hover:bg-yellow-300 disabled:cursor-not-allowed disabled:opacity-60"
