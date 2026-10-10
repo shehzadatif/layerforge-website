@@ -2,7 +2,11 @@ import type { APIRoute } from "astro";
 import Stripe from "stripe";
 
 import { stripe } from "../../lib/stripe";
-import { getOrder, markOrderPaid } from "../../lib/orders";
+import {
+  deductApparelInventory,
+  getOrder,
+  markOrderPaid,
+} from "../../lib/orders";
 import { sendPaidOrderNotifications } from "../../lib/paidOrderNotifications";
 import {
   convertPaidQuoteToOrder,
@@ -125,6 +129,8 @@ export const POST: APIRoute = async ({ request }) => {
         );
 
         console.log(`Order ${orderId} marked paid`);
+
+        await deductApparelInventory(orderId);
 
         await sendPaidOrderNotifications(order as CompletedOrder, "Shop");
 

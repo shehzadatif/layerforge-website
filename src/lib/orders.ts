@@ -158,6 +158,15 @@ export async function updateStripeSession(orderId: string, sessionId: string) {
   if (error) throw error;
 }
 
+export async function deductApparelInventory(orderId: string) {
+  const { error } = await supabaseAdmin.rpc(
+    "deduct_apparel_inventory_for_order",
+    { p_order_id: orderId },
+  );
+
+  if (error) throw error;
+}
+
 /**
  * Mark payment complete
  */

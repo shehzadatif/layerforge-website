@@ -2,6 +2,7 @@ import {
   useMemo,
   useRef,
   useState,
+  useEffect,
   type ChangeEvent,
   type PointerEvent as ReactPointerEvent,
 } from "react";
@@ -41,6 +42,12 @@ type ProductVariant = {
   price: number | string;
   active?: boolean | null;
   sort_order?: number | string | null;
+  apparel_garment_type?: "t-shirt" | "hoodie" | null;
+  apparel_quality?: string | null;
+  apparel_color_name?: string | null;
+  apparel_color_hex?: string | null;
+  apparel_size?: string | null;
+  inventory_quantity?: number | string | null;
 };
 
 type Product = {
@@ -164,12 +171,29 @@ export default function ApparelDesigner({
         ),
     [product.product_variants],
   );
-  const material = product.product_materials?.[0];
-  const [selectedVariantId, setSelectedVariantId] = useState(
-    variants[0]?.id ?? "",
+  const inventoryConfigured = variants.some(
+    (variant) => variant.apparel_garment_type,
   );
-  const [colorId, setColorId] = useState("black");
-  const [size, setSize] = useState("M");
+  const inventoryVariants = useMemo(
+    () =>
+      variants.filter(
+        (variant) =>
+          variant.apparel_garment_type &&
+          Number(variant.inventory_quantity ?? 0) > 0,
+      ),
+    [variants],
+  );
+  const usesInventory = inventoryConfigured;
+  const material = product.product_materials?.[0];
+  const [quality, setQuality] = useState(
+    inventoryVariants[0]?.apparel_quality ??
+      variants[0]?.option_value ??
+      "Standard",
+  );
+  const [colorName, setColorName] = useState(
+    inventoryVariants[0]?.apparel_color_name ?? "Black",
+  );
+  const [size, setSize] = useState(inventoryVariants[0]?.apparel_size ?? "M");
   const [quantity, setQuantity] = useState(1);
   const [activeSide, setActiveSide] = useState<ApparelSide>("front");
   const [artworks, setArtworks] = useState<
@@ -179,18 +203,97 @@ export default function ApparelDesigner({
   const [isAdding, setIsAdding] = useState(false);
   const printAreaRef = useRef<HTMLDivElement | null>(null);
 
-  const selectedColor =
-    APPAREL_COLORS.find((color) => color.id === colorId) ?? APPAREL_COLORS[0];
-  const selectedVariant = variants.find(
-    (variant) => variant.id === selectedVariantId,
+  const qualities = useMemo(
+    () => [
+      ...new Set(
+        (usesInventory
+          ? inventoryVariants.map((variant) => variant.apparel_quality)
+          : variants.map((variant) => variant.option_value)
+        ).filter(Boolean) as string[],
+      ),
+    ],
+    [inventoryVariants, variants, usesInventory],
   );
+  const availableColors = useMemo(
+    () =>
+      usesInventory
+        ? [
+            ...new Map(
+              inventoryVariants
+                .filter((variant) => variant.apparel_quality === quality)
+                .map((variant) => [
+                  variant.apparel_color_name,
+                  {
+                    name: variant.apparel_color_name!,
+                    hex: variant.apparel_color_hex ?? "#15171B",
+                  },
+                ]),
+            ).values(),
+          ]
+        : APPAREL_COLORS.map((color) => ({ name: color.name, hex: color.hex })),
+    [inventoryVariants, quality, usesInventory],
+  );
+  const availableSizes = useMemo(
+    () =>
+      usesInventory
+        ? [
+            ...new Set(
+              inventoryVariants
+                .filter(
+                  (variant) =>
+                    variant.apparel_quality === quality &&
+                    variant.apparel_color_name === colorName,
+                )
+                .map((variant) => variant.apparel_size)
+                .filter(Boolean) as string[],
+            ),
+          ]
+        : [...APPAREL_SIZES],
+    [inventoryVariants, quality, colorName, usesInventory],
+  );
+  const selectedVariant = usesInventory
+    ? inventoryVariants.find(
+        (variant) =>
+          variant.apparel_quality === quality &&
+          variant.apparel_color_name === colorName &&
+          variant.apparel_size === size,
+      )
+    : variants.find((variant) => variant.option_value === quality);
+  const selectedColor = usesInventory
+    ? {
+        id: colorName.toLowerCase().replace(/[^a-z0-9]+/g, "-"),
+        name: colorName,
+        hex:
+          selectedVariant?.apparel_color_hex ??
+          availableColors[0]?.hex ??
+          "#15171B",
+      }
+    : (APPAREL_COLORS.find((color) => color.name === colorName) ??
+      APPAREL_COLORS[0]);
+
+  useEffect(() => {
+    if (!qualities.includes(quality) && qualities[0]) setQuality(qualities[0]);
+  }, [qualities, quality]);
+  useEffect(() => {
+    if (
+      !availableColors.some((color) => color.name === colorName) &&
+      availableColors[0]
+    )
+      setColorName(availableColors[0].name);
+  }, [availableColors, colorName]);
+  useEffect(() => {
+    if (!availableSizes.includes(size) && availableSizes[0])
+      setSize(availableSizes[0]);
+  }, [availableSizes, size]);
   const activeArtwork = artworks[activeSide];
   const rawBasePrice = selectedVariant
     ? Number(selectedVariant.price)
     : Number(product.sale_price) > 0
       ? Number(product.sale_price)
       : Number(product.price);
-  const markupPercent = Number(material?.materials.markup_percent ?? 0);
+  const markupPercent = usesInventory
+    ? 0
+    : Number(material?.materials.markup_percent ?? 0);
   const basePriceCents = Math.round(
     rawBasePrice * (1 + markupPercent / 100) * 100,
   );
@@ -199,11 +302,15 @@ export default function ApparelDesigner({
   );
   const previewDesign: ApparelDesignData = {
     version: 1,
+    garmentType: selectedVariant?.apparel_garment_type ?? "t-shirt",
     size,
     colorId: selectedColor.id,
     colorName: selectedColor.name,
     colorHex: selectedColor.hex,
-    quality: selectedVariant?.option_value ?? "Standard",
+    quality:
+      selectedVariant?.apparel_quality ??
+      selectedVariant?.option_value ??
+      quality,
     sides: Object.fromEntries(
       Object.entries(artworks).map(([side, artwork]) => [
         side,
@@ -368,6 +475,10 @@ export default function ApparelDesigner({
       toast.error("Upload artwork for the front, back, or both sides.");
       return;
     }
+    if (usesInventory && !selectedVariant) {
+      toast.error("That size and colour combination is unavailable.");
+      return;
+    }
     if (isAdding) return;
 
     setIsAdding(true);
@@ -421,7 +532,7 @@ export default function ApparelDesigner({
         design,
       });
 
-      toast.success("Custom T-shirt added to cart", {
+      toast.success("Custom apparel added to cart", {
         description: `${selectedColor.name} · ${size} · ${Object.keys(sides).join(" + ")}`,
       });
     } catch (error) {
@@ -433,7 +544,15 @@ export default function ApparelDesigner({
     }
   }
 
-  const shirtStroke = selectedColor.id === "white" ? "#94a3b8" : "#0f172a";
+  const shirtStroke =
+    selectedColor.hex.toLowerCase() === "#f8fafc" ||
+    selectedColor.hex.toLowerCase() === "#ffffff"
+      ? "#94a3b8"
+      : "#0f172a";
+  const isHoodie = selectedVariant?.apparel_garment_type === "hoodie";
+  const availableStock = usesInventory
+    ? Number(selectedVariant?.inventory_quantity ?? 0)
+    : 100;
 
   return (
     <div className="grid gap-8 xl:grid-cols-[minmax(0,1.12fr)_minmax(22rem,0.88fr)]">
@@ -456,16 +575,37 @@ export default function ApparelDesigner({
           <svg
             viewBox="0 0 600 700"
             className="absolute inset-0 h-full w-full"
-            aria-label={`${selectedColor.name} T-shirt ${activeSide} mockup`}
+            aria-label={`${selectedColor.name} ${isHoodie ? "hoodie" : "T-shirt"} ${activeSide} mockup`}
           >
             <path
-              d="M205 70 92 126 20 266l91 51 50-76v389h278V241l50 76 91-51-72-140-113-56c-25 41-165 41-190 0Z"
+              d={
+                isHoodie
+                  ? "M203 102 88 151 18 292l93 49 49-73v362h280V268l49 73 93-49-70-141-115-49c-15-45-51-78-97-78s-82 33-97 78Z"
+                  : "M205 70 92 126 20 266l91 51 50-76v389h278V241l50 76 91-51-72-140-113-56c-25 41-165 41-190 0Z"
+              }
               fill={selectedColor.hex}
               stroke={shirtStroke}
               strokeWidth="5"
               strokeLinejoin="round"
             />
-            {activeSide === "front" ? (
+            {isHoodie && activeSide === "front" ? (
+              <>
+                <path
+                  d="M215 105c22-72 148-72 170 0-38 28-132 28-170 0Z"
+                  fill="#020617"
+                  fillOpacity=".2"
+                  stroke={shirtStroke}
+                  strokeWidth="4"
+                />
+                <path
+                  d="M218 470h164v96H218c-24-28-24-68 0-96Z"
+                  fill="#020617"
+                  fillOpacity=".12"
+                  stroke={shirtStroke}
+                  strokeWidth="3"
+                />
+              </>
+            ) : activeSide === "front" ? (
               <path
                 d="M205 70c18 100 172 100 190 0-34-16-53-25-67-31-17 33-39 50-28 50s-11-17-28-50c-14 6-33 15-67 31Z"
                 fill="#020617"
@@ -529,27 +669,34 @@ export default function ApparelDesigner({
           </h2>
         </div>
 
-        {variants.length > 0 ? (
+        {qualities.length > 0 ? (
           <fieldset>
             <legend className="mb-3 font-bold text-slate-900">
               1. Quality
             </legend>
             <div className="grid gap-2 sm:grid-cols-2">
-              {variants.map((variant) => (
-                <button
-                  key={variant.id}
-                  type="button"
-                  onClick={() => setSelectedVariantId(variant.id)}
-                  className={`rounded-xl border-2 p-3 text-left transition ${selectedVariantId === variant.id ? "border-yellow-400 bg-yellow-50" : "border-slate-200 hover:border-slate-400"}`}
-                >
-                  <span className="block font-bold">
-                    {variant.option_value}
-                  </span>
-                  <span className="text-sm text-slate-500">
-                    CAD ${Number(variant.price).toFixed(2)}
-                  </span>
-                </button>
-              ))}
+              {qualities.map((qualityOption) => {
+                const qualityPrice =
+                  inventoryVariants.find(
+                    (variant) => variant.apparel_quality === qualityOption,
+                  )?.price ??
+                  variants.find(
+                    (variant) => variant.option_value === qualityOption,
+                  )?.price;
+                return (
+                  <button
+                    key={qualityOption}
+                    type="button"
+                    onClick={() => setQuality(qualityOption)}
+                    className={`rounded-xl border-2 p-3 text-left transition ${quality === qualityOption ? "border-yellow-400 bg-yellow-50" : "border-slate-200 hover:border-slate-400"}`}
+                  >
+                    <span className="block font-bold">{qualityOption}</span>
+                    <span className="text-sm text-slate-500">
+                      From CAD ${Number(qualityPrice ?? 0).toFixed(2)}
+                    </span>
+                  </button>
+                );
+              })}
             </div>
           </fieldset>
         ) : null}
@@ -559,14 +706,14 @@ export default function ApparelDesigner({
             2. Shirt colour
           </legend>
           <div className="flex flex-wrap gap-3">
-            {APPAREL_COLORS.map((color) => (
+            {availableColors.map((color) => (
               <button
-                key={color.id}
+                key={color.name}
                 type="button"
-                onClick={() => setColorId(color.id)}
+                onClick={() => setColorName(color.name)}
                 aria-label={color.name}
                 title={color.name}
-                className={`h-11 w-11 rounded-full border-4 shadow-sm transition ${colorId === color.id ? "border-yellow-400 scale-110" : "border-white ring-1 ring-slate-300"}`}
+                className={`h-11 w-11 rounded-full border-4 shadow-sm transition ${colorName === color.name ? "border-yellow-400 scale-110" : "border-white ring-1 ring-slate-300"}`}
                 style={{ backgroundColor: color.hex }}
               />
             ))}
@@ -584,7 +731,7 @@ export default function ApparelDesigner({
               onChange={(event) => setSize(event.target.value)}
               className="mt-2 w-full rounded-xl border border-slate-300 p-3 font-normal"
             >
-              {APPAREL_SIZES.map((option) => (
+              {availableSizes.map((option) => (
                 <option key={option}>{option}</option>
               ))}
             </select>
@@ -594,15 +741,23 @@ export default function ApparelDesigner({
             <input
               type="number"
               min="1"
-              max="100"
+              max={availableStock}
               value={quantity}
               onChange={(event) =>
                 setQuantity(
-                  Math.min(100, Math.max(1, Number(event.target.value) || 1)),
+                  Math.min(
+                    availableStock,
+                    Math.max(1, Number(event.target.value) || 1),
+                  ),
                 )
               }
               className="mt-2 w-full rounded-xl border border-slate-300 p-3 font-normal"
             />
+            {usesInventory ? (
+              <span className="mt-2 block text-xs font-medium text-slate-500">
+                {availableStock} currently in stock
+              </span>
+            ) : null}
           </label>
         </div>
 
@@ -787,10 +942,16 @@ export default function ApparelDesigner({
         <button
           type="button"
           onClick={() => void handleAddToCart()}
-          disabled={isAdding || !material}
+          disabled={
+            isAdding ||
+            !material ||
+            (usesInventory && (!selectedVariant || availableStock < 1))
+          }
           className="w-full rounded-xl bg-yellow-400 py-4 text-lg font-bold text-slate-950 hover:bg-yellow-300 disabled:cursor-not-allowed disabled:opacity-60"
         >
-          {isAdding ? "Saving Design..." : "Add Custom T-shirt to Cart"}
+          {isAdding
+            ? "Saving Design..."
+            : `Add Custom ${isHoodie ? "Hoodie" : "T-Shirt"} to Cart`}
         </button>
       </section>
     </div>

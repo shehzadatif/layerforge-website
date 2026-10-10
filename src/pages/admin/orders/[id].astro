@@ -541,6 +541,7 @@ const shippingService =
                       <div class="mt-3 rounded-xl border border-yellow-200 bg-yellow-50 p-4 text-sm text-slate-700">
                         <div class="font-bold text-slate-950">Custom apparel production details</div>
                         <div class="mt-2 flex flex-wrap gap-x-4 gap-y-1">
+                          <span>Garment: <strong>{item.design_data.garmentType === "hoodie" ? "Hoodie" : "T-Shirt"}</strong></span>
                           <span>Size: <strong>{item.design_data.size}</strong></span>
                           <span class="inline-flex items-center gap-1.5">
                             Colour:

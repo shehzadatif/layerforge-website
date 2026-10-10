@@ -167,7 +167,7 @@ export const POST: APIRoute = async ({ request }) => {
     const description = String(formData.get("description") ?? "").trim();
 
     const priceValue = formData.get("price");
-    const price =
+    let price =
       priceValue && String(priceValue).trim() !== ""
         ? Number(priceValue)
         : null;
@@ -189,12 +189,19 @@ export const POST: APIRoute = async ({ request }) => {
     const apparelBackPrintPrice = Number(
       formData.get("apparel_back_print_price") ?? 8,
     );
+    const returnTo = String(formData.get("return_to") ?? "");
 
     const status = formData.get("active") === "on" ? "Active" : "Inactive";
 
     const selectedMaterials = formData.getAll("materials").map(String);
 
     const variants = parseProductVariants(formData);
+    if (apparelDesignerEnabled) {
+      const apparelPrices = variants
+        .filter((variant) => variant.apparel)
+        .map((variant) => variant.price);
+      if (apparelPrices.length > 0) price = Math.min(...apparelPrices);
+    }
     const variantShippingProfiles = parseVariantShippingProfilesForm(
       formData,
       variants.length,
@@ -234,6 +241,16 @@ export const POST: APIRoute = async ({ request }) => {
       return new Response("Enter a valid additional back print price.", {
         status: 400,
       });
+    }
+
+    if (
+      apparelDesignerEnabled &&
+      !variants.some((variant) => variant.apparel)
+    ) {
+      return new Response(
+        "Add at least one apparel inventory row with size, colour, price and quantity.",
+        { status: 400 },
+      );
     }
 
     const slug = name
@@ -322,7 +339,10 @@ export const POST: APIRoute = async ({ request }) => {
     return new Response(null, {
       status: 303,
       headers: {
-        Location: `/admin/products/${id}?saved=1`,
+        Location:
+          returnTo === "/admin/apparel"
+            ? `/admin/products/${id}?apparel=1&saved=1`
+            : `/admin/products/${id}?saved=1`,
       },
     });
   } catch (error) {

@@ -55,12 +55,12 @@ describe("apparel designer", () => {
   it("rejects invalid sizes and untrusted artwork paths", () => {
     expect(() =>
       parseApparelDesignData({
-        size: "5XL",
+        size: "child",
         colorId: "black",
         quality: "Premium",
         sides: { front },
       }),
-    ).toThrow("valid T-shirt size");
+    ).toThrow("valid apparel size");
 
     expect(() =>
       parseApparelDesignData({

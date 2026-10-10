@@ -1,0 +1,112 @@
+---
+type ApparelVariant = {
+  id?: string | number | null;
+  sku?: string | null;
+  price?: number | string | null;
+  apparel_garment_type?: string | null;
+  apparel_quality?: string | null;
+  apparel_color_name?: string | null;
+  apparel_color_hex?: string | null;
+  apparel_size?: string | null;
+  inventory_quantity?: number | string | null;
+  option_value?: string | null;
+};
+
+const variants = (Astro.props.variants ?? []) as ApparelVariant[];
+---
+
+<section class="rounded-xl border border-indigo-200 bg-indigo-50 p-6" data-apparel-inventory>
+  <div class="flex flex-wrap items-start justify-between gap-4">
+    <div>
+      <h2 class="text-xl font-bold text-slate-950">Apparel Inventory</h2>
+      <p class="mt-2 max-w-3xl text-sm leading-6 text-slate-600">
+        Each row is one sellable combination. Customers will only see sizes and
+        colours that are in stock. The price includes the blank garment and one
+        printed side; the back-print charge is added separately.
+      </p>
+    </div>
+    <button type="button" class="rounded-lg bg-slate-950 px-4 py-2 font-semibold text-white hover:bg-slate-700" data-add-apparel-row>
+      + Add Inventory Row
+    </button>
+  </div>
+
+  <div class="mt-6 space-y-4" data-apparel-list>
+    {variants.map((variant) => (
+      <div class="rounded-xl border border-slate-200 bg-white p-4 shadow-sm" data-apparel-row>
+        <input type="hidden" name="variant_id" value={variant.id ?? ""} />
+        <input type="hidden" name="variant_name" value="" />
+        <input type="hidden" name="variant_sku" value={variant.sku ?? ""} />
+        <div class="grid gap-3 sm:grid-cols-2 xl:grid-cols-7 xl:items-end">
+          <label class="block"><span class="mb-1 block text-xs font-bold">Garment</span><select name="apparel_garment_type" class="w-full rounded-lg border p-2.5"><option value="t-shirt" selected={variant.apparel_garment_type !== "hoodie"}>T-Shirt</option><option value="hoodie" selected={variant.apparel_garment_type === "hoodie"}>Hoodie</option></select></label>
+          <label class="block"><span class="mb-1 block text-xs font-bold">Quality</span><input name="apparel_quality" value={variant.apparel_quality ?? variant.option_value ?? "Standard"} placeholder="Standard" maxlength="80" required class="w-full rounded-lg border p-2.5" /></label>
+          <label class="block"><span class="mb-1 block text-xs font-bold">Colour</span><input name="apparel_color_name" value={variant.apparel_color_name ?? "Black"} placeholder="Black" maxlength="60" required class="w-full rounded-lg border p-2.5" /></label>
+          <label class="block"><span class="mb-1 block text-xs font-bold">Swatch</span><input type="color" name="apparel_color_hex" value={variant.apparel_color_hex ?? "#15171B"} class="h-[42px] w-full rounded-lg border bg-white p-1" /></label>
+          <label class="block"><span class="mb-1 block text-xs font-bold">Size</span><select name="apparel_size" class="w-full rounded-lg border p-2.5">{["XS","S","M","L","XL","2XL","3XL","4XL","5XL"].map((size) => <option value={size} selected={(variant.apparel_size ?? "M") === size}>{size}</option>)}</select></label>
+          <label class="block"><span class="mb-1 block text-xs font-bold">Price (CAD)</span><input type="number" name="variant_price" value={variant.price ?? ""} min="0.01" step="0.01" required class="w-full rounded-lg border p-2.5" /></label>
+          <label class="block"><span class="mb-1 block text-xs font-bold">Qty in stock</span><input type="number" name="inventory_quantity" value={variant.inventory_quantity ?? 0} min="0" max="100000" step="1" required class="w-full rounded-lg border p-2.5" /></label>
+        </div>
+        <div class="mt-3 flex flex-wrap items-center justify-between gap-3 border-t border-slate-100 pt-3">
+          <span class="font-mono text-xs text-slate-500">{variant.sku || "SKU generated when saved"}</span>
+          <div class="flex gap-2">
+            <button type="button" class="rounded-lg border px-3 py-2 text-sm font-semibold hover:bg-slate-50" data-duplicate-apparel-row>Duplicate</button>
+            <button type="button" class="rounded-lg border border-red-200 px-3 py-2 text-sm font-semibold text-red-700 hover:bg-red-50" data-remove-apparel-row>Remove</button>
+          </div>
+        </div>
+      </div>
+    ))}
+  </div>
+
+  <p class:list={["mt-5 rounded-lg border border-dashed border-indigo-300 bg-white p-4 text-center text-sm text-slate-500", variants.length > 0 && "hidden"]} data-apparel-empty>
+    No inventory rows yet. Add at least one size and colour before activating this product.
+  </p>
+
+  <template data-apparel-template>
+    <div class="rounded-xl border border-slate-200 bg-white p-4 shadow-sm" data-apparel-row>
+      <input type="hidden" name="variant_id" value="" />
+      <input type="hidden" name="variant_name" value="" />
+      <input type="hidden" name="variant_sku" value="" />
+      <div class="grid gap-3 sm:grid-cols-2 xl:grid-cols-7 xl:items-end">
+        <label class="block"><span class="mb-1 block text-xs font-bold">Garment</span><select name="apparel_garment_type" class="w-full rounded-lg border p-2.5"><option value="t-shirt">T-Shirt</option><option value="hoodie">Hoodie</option></select></label>
+        <label class="block"><span class="mb-1 block text-xs font-bold">Quality</span><input name="apparel_quality" value="Standard" maxlength="80" required class="w-full rounded-lg border p-2.5" /></label>
+        <label class="block"><span class="mb-1 block text-xs font-bold">Colour</span><input name="apparel_color_name" value="Black" maxlength="60" required class="w-full rounded-lg border p-2.5" /></label>
+        <label class="block"><span class="mb-1 block text-xs font-bold">Swatch</span><input type="color" name="apparel_color_hex" value="#15171b" class="h-[42px] w-full rounded-lg border bg-white p-1" /></label>
+        <label class="block"><span class="mb-1 block text-xs font-bold">Size</span><select name="apparel_size" class="w-full rounded-lg border p-2.5"><option>XS</option><option>S</option><option selected>M</option><option>L</option><option>XL</option><option>2XL</option><option>3XL</option><option>4XL</option><option>5XL</option></select></label>
+        <label class="block"><span class="mb-1 block text-xs font-bold">Price (CAD)</span><input type="number" name="variant_price" min="0.01" step="0.01" required class="w-full rounded-lg border p-2.5" /></label>
+        <label class="block"><span class="mb-1 block text-xs font-bold">Qty in stock</span><input type="number" name="inventory_quantity" value="0" min="0" max="100000" step="1" required class="w-full rounded-lg border p-2.5" /></label>
+      </div>
+      <div class="mt-3 flex flex-wrap items-center justify-between gap-3 border-t border-slate-100 pt-3"><span class="font-mono text-xs text-slate-500">SKU generated when saved</span><div class="flex gap-2"><button type="button" class="rounded-lg border px-3 py-2 text-sm font-semibold hover:bg-slate-50" data-duplicate-apparel-row>Duplicate</button><button type="button" class="rounded-lg border border-red-200 px-3 py-2 text-sm font-semibold text-red-700 hover:bg-red-50" data-remove-apparel-row>Remove</button></div></div>
+    </div>
+  </template>
+</section>
+
+<script>
+  document.querySelectorAll<HTMLElement>("[data-apparel-inventory]").forEach((root) => {
+    const list = root.querySelector<HTMLElement>("[data-apparel-list]");
+    const template = root.querySelector<HTMLTemplateElement>("[data-apparel-template]");
+    const empty = root.querySelector<HTMLElement>("[data-apparel-empty]");
+    const refresh = () => empty?.classList.toggle("hidden", Boolean(list?.querySelector("[data-apparel-row]")));
+    const wire = (row: Element) => {
+      row.querySelector("[data-remove-apparel-row]")?.addEventListener("click", () => { row.remove(); refresh(); });
+      row.querySelector("[data-duplicate-apparel-row]")?.addEventListener("click", () => {
+        const copy = row.cloneNode(true) as HTMLElement;
+        const id = copy.querySelector<HTMLInputElement>("[name='variant_id']");
+        const sku = copy.querySelector<HTMLInputElement>("[name='variant_sku']");
+        if (id) id.value = "";
+        if (sku) sku.value = "";
+        wire(copy);
+        row.after(copy);
+        refresh();
+      });
+    };
+    list?.querySelectorAll("[data-apparel-row]").forEach(wire);
+    root.querySelector("[data-add-apparel-row]")?.addEventListener("click", () => {
+      const row = template?.content.firstElementChild?.cloneNode(true) as HTMLElement | undefined;
+      if (!row || !list) return;
+      wire(row);
+      list.appendChild(row);
+      refresh();
+      row.querySelector<HTMLInputElement>("[name='apparel_quality']")?.focus();
+    });
+    refresh();
+  });
+</script>

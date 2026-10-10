@@ -68,6 +68,12 @@ interface ProductVariantRecord {
   option_value: string | null;
   price: number | string | null;
   active: boolean | null;
+  apparel_garment_type: "t-shirt" | "hoodie" | null;
+  apparel_quality: string | null;
+  apparel_color_name: string | null;
+  apparel_color_hex: string | null;
+  apparel_size: string | null;
+  inventory_quantity: number | null;
 }
 
 interface ProductRecord {
@@ -251,7 +257,13 @@ async function buildTrustedItems(
         id,
         option_value,
         price,
-        active
+        active,
+        apparel_garment_type,
+        apparel_quality,
+        apparel_color_name,
+        apparel_color_hex,
+        apparel_size,
+        inventory_quantity
       ),
       product_materials(
         material_id,
@@ -332,7 +344,12 @@ async function buildTrustedItems(
         : regularPrice;
     const usesSalePrice =
       !selectedVariant && Number.isFinite(salePrice) && salePrice > 0;
-    const markupPercent = Number(material.markup_percent ?? 0);
+    const isApparelInventoryVariant = Boolean(
+      selectedVariant?.apparel_garment_type,
+    );
+    const markupPercent = isApparelInventoryVariant
+      ? 0
+      : Number(material.markup_percent ?? 0);
 
     if (
       !Number.isFinite(basePrice) ||
@@ -362,13 +379,41 @@ async function buildTrustedItems(
         throw error;
       }
 
-      const expectedQuality = selectedVariant?.option_value ?? "Standard";
+      const expectedQuality =
+        selectedVariant?.apparel_quality ??
+        selectedVariant?.option_value ??
+        "Standard";
       if (designData.quality !== expectedQuality) {
         throw new CheckoutRequestError(
           `The selected quality is invalid for ${product.name}.`,
           409,
           "VARIANT_UNAVAILABLE",
         );
+      }
+      if (isApparelInventoryVariant) {
+        const matchesInventory =
+          designData.garmentType === selectedVariant?.apparel_garment_type &&
+          designData.colorName === selectedVariant?.apparel_color_name &&
+          designData.colorHex.toUpperCase() ===
+            selectedVariant?.apparel_color_hex?.toUpperCase() &&
+          designData.size === selectedVariant?.apparel_size;
+        if (!matchesInventory) {
+          throw new CheckoutRequestError(
+            `The selected apparel combination is unavailable for ${product.name}.`,
+            409,
+            "VARIANT_UNAVAILABLE",
+          );
+        }
+        if (
+          Number(selectedVariant?.inventory_quantity ?? 0) <
+          requestedItem.quantity
+        ) {
+          throw new CheckoutRequestError(
+            `Only ${Number(selectedVariant?.inventory_quantity ?? 0)} of this ${product.name} combination remain in stock.`,
+            409,
+            "INSUFFICIENT_INVENTORY",
+          );
+        }
       }
     } else if (requestedItem.design) {
       throw new CheckoutRequestError(
@@ -422,7 +467,11 @@ async function buildTrustedItems(
             variantId: String(selectedVariant.id),
             variantName: designData
               ? [
-                  String(selectedVariant.option_value ?? "Variant"),
+                  String(
+                    selectedVariant.apparel_quality ??
+                      selectedVariant.option_value ??
+                      "Variant",
+                  ),
                   designData.colorName,
                   `Size ${designData.size}`,
                 ].join(" · ")

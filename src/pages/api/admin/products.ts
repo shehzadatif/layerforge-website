@@ -86,7 +86,7 @@ export const POST: APIRoute = async ({ request }) => {
     const short_description = String(formData.get("short_description") ?? "");
     const description = String(formData.get("description") ?? "");
 
-    const price = formData.get("price") ? Number(formData.get("price")) : null;
+    let price = formData.get("price") ? Number(formData.get("price")) : null;
 
     const sale_price = formData.get("sale_price")
       ? Number(formData.get("sale_price"))
@@ -103,12 +103,19 @@ export const POST: APIRoute = async ({ request }) => {
     const apparel_back_print_price = Number(
       formData.get("apparel_back_print_price") ?? 8,
     );
+    const returnTo = String(formData.get("return_to") ?? "");
 
     const status = formData.get("active") === "on" ? "Active" : "Inactive";
 
     const selectedMaterials = formData.getAll("materials").map(String);
 
     const variants = parseProductVariants(formData);
+    if (apparel_designer_enabled) {
+      const apparelPrices = variants
+        .filter((variant) => variant.apparel)
+        .map((variant) => variant.price);
+      if (apparelPrices.length > 0) price = Math.min(...apparelPrices);
+    }
     const variantShippingProfiles = parseVariantShippingProfilesForm(
       formData,
       variants.length,
@@ -142,6 +149,16 @@ export const POST: APIRoute = async ({ request }) => {
       return new Response("Enter a valid sale price greater than zero.", {
         status: 400,
       });
+    }
+
+    if (
+      apparel_designer_enabled &&
+      !variants.some((variant) => variant.apparel)
+    ) {
+      return new Response(
+        "Add at least one apparel inventory row with size, colour, price and quantity.",
+        { status: 400 },
+      );
     }
 
     if (
@@ -355,7 +372,7 @@ export const POST: APIRoute = async ({ request }) => {
     return new Response(null, {
       status: 303,
       headers: {
-        Location: "/admin/products",
+        Location: returnTo === "/admin/apparel" ? returnTo : "/admin/products",
       },
     });
   } catch (error) {

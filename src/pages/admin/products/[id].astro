@@ -3,6 +3,7 @@ import AdminLayout from "../../../layouts/AdminLayout.astro";
 import ProductVariantsField from "../../../components/admin/ProductVariantsField.astro";
 import ProductShippingProfileFields from "../../../components/admin/ProductShippingProfileFields.astro";
 import ApparelDesignerFields from "../../../components/admin/ApparelDesignerFields.astro";
+import ApparelInventoryField from "../../../components/admin/ApparelInventoryField.astro";
 import { supabaseAdmin } from "../../../lib/supabaseAdmin";
 import {
   getProductShippingProfile,
@@ -115,9 +116,10 @@ const productVariants = sortedProductVariants.map((variant) => ({
   shipping_profile: variantShippingProfiles.get(String(variant.id)) ?? null,
 }));
 const shippingProfile = await getProductShippingProfile(product.id);
+const isApparel = product.apparel_designer_enabled === true || Astro.url.searchParams.get("apparel") === "1";
 ---
 
-<AdminLayout title="Edit Product" active="products">
+<AdminLayout title={isApparel ? "Manage Apparel Product" : "Edit Product"} active={isApparel ? "apparel" : "products"}>
   <div class="mb-8 flex flex-wrap items-start justify-between gap-4">
     <div>
       <h1 class="text-4xl font-bold text-slate-900">
@@ -125,7 +127,7 @@ const shippingProfile = await getProductShippingProfile(product.id);
       </h1>
 
       <p class="mt-2 text-slate-500">
-        Edit product information, materials, and images.
+        {isApparel ? "Manage garment inventory, pricing, artwork options and product images." : "Edit product information, materials, and images."}
       </p>
     </div>
 
@@ -139,7 +141,7 @@ const shippingProfile = await getProductShippingProfile(product.id);
       </button>
 
       <a
-        href="/admin/products"
+        href={isApparel ? "/admin/apparel" : "/admin/products"}
         class="rounded-lg bg-slate-900 px-5 py-3 text-white hover:bg-slate-700"
       >
         ← Back
@@ -182,6 +184,7 @@ const shippingProfile = await getProductShippingProfile(product.id);
           name="id"
           value={product.id}
         />
+        {isApparel && <input type="hidden" name="return_to" value="/admin/apparel" />}
 
         <div>
           <label
@@ -297,7 +300,7 @@ const shippingProfile = await getProductShippingProfile(product.id);
           </p>
         </div>
 
-        <div class="grid gap-6 md:grid-cols-2">
+        {!isApparel && <div class="grid gap-6 md:grid-cols-2">
           <div class="flex flex-col">
             <label
               for="price"
@@ -344,7 +347,7 @@ const shippingProfile = await getProductShippingProfile(product.id);
               class="w-full rounded-lg border p-3"
             />
           </div>
-        </div>
+        </div>}
 
         <section class="rounded-xl border border-emerald-200 bg-emerald-50 p-5">
           <h2 class="text-lg font-bold text-slate-950">
@@ -401,10 +404,14 @@ const shippingProfile = await getProductShippingProfile(product.id);
 
         <ProductShippingProfileFields profile={shippingProfile} />
 
-        <ProductVariantsField
-          variants={productVariants}
-          imageBaseUrl={`${supabaseUrl}/storage/v1/object/public/product-images/`}
-        />
+        {isApparel ? (
+          <ApparelInventoryField variants={productVariants} />
+        ) : (
+          <ProductVariantsField
+            variants={productVariants}
+            imageBaseUrl={`${supabaseUrl}/storage/v1/object/public/product-images/`}
+          />
+        )}
 
         <div class="rounded-xl border border-slate-200 bg-slate-50 p-5">
           <h2 class="font-semibold text-slate-900">Product SKU</h2>

@@ -29,6 +29,7 @@ export type ApparelArtworkPlacement = {
 
 export type ApparelDesignData = {
   version: 1;
+  garmentType?: "t-shirt" | "hoodie";
   size: string;
   colorId: string;
   colorName: string;
@@ -119,16 +120,26 @@ export function parseApparelDesignData(value: unknown): ApparelDesignData {
   }
 
   const input = value as Record<string, unknown>;
-  const size = requiredText(input.size, "T-shirt size", 10).toUpperCase();
-  const colorId = requiredText(input.colorId, "T-shirt colour", 40);
-  const color = APPAREL_COLORS.find((option) => option.id === colorId);
-
-  if (!APPAREL_SIZES.includes(size as (typeof APPAREL_SIZES)[number])) {
-    throw new ApparelDesignValidationError("Select a valid T-shirt size.");
+  const size = requiredText(input.size, "Apparel size", 12).toUpperCase();
+  const colorId = requiredText(input.colorId, "Apparel colour", 60);
+  if (!/^(?:XS|S|M|L|XL|[2-9]XL)$/i.test(size)) {
+    throw new ApparelDesignValidationError("Select a valid apparel size.");
   }
-  if (!color) {
-    throw new ApparelDesignValidationError("Select a valid T-shirt colour.");
+  const legacyColor = APPAREL_COLORS.find((option) => option.id === colorId);
+  const colorName = requiredText(
+    input.colorName ?? legacyColor?.name,
+    "Apparel colour",
+    60,
+  );
+  const colorHex = requiredText(
+    input.colorHex ?? legacyColor?.hex,
+    "Apparel colour swatch",
+    7,
+  );
+  if (!/^#[0-9a-f]{6}$/i.test(colorHex)) {
+    throw new ApparelDesignValidationError("Select a valid apparel colour.");
   }
+  const garmentType = input.garmentType === "hoodie" ? "hoodie" : "t-shirt";
 
   const sidesInput =
     input.sides && typeof input.sides === "object"
@@ -146,10 +157,11 @@ export function parseApparelDesignData(value: unknown): ApparelDesignData {
 
   return {
     version: 1,
+    garmentType,
     size,
-    colorId: color.id,
-    colorName: color.name,
-    colorHex: color.hex,
+    colorId,
+    colorName,
+    colorHex: colorHex.toUpperCase(),
     quality: requiredText(input.quality, "T-shirt quality", 100),
     sides,
   };
