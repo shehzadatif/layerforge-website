@@ -101,9 +101,7 @@ const linkClass = (href: string) =>
 
       <a
         href="/custom-apparel"
-        class={`rounded-lg bg-yellow-400 px-4 py-2.5 font-black text-slate-950 transition hover:bg-yellow-300 ${
-          isActive("/custom-apparel") ? "ring-2 ring-white ring-offset-2 ring-offset-black" : ""
-        }`}
+        class={linkClass("/custom-apparel")}
         aria-current={isActive("/custom-apparel") ? "page" : undefined}
       >
         Design T-Shirts
@@ -146,9 +144,9 @@ const linkClass = (href: string) =>
 
       <a
         href="/custom-apparel"
-        class="my-3 block rounded-xl bg-yellow-400 px-4 py-4 text-center text-lg font-black text-slate-950 transition hover:bg-yellow-300"
+        class={`block rounded-xl px-4 py-3 font-semibold transition hover:bg-white/10 ${isActive("/custom-apparel") ? "bg-white/10 text-yellow-400" : "text-white"}`}
       >
-        Design &amp; Order T-Shirts
+        Design T-Shirts
       </a>
 
       <div class="px-4 pb-2 pt-4 text-xs font-bold uppercase tracking-[0.25em] text-slate-500">
