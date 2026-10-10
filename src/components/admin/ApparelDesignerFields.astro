@@ -2,32 +2,37 @@
 interface Props {
   enabled?: boolean;
   backPrintPrice?: number | string | null;
+  dedicated?: boolean;
 }
 
-const { enabled = false, backPrintPrice = 8 } = Astro.props;
+const { enabled = false, backPrintPrice = 8, dedicated = false } = Astro.props;
 ---
 
 <section class="rounded-xl border border-yellow-300 bg-yellow-50 p-5">
   <h2 class="text-lg font-bold text-slate-950">Interactive Apparel Designer</h2>
   <p class="mt-2 text-sm leading-6 text-slate-600">
-    Enable the live T-shirt or hoodie mockup with colour, size, quality,
-    front/back artwork, positioning and exact print dimensions.
+    Customers can upload front and back artwork, position it on a live garment
+    mockup, and enter exact print dimensions.
   </p>
 
-  <label class="mt-5 flex items-start gap-3 rounded-lg border border-yellow-300 bg-white p-4">
-    <input
-      type="checkbox"
-      name="apparel_designer_enabled"
-      checked={enabled}
-      class="mt-1 h-5 w-5 accent-yellow-500"
-    />
-    <span>
-      <span class="block font-semibold text-slate-950">Enable apparel designer</span>
-      <span class="mt-1 block text-sm leading-5 text-slate-500">
-        Add inventory combinations below for every quality, colour and size you sell.
+  {dedicated ? (
+    <input type="hidden" name="apparel_designer_enabled" value="on" />
+  ) : (
+    <label class="mt-5 flex items-start gap-3 rounded-lg border border-yellow-300 bg-white p-4">
+      <input
+        type="checkbox"
+        name="apparel_designer_enabled"
+        checked={enabled}
+        class="mt-1 h-5 w-5 accent-yellow-500"
+      />
+      <span>
+        <span class="block font-semibold text-slate-950">Enable apparel designer</span>
+        <span class="mt-1 block text-sm leading-5 text-slate-500">
+          Add inventory combinations below for every quality, colour and size you sell.
+        </span>
       </span>
-    </span>
-  </label>
+    </label>
+  )}
 
   <div class="mt-5 max-w-sm">
     <label for="apparel_back_print_price" class="mb-2 block font-semibold">

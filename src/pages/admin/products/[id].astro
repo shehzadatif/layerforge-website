@@ -169,7 +169,7 @@ const isApparel = product.apparel_designer_enabled === true || Astro.url.searchP
   <div class="grid gap-8 lg:grid-cols-2">
     <section class="rounded-2xl bg-white p-8 shadow">
       <h2 class="mb-6 text-2xl font-bold">
-        Product Information
+        {isApparel ? "Apparel Details" : "Product Information"}
       </h2>
 
       <form
@@ -216,7 +216,7 @@ const isApparel = product.apparel_designer_enabled === true || Astro.url.searchP
             name="brand"
             maxlength="80"
             value={product.brand ?? ""}
-            placeholder="e.g. Bosch, Milwaukee, DEWALT"
+            placeholder={isApparel ? "e.g. Gildan, ATC, Bella+Canvas" : "e.g. Bosch, Milwaukee, DEWALT"}
             class="w-full rounded-lg border p-3"
           />
 
@@ -225,7 +225,7 @@ const isApparel = product.apparel_designer_enabled === true || Astro.url.searchP
           </p>
         </div>
 
-        <div>
+        {!isApparel && <div>
           <label
             for="category_id"
             class="mb-2 block font-semibold"
@@ -258,7 +258,7 @@ const isApparel = product.apparel_designer_enabled === true || Astro.url.searchP
               ])
             }
           </select>
-        </div>
+        </div>}
 
         <div>
           <label
@@ -400,6 +400,7 @@ const isApparel = product.apparel_designer_enabled === true || Astro.url.searchP
         <ApparelDesignerFields
           enabled={product.apparel_designer_enabled === true}
           backPrintPrice={product.apparel_back_print_price}
+          dedicated={isApparel}
         />
 
         <ProductShippingProfileFields profile={shippingProfile} />
@@ -424,7 +425,7 @@ const isApparel = product.apparel_designer_enabled === true || Astro.url.searchP
           </p>
         </div>
 
-        <fieldset>
+        {!isApparel && <fieldset>
           <legend class="mb-4 text-lg font-semibold">
             Available Materials
           </legend>
@@ -465,7 +466,7 @@ const isApparel = product.apparel_designer_enabled === true || Astro.url.searchP
               </p>
             )
           }
-        </fieldset>
+        </fieldset>}
 
         <div class="flex flex-wrap items-center gap-6">
           <label class="flex items-center gap-2">

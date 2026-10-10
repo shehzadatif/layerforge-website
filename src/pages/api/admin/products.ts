@@ -11,6 +11,7 @@ import {
   uploadProductVariantImage,
 } from "../../../lib/productVariantImages";
 import { supabaseAdmin } from "../../../lib/supabaseAdmin";
+import { getCustomApparelCategoryId } from "../../../lib/apparelCategory";
 import {
   parseProductShippingProfileForm,
   parseVariantShippingProfilesForm,
@@ -82,7 +83,7 @@ export const POST: APIRoute = async ({ request }) => {
 
     const name = String(formData.get("name") ?? "").trim();
     const brand = String(formData.get("brand") ?? "").trim();
-    const category_id = String(formData.get("category_id") ?? "");
+    let category_id = String(formData.get("category_id") ?? "");
     const short_description = String(formData.get("short_description") ?? "");
     const description = String(formData.get("description") ?? "");
 
@@ -100,6 +101,9 @@ export const POST: APIRoute = async ({ request }) => {
       formData.get("allow_bulk_discount_on_sale") === "on";
     const apparel_designer_enabled =
       formData.get("apparel_designer_enabled") === "on";
+    if (apparel_designer_enabled) {
+      category_id = await getCustomApparelCategoryId();
+    }
     const apparel_back_print_price = Number(
       formData.get("apparel_back_print_price") ?? 8,
     );

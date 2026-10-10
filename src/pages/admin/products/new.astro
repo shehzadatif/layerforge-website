@@ -71,7 +71,7 @@ const { data: materials } = await supabaseAdmin
     {isApparel && <input type="hidden" name="return_to" value="/admin/apparel" />}
     <div class="grid gap-8 lg:grid-cols-2 lg:items-start">
       <section class="rounded-2xl bg-white p-8 shadow">
-        <h2 class="mb-6 text-2xl font-bold">Product Information</h2>
+        <h2 class="mb-6 text-2xl font-bold">{isApparel ? "Apparel Details" : "Product Information"}</h2>
         <div class="space-y-6">
     <div>
       <label
@@ -101,7 +101,7 @@ const { data: materials } = await supabaseAdmin
         id="brand"
         name="brand"
         maxlength="80"
-        placeholder="e.g. Bosch, Milwaukee, DEWALT"
+        placeholder={isApparel ? "e.g. Gildan, ATC, Bella+Canvas" : "e.g. Bosch, Milwaukee, DEWALT"}
         class="w-full rounded-lg border p-3"
       />
 
@@ -110,7 +110,7 @@ const { data: materials } = await supabaseAdmin
       </p>
     </div>
 
-    <div>
+    {!isApparel && <div>
       <label
         for="category_id"
         class="mb-2 block font-semibold"
@@ -135,7 +135,7 @@ const { data: materials } = await supabaseAdmin
           ])
         }
       </select>
-    </div>
+    </div>}
 
     <div>
       <label
@@ -165,7 +165,7 @@ const { data: materials } = await supabaseAdmin
         id="description"
         name="description"
         rows="12"
-        placeholder={`Write a short introduction here.
+        placeholder={isApparel ? "Describe the garment fit, fabric, weight and recommended use." : `Write a short introduction here.
 
 ## Features
 - First feature
@@ -278,7 +278,7 @@ const { data: materials } = await supabaseAdmin
       </div>
     </section>
 
-    <ApparelDesignerFields enabled={isApparel} />
+    {isApparel && <ApparelDesignerFields enabled dedicated />}
 
     <ProductShippingProfileFields />
 
@@ -294,7 +294,7 @@ const { data: materials } = await supabaseAdmin
 
     <hr class="my-8" />
 
-    <div class="rounded-xl border p-6">
+    {!isApparel && <div class="rounded-xl border p-6">
       <h2 class="mb-2 text-xl font-bold">
         Available Materials
       </h2>
@@ -329,7 +329,7 @@ const { data: materials } = await supabaseAdmin
           ))
         }
       </div>
-    </div>
+    </div>}
 
     <div class="flex flex-wrap items-center gap-6">
       <label class="flex items-center gap-2">
