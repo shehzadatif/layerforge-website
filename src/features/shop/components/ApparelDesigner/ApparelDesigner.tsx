@@ -28,6 +28,7 @@ import {
   normalizeProductionDays,
 } from "../../../../lib/productionEstimate";
 import type { BulkDiscountConfig } from "../../../../lib/bulkDiscount";
+import { getGarmentMockupImage } from "../../../../lib/apparelMockup";
 
 type Material = {
   id: string;
@@ -860,6 +861,12 @@ export default function ApparelDesigner({
       ? "#94a3b8"
       : "#0f172a";
   const isHoodie = selectedVariant?.apparel_garment_type === "hoodie";
+  const garmentMockupImage = getGarmentMockupImage({
+    side: activeSide,
+    garmentType: isHoodie ? "hoodie" : "t-shirt",
+    colorName: selectedColor.name,
+    frontImage: selectedBlankShirtImage,
+  });
   const availableStock = usesInventory
     ? Number(selectedVariant?.inventory_quantity ?? 0)
     : 100;
@@ -882,9 +889,9 @@ export default function ApparelDesigner({
         </div>
 
         <div className="relative mx-auto aspect-square max-w-xl overflow-hidden rounded-2xl bg-white p-4">
-          {selectedBlankShirtImage ? (
+          {garmentMockupImage ? (
             <img
-              src={selectedBlankShirtImage}
+              src={garmentMockupImage}
               alt={`${selectedColor.name} ${isHoodie ? "hoodie" : "T-shirt"} ${activeSide} mockup`}
               draggable={false}
               className="pointer-events-none absolute inset-0 h-full w-full select-none object-contain p-3"
