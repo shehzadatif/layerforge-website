@@ -102,6 +102,48 @@ type ApparelPlacementPreset = {
   yPercent: number;
 };
 
+type ResizeCorner = "nw" | "ne" | "sw" | "se";
+
+type ArtworkResizeState = {
+  corner: ResizeCorner;
+  anchorX: number;
+  anchorY: number;
+  widthIn: number;
+  heightIn: number;
+};
+
+const RESIZE_HANDLES: Array<{
+  corner: ResizeCorner;
+  label: string;
+  position: string;
+  cursor: string;
+}> = [
+  {
+    corner: "nw",
+    label: "Top left",
+    position: "-left-2 -top-2",
+    cursor: "cursor-nwse-resize",
+  },
+  {
+    corner: "ne",
+    label: "Top right",
+    position: "-right-2 -top-2",
+    cursor: "cursor-nesw-resize",
+  },
+  {
+    corner: "sw",
+    label: "Bottom left",
+    position: "-bottom-2 -left-2",
+    cursor: "cursor-nesw-resize",
+  },
+  {
+    corner: "se",
+    label: "Bottom right",
+    position: "-bottom-2 -right-2",
+    cursor: "cursor-nwse-resize",
+  },
+];
+
 const PRINT_PRESETS: Record<ApparelSide, ApparelPlacementPreset[]> = {
   front: [
     {
@@ -285,6 +327,7 @@ export default function ApparelDesigner({
   const [lockRatio, setLockRatio] = useState(true);
   const [isAdding, setIsAdding] = useState(false);
   const printAreaRef = useRef<HTMLDivElement | null>(null);
+  const artworkResizeRef = useRef<ArtworkResizeState | null>(null);
 
   const qualities = useMemo(
     () => [
@@ -611,21 +654,61 @@ export default function ApparelDesigner({
     });
   }
 
-  function resizeArtwork(event: ReactPointerEvent<HTMLButtonElement>) {
+  function startArtworkResize(
+    event: ReactPointerEvent<HTMLButtonElement>,
+    corner: ResizeCorner,
+  ) {
     if (!activeArtwork || !printAreaRef.current) return;
     event.preventDefault();
     event.stopPropagation();
     event.currentTarget.setPointerCapture(event.pointerId);
 
+    const halfWidthPercent =
+      (activeArtwork.widthIn / APPAREL_MAX_PRINT_WIDTH_IN) * 50;
+    const halfHeightPercent =
+      (activeArtwork.heightIn / APPAREL_MAX_PRINT_HEIGHT_IN) * 50;
+
+    artworkResizeRef.current = {
+      corner,
+      anchorX:
+        activeArtwork.xPercent +
+        (corner.endsWith("w") ? halfWidthPercent : -halfWidthPercent),
+      anchorY:
+        activeArtwork.yPercent +
+        (corner.startsWith("n") ? halfHeightPercent : -halfHeightPercent),
+      widthIn: activeArtwork.widthIn,
+      heightIn: activeArtwork.heightIn,
+    };
+  }
+
+  function resizeArtwork(event: ReactPointerEvent<HTMLButtonElement>) {
+    const resizeState = artworkResizeRef.current;
+    if (!resizeState || !activeArtwork || !printAreaRef.current) return;
+    event.preventDefault();
+    event.stopPropagation();
+
     const rect = printAreaRef.current.getBoundingClientRect();
     const pointerX = ((event.clientX - rect.left) / rect.width) * 100;
     const pointerY = ((event.clientY - rect.top) / rect.height) * 100;
+    const horizontalDirection = resizeState.corner.endsWith("e") ? 1 : -1;
+    const verticalDirection = resizeState.corner.startsWith("s") ? 1 : -1;
+    const maximumWidthIn =
+      ((horizontalDirection > 0
+        ? 100 - resizeState.anchorX
+        : resizeState.anchorX) /
+        100) *
+      APPAREL_MAX_PRINT_WIDTH_IN;
+    const maximumHeightIn =
+      ((verticalDirection > 0
+        ? 100 - resizeState.anchorY
+        : resizeState.anchorY) /
+        100) *
+      APPAREL_MAX_PRINT_HEIGHT_IN;
     const widthFromPointer = Math.max(
       1,
       Math.min(
-        APPAREL_MAX_PRINT_WIDTH_IN,
-        (Math.abs(pointerX - activeArtwork.xPercent) *
-          2 *
+        maximumWidthIn,
+        (Math.abs(pointerX - resizeState.anchorX) *
           APPAREL_MAX_PRINT_WIDTH_IN) /
           100,
       ),
@@ -633,9 +716,8 @@ export default function ApparelDesigner({
     const heightFromPointer = Math.max(
       1,
       Math.min(
-        APPAREL_MAX_PRINT_HEIGHT_IN,
-        (Math.abs(pointerY - activeArtwork.yPercent) *
-          2 *
+        maximumHeightIn,
+        (Math.abs(pointerY - resizeState.anchorY) *
           APPAREL_MAX_PRINT_HEIGHT_IN) /
           100,
       ),
@@ -645,41 +727,37 @@ export default function ApparelDesigner({
     let heightIn = heightFromPointer;
 
     if (lockRatio) {
-      const widthChange =
-        Math.abs(widthFromPointer - activeArtwork.widthIn) /
-        activeArtwork.widthIn;
-      const heightChange =
-        Math.abs(heightFromPointer - activeArtwork.heightIn) /
-        activeArtwork.heightIn;
-
-      if (widthChange >= heightChange) {
-        widthIn = widthFromPointer;
-        heightIn = Math.min(
-          APPAREL_MAX_PRINT_HEIGHT_IN,
-          Math.max(1, widthIn / activeArtwork.aspectRatio),
-        );
-      } else {
-        heightIn = heightFromPointer;
-        widthIn = Math.min(
-          APPAREL_MAX_PRINT_WIDTH_IN,
-          Math.max(1, heightIn * activeArtwork.aspectRatio),
-        );
-      }
+      const widthScale = widthFromPointer / resizeState.widthIn;
+      const heightScale = heightFromPointer / resizeState.heightIn;
+      const requestedScale =
+        Math.abs(widthScale - 1) >= Math.abs(heightScale - 1)
+          ? widthScale
+          : heightScale;
+      const minimumScale = Math.max(
+        1 / resizeState.widthIn,
+        1 / resizeState.heightIn,
+      );
+      const maximumScale = Math.min(
+        maximumWidthIn / resizeState.widthIn,
+        maximumHeightIn / resizeState.heightIn,
+      );
+      const scale = Math.max(
+        minimumScale,
+        Math.min(maximumScale, requestedScale),
+      );
+      widthIn = resizeState.widthIn * scale;
+      heightIn = resizeState.heightIn * scale;
     }
 
-    const halfWidthPercent = (widthIn / APPAREL_MAX_PRINT_WIDTH_IN) * 50;
-    const halfHeightPercent = (heightIn / APPAREL_MAX_PRINT_HEIGHT_IN) * 50;
+    const widthPercent = (widthIn / APPAREL_MAX_PRINT_WIDTH_IN) * 100;
+    const heightPercent = (heightIn / APPAREL_MAX_PRINT_HEIGHT_IN) * 100;
+    const movingX = resizeState.anchorX + horizontalDirection * widthPercent;
+    const movingY = resizeState.anchorY + verticalDirection * heightPercent;
     const nextArtwork = {
       widthIn: roundDimension(widthIn),
       heightIn: roundDimension(heightIn),
-      xPercent: Math.max(
-        halfWidthPercent,
-        Math.min(100 - halfWidthPercent, activeArtwork.xPercent),
-      ),
-      yPercent: Math.max(
-        halfHeightPercent,
-        Math.min(100 - halfHeightPercent, activeArtwork.yPercent),
-      ),
+      xPercent: (resizeState.anchorX + movingX) / 2,
+      yPercent: (resizeState.anchorY + movingY) / 2,
     };
 
     setSelectedPresetIds((current) => ({
@@ -687,6 +765,15 @@ export default function ApparelDesigner({
       [activeSide]: getApparelPrintClass(nextArtwork),
     }));
     updateActiveArtwork(nextArtwork);
+  }
+
+  function finishArtworkResize(event: ReactPointerEvent<HTMLButtonElement>) {
+    event.preventDefault();
+    event.stopPropagation();
+    artworkResizeRef.current = null;
+    if (event.currentTarget.hasPointerCapture(event.pointerId)) {
+      event.currentTarget.releasePointerCapture(event.pointerId);
+    }
   }
 
   async function handleAddToCart() {
@@ -866,7 +953,7 @@ export default function ApparelDesigner({
           >
             {activeArtwork ? (
               <div
-                className="pointer-events-none absolute"
+                className="pointer-events-none absolute rounded-sm outline outline-2 outline-offset-2 outline-yellow-400"
                 style={{
                   width: `${(activeArtwork.widthIn / APPAREL_MAX_PRINT_WIDTH_IN) * 100}%`,
                   height: `${(activeArtwork.heightIn / APPAREL_MAX_PRINT_HEIGHT_IN) * 100}%`,
@@ -881,22 +968,19 @@ export default function ApparelDesigner({
                   draggable={false}
                   className="h-full w-full select-none object-fill drop-shadow-lg"
                 />
-                {[
-                  ["top-0 left-0", "Top left"],
-                  ["top-0 right-0", "Top right"],
-                  ["bottom-0 left-0", "Bottom left"],
-                  ["bottom-0 right-0", "Bottom right"],
-                ].map(([position, label]) => (
+                {RESIZE_HANDLES.map(({ corner, position, cursor, label }) => (
                   <button
-                    key={label}
+                    key={corner}
                     type="button"
                     aria-label={`${label} resize handle`}
                     title="Drag to resize artwork"
-                    className={`pointer-events-auto absolute ${position} h-5 w-5 -translate-x-1/2 -translate-y-1/2 cursor-nwse-resize rounded-full border-2 border-slate-950 bg-yellow-400 shadow-lg`}
-                    onPointerDown={resizeArtwork}
+                    className={`pointer-events-auto absolute ${position} ${cursor} h-4 w-4 rounded-full border-[3px] border-yellow-400 bg-white shadow-[0_0_0_2px_rgba(15,23,42,0.85)] transition-transform hover:scale-125 focus:scale-125 focus:outline-none`}
+                    onPointerDown={(event) => startArtworkResize(event, corner)}
                     onPointerMove={(event) => {
                       if (event.buttons === 1) resizeArtwork(event);
                     }}
+                    onPointerUp={finishArtworkResize}
+                    onPointerCancel={finishArtworkResize}
                   />
                 ))}
               </div>
@@ -911,35 +995,6 @@ export default function ApparelDesigner({
           Mockup is an approximate placement guide. Your original
           full-resolution file is retained for production.
         </p>
-
-        {selectedBlankShirtImage ? (
-          <div className="mt-8 border-t border-white/10 pt-7">
-            <div className="mb-4 flex items-end justify-between gap-4">
-              <div>
-                <p className="text-xs font-bold uppercase tracking-[0.18em] text-yellow-400">
-                  Available blank colours
-                </p>
-                <h3 className="mt-1 text-lg font-bold text-white">
-                  See the actual shirts
-                </h3>
-              </div>
-              <p className="max-w-52 text-right text-xs leading-5 text-slate-400">
-                Product photos may vary slightly by screen.
-              </p>
-            </div>
-            <figure className="mx-auto max-w-xl overflow-hidden rounded-2xl border border-white/10 bg-white">
-              <img
-                src={selectedBlankShirtImage}
-                alt={`${selectedColor.name} ${product.name} blank shirt`}
-                className="aspect-square w-full object-contain p-4"
-                loading="lazy"
-              />
-              <figcaption className="border-t border-slate-200 px-4 py-3 text-center text-sm font-bold text-slate-900">
-                {selectedColor.name}
-              </figcaption>
-            </figure>
-          </div>
-        ) : null}
       </section>
 
       <section className="space-y-6 rounded-3xl bg-white p-6 shadow-xl sm:p-8">
