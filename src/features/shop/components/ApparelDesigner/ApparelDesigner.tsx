@@ -89,6 +89,7 @@ interface Props {
   product: Product;
   bulkDiscountConfig: BulkDiscountConfig;
   printPricing: ApparelPrintPricingConfig;
+  blankShirtImages: string[];
 }
 
 type ApparelPlacementPreset = {
@@ -233,6 +234,7 @@ export default function ApparelDesigner({
   product,
   bulkDiscountConfig,
   printPricing,
+  blankShirtImages,
 }: Props) {
   const variants = useMemo(
     () =>
@@ -351,6 +353,12 @@ export default function ApparelDesigner({
       }
     : (APPAREL_COLORS.find((color) => color.name === colorName) ??
       APPAREL_COLORS[0]);
+  const selectedColourIndex = Math.max(
+    0,
+    availableColors.findIndex((color) => color.name === selectedColor.name),
+  );
+  const selectedBlankShirtImage =
+    blankShirtImages[selectedColourIndex] ?? blankShirtImages[0];
 
   useEffect(() => {
     if (!qualities.includes(quality) && qualities[0]) setQuality(qualities[0]);
@@ -794,6 +802,35 @@ export default function ApparelDesigner({
           Mockup is an approximate placement guide. Your original
           full-resolution file is retained for production.
         </p>
+
+        {selectedBlankShirtImage ? (
+          <div className="mt-8 border-t border-white/10 pt-7">
+            <div className="mb-4 flex items-end justify-between gap-4">
+              <div>
+                <p className="text-xs font-bold uppercase tracking-[0.18em] text-yellow-400">
+                  Available blank colours
+                </p>
+                <h3 className="mt-1 text-lg font-bold text-white">
+                  See the actual shirts
+                </h3>
+              </div>
+              <p className="max-w-52 text-right text-xs leading-5 text-slate-400">
+                Product photos may vary slightly by screen.
+              </p>
+            </div>
+            <figure className="mx-auto max-w-xl overflow-hidden rounded-2xl border border-white/10 bg-white">
+              <img
+                src={selectedBlankShirtImage}
+                alt={`${selectedColor.name} ${product.name} blank shirt`}
+                className="aspect-square w-full object-contain p-4"
+                loading="lazy"
+              />
+              <figcaption className="border-t border-slate-200 px-4 py-3 text-center text-sm font-bold text-slate-900">
+                {selectedColor.name}
+              </figcaption>
+            </figure>
+          </div>
+        ) : null}
       </section>
 
       <section className="space-y-6 rounded-3xl bg-white p-6 shadow-xl sm:p-8">
