@@ -40,7 +40,7 @@ import {
 export const prerender = false;
 
 const MAX_CART_LINES = 50;
-const MAX_QUANTITY_PER_LINE = 100;
+const MAX_QUANTITY_PER_LINE = 5_000;
 
 interface RequestedCheckoutItem {
   id?: unknown;

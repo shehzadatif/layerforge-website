@@ -7,7 +7,7 @@ import {
   StallionError,
   type ShippingDestination,
 } from "../../lib/stallion";
-import { estimateShipmentPackagesForItems } from "../../lib/shippingPackingServer";
+import { getShipmentPackingPlanForItems } from "../../lib/shippingPackingServer";
 
 export const prerender = false;
 
@@ -64,7 +64,7 @@ export const POST: APIRoute = async ({ request }) => {
       return productId &&
         Number.isInteger(quantity) &&
         quantity > 0 &&
-        quantity <= 100
+        quantity <= 5_000
         ? [{ productId, ...(variantId ? { variantId } : {}), quantity }]
         : [];
     });
@@ -91,15 +91,20 @@ export const POST: APIRoute = async ({ request }) => {
       provinceCode: provinceCode as Province,
       postalCode,
     };
-    const shipmentPackages =
-      await estimateShipmentPackagesForItems(packingItems);
+    const packingPlan = await getShipmentPackingPlanForItems(packingItems);
+    const shipmentPackages = packingPlan.packages;
     const rates = await getMultiPackageShippingRates(
       destination,
       shipmentPackages,
       totalQuantity,
     );
 
-    return Response.json({ rates, packageCount: shipmentPackages.length });
+    return Response.json({
+      rates,
+      packageCount: shipmentPackages.length,
+      packageType: packingPlan.packageType,
+      bulkReviewRecommended: packingPlan.bulkReviewRecommended,
+    });
   } catch (error) {
     if (error instanceof StallionError) {
       return Response.json({ error: error.message }, { status: error.status });

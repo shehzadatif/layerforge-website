@@ -28,7 +28,7 @@ interface Props {
   salesTaxConfig: SalesTaxConfig;
 }
 
-const MAX_CHECKOUT_QUANTITY = 100;
+const MAX_CHECKOUT_QUANTITY = 5_000;
 
 export default function CheckoutPage({
   bulkDiscountConfig,
