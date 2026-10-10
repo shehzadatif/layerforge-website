@@ -1,8 +1,12 @@
 import { describe, expect, it } from "vitest";
-import { getGarmentMockupImage, getGarmentPrintArea } from "./apparelMockup";
+import {
+  getGarmentMockupColourFilter,
+  getGarmentMockupImage,
+  getGarmentPrintArea,
+} from "./apparelMockup";
 
 describe("apparel mockup garment image", () => {
-  it("uses the uploaded colour image for the front", () => {
+  it("pins supported front colours to their matching mockup asset", () => {
     expect(
       getGarmentMockupImage({
         side: "front",
@@ -10,7 +14,31 @@ describe("apparel mockup garment image", () => {
         colorName: "Black",
         frontImage: "https://example.com/black-front.jpg",
       }),
-    ).toBe("https://example.com/black-front.jpg");
+    ).toBe("/images/apparel/gildan-g640-front-photo-1.jpg");
+  });
+
+  it("uses the dark photo base and the right colour filter for navy", () => {
+    expect(
+      getGarmentMockupImage({
+        side: "front",
+        garmentType: "t-shirt",
+        colorName: "Navy",
+      }),
+    ).toBe("/images/apparel/gildan-g640-front-photo-1.jpg");
+    expect(getGarmentMockupColourFilter("t-shirt", " Navy ")).toBe("navy");
+  });
+
+  it("uses the dark back photo and the right colour filter for charcoal", () => {
+    expect(
+      getGarmentMockupImage({
+        side: "back",
+        garmentType: "t-shirt",
+        colorName: "Charcoal",
+      }),
+    ).toBe("/images/apparel/gildan-g640-black-back.png");
+    expect(getGarmentMockupColourFilter("t-shirt", "Charcoal")).toBe(
+      "charcoal",
+    );
   });
 
   it("uses the matching T-shirt back image for supported colours", () => {
