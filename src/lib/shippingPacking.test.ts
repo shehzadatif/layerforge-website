@@ -2,6 +2,9 @@ import { describe, expect, it } from "vitest";
 
 import {
   DEFAULT_STANDARD_BOXES,
+  BULK_APPAREL_REVIEW_QUANTITY,
+  defaultApparelUnitWeightLbs,
+  estimateApparelShippingPlan,
   estimateShippingPackage,
   estimateShippingPackages,
   parseProductShippingProfile,
@@ -146,5 +149,65 @@ describe("shipping profile parsing", () => {
       { length: 4, width: 2, height: 2 },
       { length: 8, width: 6, height: 4 },
     ]);
+  });
+});
+
+describe("apparel packing", () => {
+  it("uses a slim mailer for one T-shirt", () => {
+    expect(
+      estimateApparelShippingPlan([
+        { garmentType: "t-shirt", size: "M", quantity: 1 },
+      ]),
+    ).toEqual({
+      packages: [{ weight: 0.49, length: 13, width: 10, height: 1 }],
+      packageType: "poly-mailer",
+      bulkReviewRecommended: false,
+    });
+  });
+
+  it("uses a gusseted mailer for two hoodies", () => {
+    const plan = estimateApparelShippingPlan([
+      { garmentType: "hoodie", size: "M", quantity: 2 },
+    ]);
+
+    expect(plan.packageType).toBe("poly-mailer");
+    expect(plan.packages).toEqual([
+      { weight: 2.79, length: 19, width: 14.5, height: 3 },
+    ]);
+  });
+
+  it("splits 300 T-shirts into multiple apparel cartons", () => {
+    const plan = estimateApparelShippingPlan([
+      { garmentType: "t-shirt", size: "M", quantity: 300 },
+    ]);
+
+    expect(plan.packageType).toBe("apparel-carton");
+    expect(plan.bulkReviewRecommended).toBe(true);
+    expect(plan.packages).toHaveLength(7);
+    expect(plan.packages.every((parcel) => parcel.length === 20)).toBe(true);
+    expect(plan.packages.every((parcel) => parcel.weight < 38)).toBe(true);
+  });
+
+  it("flags only apparel orders above the review threshold", () => {
+    expect(BULK_APPAREL_REVIEW_QUANTITY).toBe(96);
+    expect(
+      estimateApparelShippingPlan([
+        { garmentType: "t-shirt", size: "M", quantity: 96 },
+      ]).bulkReviewRecommended,
+    ).toBe(false);
+    expect(
+      estimateApparelShippingPlan([
+        { garmentType: "t-shirt", size: "M", quantity: 97 },
+      ]).bulkReviewRecommended,
+    ).toBe(true);
+  });
+
+  it("increases default apparel weight for extended sizes", () => {
+    expect(defaultApparelUnitWeightLbs("t-shirt", "3XL")).toBeGreaterThan(
+      defaultApparelUnitWeightLbs("t-shirt", "M"),
+    );
+    expect(defaultApparelUnitWeightLbs("hoodie", "XL")).toBeGreaterThan(
+      defaultApparelUnitWeightLbs("t-shirt", "XL"),
+    );
   });
 });

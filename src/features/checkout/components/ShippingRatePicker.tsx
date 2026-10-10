@@ -19,6 +19,7 @@ export default function ShippingRatePicker({
   const [rates, setRates] = useState<ShippingRate[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
+  const [packingNotice, setPackingNotice] = useState("");
   const itemsSignature = items.map((item) => item.quantity).join("|");
   const previousItemsSignature = useRef(itemsSignature);
   const requestSequence = useRef(0);
@@ -38,6 +39,7 @@ export default function ShippingRatePicker({
 
     setIsLoading(true);
     setError("");
+    setPackingNotice("");
     setRates([]);
 
     try {
@@ -49,6 +51,9 @@ export default function ShippingRatePicker({
       const data = (await response.json()) as {
         rates?: ShippingRate[];
         error?: string;
+        packageCount?: number;
+        packageType?: "poly-mailer" | "apparel-carton" | "standard-box";
+        bulkReviewRecommended?: boolean;
       };
 
       if (!response.ok || !Array.isArray(data.rates)) {
@@ -57,6 +62,18 @@ export default function ShippingRatePicker({
       if (requestId !== requestSequence.current) return;
 
       setRates(data.rates);
+      if (data.packageType === "poly-mailer") {
+        setPackingNotice(
+          "Packed in a slim apparel mailer for a lower shipping rate.",
+        );
+      } else if (data.packageType === "apparel-carton") {
+        const count = Math.max(1, Number(data.packageCount ?? 1));
+        setPackingNotice(
+          data.bulkReviewRecommended
+            ? `Bulk apparel shipment estimated as ${count} cartons. We will verify the final carton count and measurements before purchasing the labels.`
+            : `Apparel shipment estimated as ${count} ${count === 1 ? "carton" : "cartons"}.`,
+        );
+      }
 
       const preferredRate = preferredService
         ? data.rates.find((rate) => rate.service === preferredService)
@@ -121,6 +138,12 @@ export default function ShippingRatePicker({
       {error ? (
         <p className="mt-5 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">
           {error}
+        </p>
+      ) : null}
+
+      {packingNotice ? (
+        <p className="mt-5 rounded-xl border border-amber-300 bg-amber-50 p-4 text-sm leading-6 text-amber-900">
+          {packingNotice}
         </p>
       ) : null}
 

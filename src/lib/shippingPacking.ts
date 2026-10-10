@@ -34,6 +34,74 @@ export interface ShippingBox {
   height: number;
 }
 
+export interface ApparelPackingItem {
+  garmentType: "t-shirt" | "hoodie";
+  size: string;
+  quantity: number;
+  unitWeightLbs?: number;
+}
+
+export interface ApparelShippingPlan {
+  packages: ShippingPackage[];
+  packageType: "poly-mailer" | "apparel-carton";
+  bulkReviewRecommended: boolean;
+}
+
+interface ApparelPackageProfile extends ShippingBox {
+  packagingWeightLbs: number;
+  capacityUnits: number;
+}
+
+const APPAREL_MAILERS: ApparelPackageProfile[] = [
+  {
+    length: 13,
+    width: 10,
+    height: 1,
+    packagingWeightLbs: 0.04,
+    capacityUnits: 1.5,
+  },
+  {
+    length: 15.5,
+    width: 12,
+    height: 2,
+    packagingWeightLbs: 0.06,
+    capacityUnits: 3,
+  },
+  {
+    length: 19,
+    width: 14.5,
+    height: 3,
+    packagingWeightLbs: 0.09,
+    capacityUnits: 6,
+  },
+  {
+    length: 20,
+    width: 15,
+    height: 4,
+    packagingWeightLbs: 0.14,
+    capacityUnits: 8,
+  },
+];
+
+const MEDIUM_APPAREL_CARTON: ApparelPackageProfile = {
+  length: 18,
+  width: 14,
+  height: 8,
+  packagingWeightLbs: 1,
+  capacityUnits: 24,
+};
+
+const LARGE_APPAREL_CARTON: ApparelPackageProfile = {
+  length: 20,
+  width: 16,
+  height: 12,
+  packagingWeightLbs: 1.5,
+  capacityUnits: 48,
+};
+
+const MAX_APPAREL_PRODUCT_WEIGHT_PER_CARTON_LBS = 38;
+export const BULK_APPAREL_REVIEW_QUANTITY = 96;
+
 export const DEFAULT_STANDARD_BOXES: ShippingBox[] = [
   { length: 4, width: 2, height: 2 },
   { length: 6, width: 4, height: 3 },
@@ -54,6 +122,109 @@ function positiveNumber(value: unknown): number | null {
 
 function rounded(value: number): number {
   return Math.round(value * 100) / 100;
+}
+
+function apparelSizeExtra(size: string): number {
+  const normalized = size.trim().toUpperCase();
+  if (normalized === "2XL") return 0.1;
+  const extendedMatch = normalized.match(/^([3-9])XL$/);
+  return extendedMatch ? (Number(extendedMatch[1]) - 1) * 0.1 : 0;
+}
+
+export function defaultApparelUnitWeightLbs(
+  garmentType: "t-shirt" | "hoodie",
+  size: string,
+): number {
+  const normalized = size.trim().toUpperCase();
+  const base = garmentType === "hoodie" ? 1.35 : 0.45;
+  const largeAdjustment = ["L", "XL"].includes(normalized)
+    ? garmentType === "hoodie"
+      ? 0.15
+      : 0.05
+    : 0;
+  const extendedAdjustment =
+    apparelSizeExtra(size) * (garmentType === "hoodie" ? 2 : 1);
+  return rounded(base + largeAdjustment + extendedAdjustment);
+}
+
+function apparelPackingUnits(
+  garmentType: "t-shirt" | "hoodie",
+  size: string,
+): number {
+  return rounded((garmentType === "hoodie" ? 3 : 1) + apparelSizeExtra(size));
+}
+
+/**
+ * Soft apparel is packed separately from rigid products. Small orders use the
+ * smallest suitable poly mailer; larger orders use one or more apparel cartons.
+ * The carton plan is constrained by both folded-garment capacity and weight.
+ */
+export function estimateApparelShippingPlan(
+  items: ApparelPackingItem[],
+): ApparelShippingPlan {
+  const normalized = items.filter(
+    (item) =>
+      (item.garmentType === "t-shirt" || item.garmentType === "hoodie") &&
+      Number.isInteger(item.quantity) &&
+      item.quantity > 0,
+  );
+  const totalQuantity = normalized.reduce(
+    (total, item) => total + item.quantity,
+    0,
+  );
+  const totalUnits = normalized.reduce(
+    (total, item) =>
+      total + apparelPackingUnits(item.garmentType, item.size) * item.quantity,
+    0,
+  );
+  const productWeight = normalized.reduce(
+    (total, item) =>
+      total +
+      (item.unitWeightLbs ??
+        defaultApparelUnitWeightLbs(item.garmentType, item.size)) *
+        item.quantity,
+    0,
+  );
+
+  const mailer = APPAREL_MAILERS.find(
+    (profile) => totalUnits <= profile.capacityUnits,
+  );
+  if (mailer) {
+    return {
+      packages: [
+        {
+          weight: rounded(productWeight + mailer.packagingWeightLbs),
+          length: mailer.length,
+          width: mailer.width,
+          height: mailer.height,
+        },
+      ],
+      packageType: "poly-mailer",
+      bulkReviewRecommended: false,
+    };
+  }
+
+  const carton =
+    totalUnits <= MEDIUM_APPAREL_CARTON.capacityUnits
+      ? MEDIUM_APPAREL_CARTON
+      : LARGE_APPAREL_CARTON;
+  const packageCount = Math.max(
+    1,
+    Math.ceil(totalUnits / carton.capacityUnits),
+    Math.ceil(productWeight / MAX_APPAREL_PRODUCT_WEIGHT_PER_CARTON_LBS),
+  );
+  const productWeightPerCarton = productWeight / packageCount;
+
+  return {
+    packages: Array.from({ length: packageCount }, () => ({
+      weight: rounded(productWeightPerCarton + carton.packagingWeightLbs),
+      length: carton.length,
+      width: carton.width,
+      height: carton.height,
+    })),
+    packageType: "apparel-carton",
+    bulkReviewRecommended: totalQuantity > BULK_APPAREL_REVIEW_QUANTITY,
+  };
 }
 
 function volume(box: ShippingBox): number {
