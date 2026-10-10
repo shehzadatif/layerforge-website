@@ -1,7 +1,6 @@
 import {
   estimateShippingPackage,
-  estimateShippingPackages,
-  estimateApparelShippingPlan,
+  estimateResolvedShipmentPackingPlan,
   parseProductShippingProfile,
   parseStandardBoxes,
   productIdFromShippingProfileSettingKey,
@@ -9,7 +8,7 @@ import {
   type ProductShippingProfile,
   type ShippingPackingItem,
   type ShippingPackage,
-  type ApparelShippingPlan,
+  type ShipmentPackingPlan,
 } from "./shippingPacking";
 import { supabaseAdmin } from "./supabaseAdmin";
 
@@ -307,12 +306,6 @@ export async function estimateShipmentPackagesForItems(
   return (await getShipmentPackingPlanForItems(items)).packages;
 }
 
-export interface ShipmentPackingPlan {
-  packages: ShippingPackage[];
-  packageType: "poly-mailer" | "apparel-carton" | "standard-box";
-  bulkReviewRecommended: boolean;
-}
-
 export async function getShipmentPackingPlanForItems(
   items: ShippingPackingItem[],
 ): Promise<ShipmentPackingPlan> {
@@ -349,64 +342,42 @@ export async function getShipmentPackingPlanForItems(
         : [];
     }),
   );
-  const allApparel =
-    items.length > 0 &&
-    items.every(
-      (item) => item.variantId && apparelByVariant.has(item.variantId),
-    );
-
-  if (allApparel) {
-    const apparelPlan: ApparelShippingPlan = estimateApparelShippingPlan(
-      items.map((item) => {
-        const apparel = apparelByVariant.get(item.variantId as string)!;
-        const configuredWeight =
-          variantProfiles.get(item.variantId as string)?.unitWeightLbs ??
-          productProfiles.get(item.productId)?.unitWeightLbs;
-        return {
-          ...apparel,
-          quantity: item.quantity,
-          ...(configuredWeight ? { unitWeightLbs: configuredWeight } : {}),
-        };
-      }),
-    );
-    return apparelPlan;
-  }
-
-  const resolvedProfiles = new Map<string, ProductShippingProfile>();
-  const resolvedItems = items.map((item, index) => {
-    const key = `line-${index}`;
-    const profile =
+  const resolvedItems = items.map((item) => {
+    const shippingProfile =
       (item.variantId ? variantProfiles.get(item.variantId) : null) ??
       productProfiles.get(item.productId);
-    if (profile) resolvedProfiles.set(key, profile);
-    return { productId: key, quantity: item.quantity };
+    const apparel = item.variantId
+      ? apparelByVariant.get(item.variantId)
+      : undefined;
+
+    return {
+      ...item,
+      ...(shippingProfile ? { shippingProfile } : {}),
+      ...(apparel ? { apparel } : {}),
+    };
   });
 
-  return {
-    packages: estimateShippingPackages(resolvedItems, resolvedProfiles, {
-      defaultItemWeightLbs: positiveNumber(
-        process.env.STALLION_DEFAULT_ITEM_WEIGHT_LBS,
-        DEFAULT_ITEM_WEIGHT_LBS,
-      ),
-      packagingWeightLbs: positiveNumber(
-        process.env.STALLION_PACKAGING_WEIGHT_LBS,
-        DEFAULT_PACKAGING_WEIGHT_LBS,
-      ),
-      fallbackLengthIn: positiveNumber(
-        process.env.STALLION_DEFAULT_PACKAGE_LENGTH_IN,
-        DEFAULT_PACKAGE_LENGTH_IN,
-      ),
-      fallbackWidthIn: positiveNumber(
-        process.env.STALLION_DEFAULT_PACKAGE_WIDTH_IN,
-        DEFAULT_PACKAGE_WIDTH_IN,
-      ),
-      fallbackHeightIn: positiveNumber(
-        process.env.STALLION_DEFAULT_PACKAGE_HEIGHT_IN,
-        DEFAULT_PACKAGE_HEIGHT_IN,
-      ),
-      standardBoxes: parseStandardBoxes(process.env.STALLION_STANDARD_BOXES_IN),
-    }),
-    packageType: "standard-box",
-    bulkReviewRecommended: false,
-  };
+  return estimateResolvedShipmentPackingPlan(resolvedItems, {
+    defaultItemWeightLbs: positiveNumber(
+      process.env.STALLION_DEFAULT_ITEM_WEIGHT_LBS,
+      DEFAULT_ITEM_WEIGHT_LBS,
+    ),
+    packagingWeightLbs: positiveNumber(
+      process.env.STALLION_PACKAGING_WEIGHT_LBS,
+      DEFAULT_PACKAGING_WEIGHT_LBS,
+    ),
+    fallbackLengthIn: positiveNumber(
+      process.env.STALLION_DEFAULT_PACKAGE_LENGTH_IN,
+      DEFAULT_PACKAGE_LENGTH_IN,
+    ),
+    fallbackWidthIn: positiveNumber(
+      process.env.STALLION_DEFAULT_PACKAGE_WIDTH_IN,
+      DEFAULT_PACKAGE_WIDTH_IN,
+    ),
+    fallbackHeightIn: positiveNumber(
+      process.env.STALLION_DEFAULT_PACKAGE_HEIGHT_IN,
+      DEFAULT_PACKAGE_HEIGHT_IN,
+    ),
+    standardBoxes: parseStandardBoxes(process.env.STALLION_STANDARD_BOXES_IN),
+  });
 }

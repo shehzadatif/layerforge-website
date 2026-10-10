@@ -7,6 +7,7 @@ import {
   estimateApparelShippingPlan,
   estimateShippingPackage,
   estimateShippingPackages,
+  estimateResolvedShipmentPackingPlan,
   parseProductShippingProfile,
   parseStandardBoxes,
   type ProductShippingProfile,
@@ -209,5 +210,32 @@ describe("apparel packing", () => {
     expect(defaultApparelUnitWeightLbs("hoodie", "XL")).toBeGreaterThan(
       defaultApparelUnitWeightLbs("t-shirt", "XL"),
     );
+  });
+});
+
+describe("mixed-cart packing", () => {
+  it("keeps apparel separate from rigid products and quotes both parcels", () => {
+    const plan = estimateResolvedShipmentPackingPlan(
+      [
+        {
+          productId: "mount",
+          quantity: 4,
+          shippingProfile: mountProfile,
+        },
+        {
+          productId: "shirt",
+          variantId: "shirt-white-large",
+          quantity: 2,
+          apparel: { garmentType: "t-shirt", size: "L" },
+        },
+      ],
+      options,
+    );
+
+    expect(plan.packageType).toBe("mixed");
+    expect(plan.packages).toEqual([
+      { weight: 1.05, length: 4, width: 2, height: 2 },
+      { weight: 1.06, length: 15.5, width: 12, height: 2 },
+    ]);
   });
 });

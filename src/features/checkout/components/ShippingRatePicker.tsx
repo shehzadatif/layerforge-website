@@ -52,7 +52,8 @@ export default function ShippingRatePicker({
         rates?: ShippingRate[];
         error?: string;
         packageCount?: number;
-        packageType?: "poly-mailer" | "apparel-carton" | "standard-box";
+        packageType?:
+          "poly-mailer" | "apparel-carton" | "standard-box" | "mixed";
         bulkReviewRecommended?: boolean;
       };
 
@@ -72,6 +73,11 @@ export default function ShippingRatePicker({
           data.bulkReviewRecommended
             ? `Bulk apparel shipment estimated as ${count} cartons. We will verify the final carton count and measurements before purchasing the labels.`
             : `Apparel shipment estimated as ${count} ${count === 1 ? "carton" : "cartons"}.`,
+        );
+      } else if (data.packageType === "mixed") {
+        const count = Math.max(2, Number(data.packageCount ?? 2));
+        setPackingNotice(
+          `Mixed order estimated as ${count} parcels: apparel is packed separately from rigid products, and the rate includes every parcel.`,
         );
       }
 
