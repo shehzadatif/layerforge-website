@@ -123,9 +123,9 @@ const categoryPath = [parentCategory?.name, product.categories?.name]
   <div class="mx-auto max-w-7xl px-6">
 
     <a
-      href="/shop"
+      href={product.apparel_designer_enabled ? "/custom-apparel" : "/shop"}
       class="mb-8 inline-flex items-center gap-2 rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 shadow-sm transition hover:border-yellow-400 hover:bg-yellow-50 hover:text-slate-950 focus:outline-none focus:ring-2 focus:ring-yellow-400 focus:ring-offset-2"
-      aria-label="Back to Shop"
+      aria-label={product.apparel_designer_enabled ? "Back to Custom Apparel" : "Back to Shop"}
     >
       <svg
         aria-hidden="true"
@@ -141,7 +141,7 @@ const categoryPath = [parentCategory?.name, product.categories?.name]
           d="m12.5 15-5-5 5-5"
         ></path>
       </svg>
-      Back to Shop
+      {product.apparel_designer_enabled ? "Back to Custom Apparel" : "Back to Shop"}
     </a>
 
     <div class="grid gap-12 lg:grid-cols-2">

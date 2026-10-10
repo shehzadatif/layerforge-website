@@ -2,61 +2,112 @@
 import AdminLayout from "../../layouts/AdminLayout.astro";
 import { supabaseAdmin } from "../../lib/supabaseAdmin";
 
-const { data: products, error } = await supabaseAdmin
-  .from("products")
-  .select(`
-    id, name, sku, status, apparel_back_print_price, created_at,
-    product_variants(id, apparel_garment_type, apparel_quality, apparel_color_name, apparel_size, inventory_quantity, price)
-  `)
-  .eq("apparel_designer_enabled", true)
-  .order("created_at", { ascending: false });
+const [productsResult, paidOrdersResult, orderItemsResult] = await Promise.all([
+  supabaseAdmin
+    .from("products")
+    .select(`
+      id, name, sku, status, apparel_back_print_price, created_at,
+      product_variants(
+        id, sku, apparel_garment_type, apparel_quality,
+        apparel_color_name, apparel_color_hex, apparel_size,
+        inventory_quantity, price
+      )
+    `)
+    .eq("apparel_designer_enabled", true)
+    .order("created_at", { ascending: false }),
+  supabaseAdmin.from("orders").select("id").eq("payment_status", "Paid"),
+  supabaseAdmin
+    .from("order_items")
+    .select("order_id, variant_id, quantity")
+    .not("variant_id", "is", null),
+]);
 
-if (error) console.error("Unable to load apparel products.", error);
+if (productsResult.error) console.error("Unable to load apparel products.", productsResult.error);
+if (paidOrdersResult.error) console.error("Unable to load paid apparel orders.", paidOrdersResult.error);
+if (orderItemsResult.error) console.error("Unable to load apparel sales.", orderItemsResult.error);
 
-const rows = (products ?? []).map((product) => {
-  const variants = (product.product_variants ?? []).filter((variant) => variant.apparel_garment_type);
-  return {
-    ...product,
-    variants,
-    stock: variants.reduce((total, variant) => total + Number(variant.inventory_quantity ?? 0), 0),
-    lowStock: variants.filter((variant) => Number(variant.inventory_quantity ?? 0) <= 2).length,
-    garmentTypes: [...new Set(variants.map((variant) => variant.apparel_garment_type === "hoodie" ? "Hoodie" : "T-Shirt"))],
-  };
+const paidOrderIds = new Set((paidOrdersResult.data ?? []).map((order) => String(order.id)));
+const soldByVariantId = new Map<string, number>();
+
+for (const item of orderItemsResult.data ?? []) {
+  if (!paidOrderIds.has(String(item.order_id)) || !item.variant_id) continue;
+  const variantId = String(item.variant_id);
+  soldByVariantId.set(variantId, (soldByVariantId.get(variantId) ?? 0) + Number(item.quantity ?? 0));
+}
+
+const products = (productsResult.data ?? []).map((product) => {
+  const variants = (product.product_variants ?? [])
+    .filter((variant) => variant.apparel_garment_type)
+    .map((variant) => {
+      const available = Number(variant.inventory_quantity ?? 0);
+      const sold = soldByVariantId.get(String(variant.id)) ?? 0;
+      return { ...variant, available, sold, accounted: available + sold };
+    })
+    .sort((left, right) =>
+      [left.apparel_garment_type, left.apparel_quality, left.apparel_color_name, left.apparel_size]
+        .map(String).join("|")
+        .localeCompare(
+          [right.apparel_garment_type, right.apparel_quality, right.apparel_color_name, right.apparel_size]
+            .map(String).join("|"),
+        ),
+    );
+
+  return { ...product, variants };
 });
+
+const variantRows = products.flatMap((product) =>
+  product.variants.map((variant) => ({ product, variant })),
+);
+const totalAvailable = variantRows.reduce((sum, row) => sum + row.variant.available, 0);
+const totalSold = variantRows.reduce((sum, row) => sum + row.variant.sold, 0);
 ---
 
-<AdminLayout title="Apparel Products" active="apparel">
+<AdminLayout title="Apparel Inventory" active="apparel">
   <div class="mb-8 flex flex-wrap items-start justify-between gap-4">
     <div>
-      <h1 class="text-4xl font-bold text-slate-950">T-Shirts & Hoodies</h1>
-      <p class="mt-2 text-slate-500">Manage garment styles, qualities, colours, sizes, prices and on-hand inventory.</p>
+      <h1 class="text-4xl font-bold text-slate-950">T-Shirts & Hoodies Inventory</h1>
+      <p class="mt-2 text-slate-500">See available and sold quantities for every garment, quality, colour and size.</p>
     </div>
     <a href="/admin/products/new?apparel=1" class="rounded-lg bg-yellow-400 px-6 py-3 font-bold text-slate-950 hover:bg-yellow-300">+ Add Apparel Product</a>
   </div>
 
-  <div class="grid gap-5 md:grid-cols-3">
-    <div class="rounded-2xl bg-white p-5 shadow"><div class="text-sm font-semibold text-slate-500">Apparel products</div><div class="mt-2 text-3xl font-black">{rows.length}</div></div>
-    <div class="rounded-2xl bg-white p-5 shadow"><div class="text-sm font-semibold text-slate-500">Inventory combinations</div><div class="mt-2 text-3xl font-black">{rows.reduce((sum, row) => sum + row.variants.length, 0)}</div></div>
-    <div class="rounded-2xl bg-white p-5 shadow"><div class="text-sm font-semibold text-slate-500">Total units in stock</div><div class="mt-2 text-3xl font-black">{rows.reduce((sum, row) => sum + row.stock, 0)}</div></div>
+  <div class="grid gap-5 md:grid-cols-4">
+    <div class="rounded-2xl bg-white p-5 shadow"><div class="text-sm font-semibold text-slate-500">Apparel products</div><div class="mt-2 text-3xl font-black">{products.length}</div></div>
+    <div class="rounded-2xl bg-white p-5 shadow"><div class="text-sm font-semibold text-slate-500">Stock combinations</div><div class="mt-2 text-3xl font-black">{variantRows.length}</div></div>
+    <div class="rounded-2xl border border-emerald-200 bg-emerald-50 p-5 shadow"><div class="text-sm font-semibold text-emerald-700">Units available</div><div class="mt-2 text-3xl font-black text-emerald-900">{totalAvailable}</div></div>
+    <div class="rounded-2xl border border-blue-200 bg-blue-50 p-5 shadow"><div class="text-sm font-semibold text-blue-700">Units sold</div><div class="mt-2 text-3xl font-black text-blue-900">{totalSold}</div><div class="mt-1 text-xs text-blue-700">Paid orders only</div></div>
   </div>
 
   <div class="mt-8 overflow-hidden rounded-2xl bg-white shadow">
-    {rows.length ? (
-      <table class="min-w-full">
-        <thead class="bg-slate-100"><tr><th class="px-6 py-4 text-left">Product</th><th class="px-6 py-4 text-left">Garment</th><th class="px-6 py-4 text-right">Combinations</th><th class="px-6 py-4 text-right">Units</th><th class="px-6 py-4 text-center">Status</th><th class="px-6 py-4 text-right">Action</th></tr></thead>
-        <tbody>{rows.map((product) => (
-          <tr class="border-t hover:bg-slate-50">
-            <td class="px-6 py-4"><div class="font-bold text-slate-950">{product.name}</div><div class="mt-1 font-mono text-xs text-slate-500">{product.sku}</div>{product.lowStock > 0 && <div class="mt-1 text-xs font-semibold text-amber-700">{product.lowStock} low/out-of-stock combination{product.lowStock === 1 ? "" : "s"}</div>}</td>
-            <td class="px-6 py-4">{product.garmentTypes.join(" + ") || "Not configured"}</td>
-            <td class="px-6 py-4 text-right font-semibold">{product.variants.length}</td>
-            <td class="px-6 py-4 text-right font-semibold">{product.stock}</td>
-            <td class="px-6 py-4 text-center"><span class:list={["rounded-full px-3 py-1 text-xs font-bold", product.status === "Active" ? "bg-emerald-100 text-emerald-800" : "bg-slate-200 text-slate-700"]}>{product.status}</span></td>
-            <td class="px-6 py-4 text-right"><a href={`/admin/products/${product.id}?apparel=1`} class="rounded-lg bg-slate-950 px-4 py-2 font-semibold text-white hover:bg-slate-700">Manage</a></td>
-          </tr>
-        ))}</tbody>
-      </table>
+    {variantRows.length ? (
+      <div class="overflow-x-auto">
+        <table class="min-w-full">
+          <thead class="bg-slate-100 text-sm uppercase tracking-wide text-slate-600">
+            <tr>
+              <th class="px-5 py-4 text-left">Product</th><th class="px-5 py-4 text-left">Garment</th><th class="px-5 py-4 text-left">Quality</th><th class="px-5 py-4 text-left">Colour</th><th class="px-5 py-4 text-center">Size</th><th class="px-5 py-4 text-right">Available</th><th class="px-5 py-4 text-right">Sold</th><th class="px-5 py-4 text-right">Total accounted</th><th class="px-5 py-4 text-right">Action</th>
+            </tr>
+          </thead>
+          <tbody>
+            {variantRows.map(({ product, variant }) => (
+              <tr class="border-t hover:bg-slate-50">
+                <td class="px-5 py-4"><div class="font-bold text-slate-950">{product.name}</div><div class="mt-1 font-mono text-xs text-slate-500">{variant.sku || product.sku}</div></td>
+                <td class="px-5 py-4 font-semibold">{variant.apparel_garment_type === "hoodie" ? "Hoodie" : "T-Shirt"}</td>
+                <td class="px-5 py-4">{variant.apparel_quality}</td>
+                <td class="px-5 py-4"><span class="inline-flex items-center gap-2"><span class="h-4 w-4 rounded-full border border-slate-300" style={`background-color: ${variant.apparel_color_hex || "#ffffff"}`}></span>{variant.apparel_color_name}</span></td>
+                <td class="px-5 py-4 text-center font-bold">{variant.apparel_size}</td>
+                <td class:list={["px-5 py-4 text-right text-lg font-black", variant.available <= 2 ? "text-red-700" : "text-emerald-700"]}>{variant.available}</td>
+                <td class="px-5 py-4 text-right text-lg font-black text-blue-700">{variant.sold}</td>
+                <td class="px-5 py-4 text-right font-semibold text-slate-700">{variant.accounted}</td>
+                <td class="px-5 py-4 text-right"><a href={`/admin/products/${product.id}?apparel=1`} class="rounded-lg bg-slate-950 px-4 py-2 font-semibold text-white hover:bg-slate-700">Manage</a></td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
     ) : (
-      <div class="px-6 py-16 text-center"><div class="text-5xl">👕</div><h2 class="mt-4 text-2xl font-bold">No apparel products yet</h2><p class="mt-2 text-slate-500">Create your first T-shirt or hoodie product and add its inventory combinations.</p><a href="/admin/products/new?apparel=1" class="mt-6 inline-block rounded-lg bg-yellow-400 px-6 py-3 font-bold">Add Apparel Product</a></div>
+      <div class="px-6 py-16 text-center"><div class="text-5xl">👕</div><h2 class="mt-4 text-2xl font-bold">No apparel inventory yet</h2><p class="mt-2 text-slate-500">Create an apparel product and add its quality, colour and size combinations.</p><a href="/admin/products/new?apparel=1" class="mt-6 inline-block rounded-lg bg-yellow-400 px-6 py-3 font-bold">Add Apparel Product</a></div>
     )}
   </div>
+
+  <p class="mt-4 text-sm text-slate-500">“Sold” includes quantities from paid orders. “Total accounted” is available stock plus sold units.</p>
 </AdminLayout>

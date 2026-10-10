@@ -1,0 +1,124 @@
+---
+import MainLayout from "../layouts/MainLayout.astro";
+import { supabaseAdmin } from "../lib/supabaseAdmin";
+
+const { data: products, error } = await supabaseAdmin
+  .from("products")
+  .select(`
+    id, name, slug, brand, short_description, price, sale_price,
+    product_images(image_url, sort_order),
+    product_variants(price, active, apparel_garment_type, inventory_quantity)
+  `)
+  .eq("status", "Active")
+  .eq("apparel_designer_enabled", true)
+  .order("created_at", { ascending: false });
+
+if (error) console.error("Unable to load public apparel products.", error);
+
+const apparelProducts = (products ?? []).map((product) => {
+  const variants = (product.product_variants ?? []).filter(
+    (variant) =>
+      variant.active !== false &&
+      variant.apparel_garment_type &&
+      Number(variant.inventory_quantity ?? 0) > 0,
+  );
+  const prices = variants
+    .map((variant) => Number(variant.price))
+    .filter((price) => Number.isFinite(price) && price > 0);
+  const fallbackPrice = Number(product.sale_price || product.price || 0);
+  const startingPrice = prices.length ? Math.min(...prices) : fallbackPrice;
+  const cover = [...(product.product_images ?? [])].sort(
+    (left, right) => Number(left.sort_order ?? 0) - Number(right.sort_order ?? 0),
+  )[0];
+
+  return { ...product, variants, startingPrice, cover };
+}).filter((product) => product.variants.length > 0);
+
+const imageBase = `${import.meta.env.PUBLIC_SUPABASE_URL}/storage/v1/object/public/product-images/`;
+---
+
+<MainLayout
+  title="Custom T-Shirts & Hoodies | Layer Forge Canada"
+  description="Design and order custom T-shirts and hoodies online. Choose garment quality, colour and size, upload front or back artwork, preview placement, and order from Layer Forge Canada in Surrey, BC."
+>
+  <section class="overflow-hidden bg-slate-950 text-white">
+    <div class="mx-auto grid max-w-7xl gap-10 px-6 py-16 lg:grid-cols-[1.15fr_0.85fr] lg:items-center lg:py-24">
+      <div>
+        <p class="font-black uppercase tracking-[0.22em] text-yellow-400">Design it online</p>
+        <h1 class="mt-4 max-w-4xl text-5xl font-black leading-tight sm:text-6xl">
+          Custom T‑Shirts &amp; Hoodies, made your way.
+        </h1>
+        <p class="mt-6 max-w-2xl text-lg leading-8 text-slate-300">
+          Select your garment, quality, colour and size. Upload artwork for the front, back or both, adjust its print size and position, then see your design before ordering.
+        </p>
+        <a href="#choose-apparel" class="mt-8 inline-flex rounded-xl bg-yellow-400 px-7 py-4 text-lg font-black text-slate-950 transition hover:bg-yellow-300">
+          Start Designing →
+        </a>
+      </div>
+      <div class="grid grid-cols-2 gap-4">
+        {[
+          ["1", "Choose garment"],
+          ["2", "Pick colour & size"],
+          ["3", "Upload your design"],
+          ["4", "Preview & order"],
+        ].map(([number, label]) => (
+          <div class="rounded-2xl border border-white/15 bg-white/5 p-5 backdrop-blur">
+            <span class="flex h-10 w-10 items-center justify-center rounded-full bg-yellow-400 text-lg font-black text-slate-950">{number}</span>
+            <p class="mt-4 font-bold">{label}</p>
+          </div>
+        ))}
+      </div>
+    </div>
+  </section>
+
+  <section id="choose-apparel" class="bg-slate-50 py-16 sm:py-20">
+    <div class="mx-auto max-w-7xl px-6">
+      <div class="max-w-3xl">
+        <p class="font-black uppercase tracking-[0.2em] text-amber-600">Choose your blank</p>
+        <h2 class="mt-3 text-4xl font-black text-slate-950">Select a T-shirt or hoodie to customize</h2>
+        <p class="mt-4 text-lg leading-8 text-slate-600">Only in-stock garment combinations are available for ordering.</p>
+      </div>
+
+      {apparelProducts.length ? (
+        <div class="mt-10 grid gap-8 sm:grid-cols-2 lg:grid-cols-3">
+          {apparelProducts.map((product) => (
+            <a href={`/shop/${product.slug}`} class="group flex overflow-hidden rounded-2xl bg-white shadow transition hover:-translate-y-1 hover:shadow-xl">
+              <div class="flex w-full flex-col">
+                <div class="aspect-square bg-slate-100 p-4">
+                  {product.cover ? (
+                    <img src={`${imageBase}${product.cover.image_url}`} alt={product.name} class="h-full w-full rounded-xl object-contain" loading="lazy" />
+                  ) : (
+                    <div class="flex h-full items-center justify-center text-6xl" aria-hidden="true">👕</div>
+                  )}
+                </div>
+                <div class="flex flex-1 flex-col p-6">
+                  <p class="text-sm font-bold uppercase tracking-wide text-amber-600">{product.brand || "Layer Forge Canada"}</p>
+                  <h3 class="mt-2 text-2xl font-black text-slate-950">{product.name}</h3>
+                  <p class="mt-3 flex-1 leading-7 text-slate-600">{product.short_description || "Customize this garment with your own full-colour artwork."}</p>
+                  <div class="mt-6 flex items-end justify-between gap-4">
+                    <div><span class="block text-xs font-bold uppercase text-slate-500">Starting at</span><span class="text-2xl font-black">CAD ${product.startingPrice.toFixed(2)}</span></div>
+                    <span class="rounded-lg bg-yellow-400 px-4 py-3 font-black text-slate-950 group-hover:bg-yellow-300">Customize</span>
+                  </div>
+                </div>
+              </div>
+            </a>
+          ))}
+        </div>
+      ) : (
+        <div class="mt-10 rounded-2xl border border-yellow-300 bg-yellow-50 p-8">
+          <h3 class="text-2xl font-black text-slate-950">Online apparel products are being prepared.</h3>
+          <p class="mt-3 max-w-2xl leading-7 text-slate-600">Tell us what you need and we’ll prepare a custom apparel quote while online stock is added.</p>
+          <a href="/quote/uv-printing" class="mt-6 inline-flex rounded-lg bg-slate-950 px-6 py-3 font-bold text-white hover:bg-slate-800">Request an Apparel Quote</a>
+        </div>
+      )}
+    </div>
+  </section>
+
+  <section class="bg-white py-14">
+    <div class="mx-auto grid max-w-7xl gap-6 px-6 md:grid-cols-3">
+      <div class="rounded-2xl border p-6"><h2 class="text-xl font-black">Front, back or both</h2><p class="mt-3 leading-7 text-slate-600">Upload separate artwork for each side and preview the selected print placement.</p></div>
+      <div class="rounded-2xl border p-6"><h2 class="text-xl font-black">Exact print sizing</h2><p class="mt-3 leading-7 text-slate-600">Adjust artwork width, height and position to visualize the finished garment.</p></div>
+      <div class="rounded-2xl border p-6"><h2 class="text-xl font-black">Made locally in Surrey</h2><p class="mt-3 leading-7 text-slate-600">DTF apparel printing for individuals, teams, events, businesses and organizations.</p></div>
+    </div>
+  </section>
+</MainLayout>
