@@ -1011,8 +1011,10 @@ export default function ApparelDesigner({
           </div>
         </div>
         <p className="mt-4 text-center text-xs leading-5 text-slate-400">
-          Mockup is an approximate placement guide. Your original
-          full-resolution file is retained for production.
+          Mockup is a visual placement guide. On-screen size and scale may
+          differ slightly from the actual print. The width and height you enter
+          are the production dimensions, and your original full-resolution file
+          is retained for production.
         </p>
       </section>
 
