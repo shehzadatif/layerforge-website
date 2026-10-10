@@ -63,7 +63,7 @@ const grouped = stages.map((stage) => ({
 
   <div class="rounded-2xl bg-white p-6 shadow">
     <div class="text-sm text-slate-500">
-      Ready
+      Production Complete / Pickup Ready
     </div>
 
     <div class="mt-2 text-3xl font-bold">
@@ -107,7 +107,7 @@ const grouped = stages.map((stage) => ({
           <div class="flex items-center justify-between">
 
             <h2 class="text-xl font-bold">
-              {group.stage}
+              {group.stage === "Ready" ? "Production Complete / Pickup Ready" : group.stage}
             </h2>
 
             <span class="rounded-full bg-yellow-400 px-3 py-1 font-semibold text-slate-900">
@@ -142,5 +142,28 @@ const grouped = stages.map((stage) => ({
   }
 
 </div>
+
+<script>
+  window.moveOrder = async function (orderId, status) {
+    try {
+      const response = await fetch("/api/admin/update-order-status", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ orderId, status }),
+      });
+      const result = await response.json();
+
+      if (!response.ok || !result.success) {
+        alert(result.error || "Unable to update the order status.");
+        return;
+      }
+
+      location.reload();
+    } catch (error) {
+      console.error(error);
+      alert("Unable to update the order status.");
+    }
+  };
+</script>
 
 </AdminLayout>

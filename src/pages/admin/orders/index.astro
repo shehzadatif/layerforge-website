@@ -2,6 +2,8 @@
 import AdminLayout from "../../../layouts/AdminLayout.astro";
 import { getOrders } from "../../../lib/orders";
 import { formatOrderDate, formatPacificDate } from "../../../lib/dateUtils";
+import { isPickupDeliveryMethod } from "../../../lib/deliveryMethod";
+import { getOrderStatusDisplayLabel } from "../../../lib/orderStatus";
 
 const orders = await getOrders();
 ---
@@ -126,7 +128,10 @@ const orders = await getOrders();
           : "bg-slate-100 text-slate-700"
       }`}
     >
-      {order.order_status}
+      {getOrderStatusDisplayLabel(
+        order.order_status,
+        isPickupDeliveryMethod(order.delivery_method),
+      )}
     </span>
 
   </td>

@@ -14,7 +14,7 @@ export const ACTIVE_ORDER_STATUSES = [
   ORDER_STATUS.SHIPPED,
 ];
 
-export function getNextOrderStatus(status: string) {
+export function getNextOrderStatus(status: string, isPickupOrder = false) {
   switch (status) {
     case ORDER_STATUS.NEW:
       return ORDER_STATUS.IN_PROGRESS;
@@ -23,7 +23,7 @@ export function getNextOrderStatus(status: string) {
       return ORDER_STATUS.READY;
 
     case ORDER_STATUS.READY:
-      return ORDER_STATUS.SHIPPED;
+      return isPickupOrder ? ORDER_STATUS.COMPLETED : null;
 
     case ORDER_STATUS.SHIPPED:
       return ORDER_STATUS.COMPLETED;
@@ -33,16 +33,16 @@ export function getNextOrderStatus(status: string) {
   }
 }
 
-export function getNextButtonLabel(status: string) {
+export function getNextButtonLabel(status: string, isPickupOrder = false) {
   switch (status) {
     case ORDER_STATUS.NEW:
       return "▶ Start Order";
 
     case ORDER_STATUS.IN_PROGRESS:
-      return "▶ Mark Ready";
+      return "▶ Mark Production Complete";
 
     case ORDER_STATUS.READY:
-      return "▶ Mark Shipped";
+      return isPickupOrder ? "▶ Complete Pickup" : "";
 
     case ORDER_STATUS.SHIPPED:
       return "▶ Complete Order";
@@ -50,4 +50,15 @@ export function getNextButtonLabel(status: string) {
     default:
       return "";
   }
+}
+
+export function getOrderStatusDisplayLabel(
+  status: string,
+  isPickupOrder: boolean,
+) {
+  if (status === ORDER_STATUS.READY) {
+    return isPickupOrder ? "Ready for Pickup" : "Production Complete";
+  }
+
+  return status;
 }

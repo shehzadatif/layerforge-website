@@ -4,17 +4,24 @@ export function shippingConfirmationHtml(
   carrier: string,
   trackingNumber: string,
   trackingUrl: string,
-  orderTrackingUrl: string
+  orderTrackingUrl: string,
 ) {
+  const safeCustomerName = escapeHtml(customerName);
+  const safeOrderNumber = escapeHtml(orderNumber);
+  const safeCarrier = escapeHtml(carrier);
+  const safeTrackingNumber = escapeHtml(trackingNumber);
+  const safeTrackingUrl = escapeHtml(trackingUrl);
+  const safeOrderTrackingUrl = escapeHtml(orderTrackingUrl);
+
   return `
     <div style="font-family:Arial,sans-serif;max-width:650px;margin:auto;color:#0f172a;">
 
       <h1>Your Layer Forge Canada order has shipped</h1>
 
-      <p>Hello ${customerName},</p>
+      <p>Hello ${safeCustomerName},</p>
 
       <p>
-        Great news—your order <strong>${orderNumber}</strong>
+        Great news—your order <strong>${safeOrderNumber}</strong>
         has been shipped.
       </p>
 
@@ -23,23 +30,23 @@ export function shippingConfirmationHtml(
           <td style="padding:8px 24px 8px 0;font-weight:bold;">
             Carrier
           </td>
-          <td>${carrier}</td>
+          <td>${safeCarrier}</td>
         </tr>
 
         <tr>
           <td style="padding:8px 24px 8px 0;font-weight:bold;">
             Tracking Number
           </td>
-          <td>${trackingNumber}</td>
+          <td>${safeTrackingNumber}</td>
         </tr>
       </table>
 
       ${
-        trackingUrl
+        safeTrackingUrl
           ? `
             <p style="margin:30px 0;">
               <a
-                href="${trackingUrl}"
+                href="${safeTrackingUrl}"
                 style="
                   display:inline-block;
                   background:#eab308;
@@ -62,8 +69,8 @@ export function shippingConfirmationHtml(
       </p>
 
       <p>
-        <a href="${orderTrackingUrl}">
-          ${orderTrackingUrl}
+        <a href="${safeOrderTrackingUrl}">
+          ${safeOrderTrackingUrl}
         </a>
       </p>
 
@@ -73,4 +80,13 @@ export function shippingConfirmationHtml(
 
     </div>
   `;
+}
+
+function escapeHtml(value: string) {
+  return value
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
 }

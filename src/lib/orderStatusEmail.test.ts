@@ -40,14 +40,14 @@ describe("getOrderStatusEmailKind", () => {
     ).toBe("pickup_ready");
   });
 
-  it("does not send a pickup-ready email for shipped orders", () => {
+  it("sends a production-complete email when a shipping order becomes ready", () => {
     expect(
       getOrderStatusEmailKind({
         previousStatus: ORDER_STATUS.IN_PROGRESS,
         requestedStatus: ORDER_STATUS.READY,
         isPickupOrder: false,
       }),
-    ).toBeNull();
+    ).toBe("production_complete");
   });
 
   it("sends completion email only on the transition into Completed", () => {
