@@ -4,9 +4,23 @@ import {
   type ApparelSide,
 } from "./apparelDesigner";
 
+const TSHIRT_FRONT_MOCKUPS: Record<string, string> = {
+  black: "/images/apparel/gildan-g640-front-photo-1.jpg",
+  white: "/images/apparel/gildan-g640-front-photo-2.jpg",
+  navy: "/images/apparel/gildan-g640-front-photo-1.jpg",
+  charcoal: "/images/apparel/gildan-g640-front-photo-1.jpg",
+};
+
 const TSHIRT_BACK_MOCKUPS: Record<string, string> = {
   black: "/images/apparel/gildan-g640-black-back.png",
   white: "/images/apparel/gildan-g640-white-back.png",
+  navy: "/images/apparel/gildan-g640-black-back.png",
+  charcoal: "/images/apparel/gildan-g640-black-back.png",
+};
+
+const TSHIRT_COLOUR_FILTERS: Record<string, "navy" | "charcoal"> = {
+  navy: "navy",
+  charcoal: "charcoal",
 };
 
 type GarmentMockupInput = {
@@ -56,10 +70,27 @@ export function getGarmentMockupImage({
   colorName,
   frontImage,
 }: GarmentMockupInput): string | undefined {
-  if (side === "front") return frontImage;
+  const normalizedColor = colorName.trim().toLowerCase();
+
+  if (side === "front") {
+    if (garmentType === "t-shirt") {
+      return TSHIRT_FRONT_MOCKUPS[normalizedColor] ?? frontImage;
+    }
+
+    return frontImage;
+  }
   if (garmentType !== "t-shirt") return undefined;
 
-  return TSHIRT_BACK_MOCKUPS[colorName.trim().toLowerCase()];
+  return TSHIRT_BACK_MOCKUPS[normalizedColor];
+}
+
+export function getGarmentMockupColourFilter(
+  garmentType: "t-shirt" | "hoodie",
+  colorName: string,
+): "navy" | "charcoal" | undefined {
+  if (garmentType !== "t-shirt") return undefined;
+
+  return TSHIRT_COLOUR_FILTERS[colorName.trim().toLowerCase()];
 }
 
 export function getGarmentPrintArea({

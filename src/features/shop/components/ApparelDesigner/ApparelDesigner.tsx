@@ -29,6 +29,7 @@ import {
 } from "../../../../lib/productionEstimate";
 import type { BulkDiscountConfig } from "../../../../lib/bulkDiscount";
 import {
+  getGarmentMockupColourFilter,
   getGarmentMockupImage,
   getGarmentPrintArea,
 } from "../../../../lib/apparelMockup";
@@ -874,6 +875,10 @@ export default function ApparelDesigner({
     colorName: selectedColor.name,
     frontImage: selectedBlankShirtImage,
   });
+  const garmentMockupColourFilter = getGarmentMockupColourFilter(
+    isHoodie ? "hoodie" : "t-shirt",
+    selectedColor.name,
+  );
   const garmentPrintArea = getGarmentPrintArea({
     garmentType: isHoodie ? "hoodie" : "t-shirt",
     size,
@@ -900,12 +905,38 @@ export default function ApparelDesigner({
         </div>
 
         <div className="relative mx-auto aspect-square max-w-xl overflow-hidden rounded-2xl bg-white p-4">
+          <svg aria-hidden="true" className="absolute h-0 w-0">
+            <defs>
+              <filter id="gildan-shirt-navy" colorInterpolationFilters="sRGB">
+                <feColorMatrix
+                  type="matrix"
+                  values="0.1915 0.6452 0.0651 0 0.0980 0.1777 0.5981 0.0604 0 0.1647 0.1549 0.5216 0.0525 0 0.2706 0 0 0 1 0"
+                />
+              </filter>
+              <filter
+                id="gildan-shirt-charcoal"
+                colorInterpolationFilters="sRGB"
+              >
+                <feColorMatrix
+                  type="matrix"
+                  values="0.1601 0.5390 0.0544 0 0.2471 0.1584 0.5332 0.0538 0 0.2549 0.1575 0.5304 0.0535 0 0.2588 0 0 0 1 0"
+                />
+              </filter>
+            </defs>
+          </svg>
           {garmentMockupImage ? (
             <img
               src={garmentMockupImage}
               alt={`${selectedColor.name} ${isHoodie ? "hoodie" : "T-shirt"} ${activeSide} mockup`}
               draggable={false}
               className="pointer-events-none absolute inset-0 h-full w-full select-none object-contain p-3"
+              style={
+                garmentMockupColourFilter
+                  ? {
+                      filter: `url(#gildan-shirt-${garmentMockupColourFilter})`,
+                    }
+                  : undefined
+              }
             />
           ) : (
             <svg
