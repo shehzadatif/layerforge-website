@@ -21,7 +21,7 @@ describe("apparel mockup garment image", () => {
         colorName: " White ",
         frontImage: "https://example.com/white-front.jpg",
       }),
-    ).toBe("/images/apparel/gildan-g640-white-back.jpg");
+    ).toBe("/images/apparel/gildan-g640-white-back.png");
   });
 
   it("never reuses a front image for the back of an unsupported garment", () => {

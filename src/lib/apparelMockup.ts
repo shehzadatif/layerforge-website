@@ -1,8 +1,8 @@
 import type { ApparelSide } from "./apparelDesigner";
 
 const TSHIRT_BACK_MOCKUPS: Record<string, string> = {
-  black: "/images/apparel/gildan-g640-black-back.jpg",
-  white: "/images/apparel/gildan-g640-white-back.jpg",
+  black: "/images/apparel/gildan-g640-black-back.png",
+  white: "/images/apparel/gildan-g640-white-back.png",
 };
 
 type GarmentMockupInput = {
