@@ -1,13 +1,11 @@
 ---
 import MainLayout from "../layouts/MainLayout.astro";
 
-const solutions = [
-  ["Product Branding", "Branded merchandise, drinkware, labels, promotional items, and coordinated product collections."],
-  ["Branded Merchandise", "Promotional products, client gifts, employee items, and giveaways carrying your logo or campaign."],
-  ["Workwear & Apparel", "Custom shirts, hoodies, uniforms, and event apparel for teams and organizations."],
-  ["Labels & Stickers", "Product labels, packaging stickers, window decals, equipment labels, and custom-shaped graphics."],
-  ["Events & Campaigns", "Coordinated apparel, giveaways, branded merchandise, and event products for launches and promotions."],
-  ["Repeat & Quantity Orders", "Practical planning for consistent reorders, multiple products, and larger quantities."],
+const brandingProducts = [
+  { title: "Team apparel & textiles", items: ["T-shirts and polo shirts", "Hoodies and sweatshirts", "Caps and hats", "Aprons and uniforms", "Jackets and workwear", "Tote bags"] },
+  { title: "Drinkware & everyday products", items: ["Tumblers and travel mugs", "Water bottles", "Ceramic mugs", "Coasters", "Phone cases", "Notebooks"] },
+  { title: "Gifts & promotional items", items: ["Keychains", "Fridge magnets", "Plaques and awards", "Employee recognition pieces", "Client gifts and keepsakes", "Event giveaways"] },
+  { title: "Labels & business essentials", items: ["Product labels", "Packaging stickers", "Custom-shaped stickers and decals", "Window decals", "Equipment labels", "Nameplates"] },
 ];
 ---
 
@@ -22,9 +20,20 @@ const solutions = [
   </section>
   <section class="bg-white py-24">
     <div class="mx-auto max-w-7xl px-6">
-      <div class="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-        {solutions.map(([title, description]) => (
-          <article class="rounded-3xl border border-slate-200 p-8 shadow-sm"><div class="h-2 w-14 rounded-full bg-yellow-400"></div><h2 class="mt-6 text-2xl font-bold text-slate-950">{title}</h2><p class="mt-4 leading-7 text-slate-600">{description}</p></article>
+      <div class="max-w-3xl">
+        <p class="font-semibold uppercase tracking-[0.25em] text-yellow-600">Products for your brand</p>
+        <h2 class="mt-3 text-3xl font-black text-slate-950 sm:text-4xl">Make your brand part of the everyday.</h2>
+        <p class="mt-4 leading-7 text-slate-600">Explore items we can customize for your team, customers, packaging, and events. We’ll confirm the right product, artwork placement, quantity, and finish with you before quoting.</p>
+      </div>
+      <div class="mt-10 grid gap-6 md:grid-cols-2">
+        {brandingProducts.map(({ title, items }) => (
+          <article class="rounded-3xl border border-slate-200 bg-white p-8 shadow-sm">
+            <div class="h-2 w-14 rounded-full bg-yellow-400"></div>
+            <h3 class="mt-6 text-2xl font-bold text-slate-950">{title}</h3>
+            <ul class="mt-5 list-disc space-y-2 pl-5 leading-7 text-slate-600 marker:text-yellow-500">
+              {items.map((item) => <li>{item}</li>)}
+            </ul>
+          </article>
         ))}
       </div>
       <section id="corporate-apparel" class="mt-20" aria-labelledby="corporate-apparel-heading">
