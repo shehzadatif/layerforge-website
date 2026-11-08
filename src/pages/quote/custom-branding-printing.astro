@@ -1,0 +1,115 @@
+---
+import MainLayout from "../../layouts/MainLayout.astro";
+import { getPacificDateInputValue } from "../../lib/dateUtils";
+
+const project = Astro.url.searchParams.get("project") ?? "";
+const projectDefaults: Record<string, string> = {
+  "drinkware-gifts": "Drinkware or personalized gifts",
+  "labels-promotions": "Labels, stickers or promotional products",
+  "branding-package": "Coordinated branding package",
+};
+const selectedProject = projectDefaults[project] ?? "";
+---
+
+<MainLayout title="Plan a Custom Branding Project | Layer Forge Canada" description="Tell Layer Forge Canada about your custom apparel, branded products, gifts, labels, promotional items, or corporate branding project.">
+  <section class="bg-slate-950 py-16 text-white sm:py-20">
+    <div class="mx-auto max-w-4xl px-6">
+      <p class="text-sm font-black uppercase tracking-[0.26em] text-yellow-400">Custom Branding &amp; Printing</p>
+      <h1 class="mt-4 text-4xl font-black tracking-tight sm:text-5xl">Tell us about your branding project.</h1>
+      <p class="mt-5 max-w-3xl text-lg leading-8 text-slate-300">Share the goal, products, quantity, and timing. You do not need production measurements or technical details—we’ll help confirm the right options.</p>
+    </div>
+  </section>
+
+  <section class="bg-slate-100 py-12 sm:py-16">
+    <div class="mx-auto max-w-4xl px-6">
+      <form id="branding-project-form" enctype="multipart/form-data" class="space-y-8 rounded-3xl bg-white p-6 shadow-xl sm:p-10">
+        <input type="hidden" name="service" value="UV Printing" />
+        <input type="text" name="website" tabindex="-1" autocomplete="off" class="hidden" aria-hidden="true" />
+
+        <fieldset>
+          <legend class="text-2xl font-black text-slate-950">1. What are you planning?</legend>
+          <div class="mt-6 grid gap-5 sm:grid-cols-2">
+            <label class="block sm:col-span-2">
+              <span class="text-sm font-bold text-slate-700">Project type *</span>
+              <select name="itemType" required class="mt-2 w-full rounded-xl border border-slate-300 bg-white px-4 py-3.5 focus:border-yellow-400 focus:outline-none focus:ring-2 focus:ring-yellow-200">
+                <option value="">Choose a project type</option>
+                {["Custom apparel or workwear", "Drinkware or personalized gifts", "Labels, stickers or promotional products", "Coordinated branding package", "Customer-supplied products", "Something else"].map((option) => <option value={option} selected={selectedProject === option}>{option}</option>)}
+              </select>
+            </label>
+            <label class="block sm:col-span-2">
+              <span class="text-sm font-bold text-slate-700">What should this project accomplish? *</span>
+              <select name="projectPurpose" required class="mt-2 w-full rounded-xl border border-slate-300 bg-white px-4 py-3.5 focus:border-yellow-400 focus:outline-none focus:ring-2 focus:ring-yellow-200">
+                <option value="">Choose the main goal</option>
+                <option>Outfit a team or workplace</option><option>Promote a business or campaign</option><option>Prepare for an event</option><option>Create client or employee gifts</option><option>Brand products or packaging</option><option>Create personalized gifts</option><option>Other</option>
+              </select>
+            </label>
+            <label class="block"><span class="text-sm font-bold text-slate-700">Approximate quantity *</span><input name="quantity" type="number" min="1" max="10000" value="1" required class="mt-2 w-full rounded-xl border border-slate-300 px-4 py-3.5 focus:border-yellow-400 focus:outline-none focus:ring-2 focus:ring-yellow-200" /></label>
+            <label class="block"><span class="text-sm font-bold text-slate-700">Preferred completion date</span><input name="dueDate" type="date" min={getPacificDateInputValue(3)} class="mt-2 w-full rounded-xl border border-slate-300 px-4 py-3.5 focus:border-yellow-400 focus:outline-none focus:ring-2 focus:ring-yellow-200" /></label>
+            <label class="block sm:col-span-2">
+              <span class="text-sm font-bold text-slate-700">Product sourcing</span>
+              <select name="productSource" class="mt-2 w-full rounded-xl border border-slate-300 bg-white px-4 py-3.5 focus:border-yellow-400 focus:outline-none focus:ring-2 focus:ring-yellow-200">
+                <option value="">Help me decide</option><option>I would like Layer Forge to source the products</option><option>I already have the products</option><option>I need a mix of sourced and supplied products</option>
+              </select>
+            </label>
+          </div>
+        </fieldset>
+
+        <fieldset class="border-t border-slate-200 pt-8">
+          <legend class="text-2xl font-black text-slate-950">2. Tell us about the branding</legend>
+          <div class="mt-6 space-y-6">
+            <label class="block">
+              <span class="text-sm font-bold text-slate-700">Project details *</span>
+              <textarea name="notes" rows="6" required placeholder="What products are you considering? Who are they for? What would you like on them? Include any colour, placement, packaging, budget, or deadline details that matter." class="mt-2 w-full rounded-xl border border-slate-300 px-4 py-3.5 focus:border-yellow-400 focus:outline-none focus:ring-2 focus:ring-yellow-200"></textarea>
+            </label>
+            <div>
+              <span class="text-sm font-bold text-slate-700">Artwork or reference file <span class="font-normal text-slate-500">(optional)</span></span>
+              <label for="branding-file" class="mt-2 flex cursor-pointer flex-col items-center justify-center rounded-2xl border-2 border-dashed border-slate-300 bg-slate-50 px-6 py-8 text-center transition hover:border-yellow-400 hover:bg-yellow-50">
+                <span class="text-3xl" aria-hidden="true">↑</span><span class="mt-2 font-bold text-slate-800">Upload your logo, artwork, or reference</span><span class="mt-1 text-sm text-slate-500">AI, SVG, EPS, PDF, PNG, JPG, JPEG or WEBP · up to 50 MB</span>
+              </label>
+              <input id="branding-file" name="file" type="file" accept=".ai,.svg,.eps,.pdf,.png,.jpg,.jpeg,.webp" class="hidden" />
+              <p data-file-name class="mt-2 text-sm font-semibold text-slate-600" aria-live="polite"></p>
+            </div>
+          </div>
+        </fieldset>
+
+        <fieldset class="border-t border-slate-200 pt-8">
+          <legend class="text-2xl font-black text-slate-950">3. How should we reach you?</legend>
+          <div class="mt-6 grid gap-5 sm:grid-cols-2">
+            <label class="block"><span class="text-sm font-bold text-slate-700">Full name *</span><input name="name" type="text" required autocomplete="name" class="mt-2 w-full rounded-xl border border-slate-300 px-4 py-3.5 focus:border-yellow-400 focus:outline-none focus:ring-2 focus:ring-yellow-200" /></label>
+            <label class="block"><span class="text-sm font-bold text-slate-700">Email *</span><input name="email" type="email" required autocomplete="email" class="mt-2 w-full rounded-xl border border-slate-300 px-4 py-3.5 focus:border-yellow-400 focus:outline-none focus:ring-2 focus:ring-yellow-200" /></label>
+            <label class="block"><span class="text-sm font-bold text-slate-700">Phone</span><input name="phone" type="tel" autocomplete="tel" class="mt-2 w-full rounded-xl border border-slate-300 px-4 py-3.5 focus:border-yellow-400 focus:outline-none focus:ring-2 focus:ring-yellow-200" /></label>
+            <label class="block"><span class="text-sm font-bold text-slate-700">Business or organization</span><input name="company" type="text" autocomplete="organization" class="mt-2 w-full rounded-xl border border-slate-300 px-4 py-3.5 focus:border-yellow-400 focus:outline-none focus:ring-2 focus:ring-yellow-200" /></label>
+            <label class="block sm:col-span-2"><span class="text-sm font-bold text-slate-700">Delivery preference</span><select name="deliveryMethod" class="mt-2 w-full rounded-xl border border-slate-300 bg-white px-4 py-3.5 focus:border-yellow-400 focus:outline-none focus:ring-2 focus:ring-yellow-200"><option value="">Not sure yet</option><option>Pickup</option><option>Local Delivery</option><option>Shipping</option></select></label>
+          </div>
+        </fieldset>
+
+        <div class="rounded-2xl bg-yellow-50 p-5 text-sm leading-6 text-slate-700 ring-1 ring-yellow-200">We’ll review your project and reply with the suitable product options, artwork requirements, pricing, and expected timing before anything moves into production.</div>
+        <button type="submit" class="w-full rounded-xl bg-yellow-400 px-8 py-4 text-lg font-black text-slate-950 transition hover:bg-yellow-300 disabled:cursor-wait disabled:opacity-70">Send Project Details</button>
+        <p data-form-error class="hidden rounded-xl border border-red-200 bg-red-50 p-4 text-sm font-semibold text-red-800" role="alert"></p>
+      </form>
+    </div>
+  </section>
+
+  <script>
+    const form = document.querySelector<HTMLFormElement>("#branding-project-form");
+    const fileInput = document.querySelector<HTMLInputElement>("#branding-file");
+    const fileName = document.querySelector<HTMLElement>("[data-file-name]");
+    const errorMessage = document.querySelector<HTMLElement>("[data-form-error]");
+    fileInput?.addEventListener("change", () => { if (fileName) fileName.textContent = fileInput.files?.[0]?.name ? `Selected: ${fileInput.files[0].name}` : ""; });
+    form?.addEventListener("submit", async (event) => {
+      event.preventDefault();
+      const button = form.querySelector<HTMLButtonElement>('button[type="submit"]');
+      if (!button) return;
+      button.disabled = true; button.textContent = "Sending…"; errorMessage?.classList.add("hidden");
+      try {
+        const response = await fetch("/api/quote", { method: "POST", body: new FormData(form) });
+        const result = await response.json();
+        if (result.success) { window.location.href = result.redirect; return; }
+        throw new Error(result.error || "Unable to send your project details.");
+      } catch (error) {
+        if (errorMessage) { errorMessage.textContent = error instanceof Error ? error.message : "Unable to send your project details."; errorMessage.classList.remove("hidden"); }
+        button.disabled = false; button.textContent = "Send Project Details";
+      }
+    });
+  </script>
+</MainLayout>

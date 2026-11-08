@@ -321,6 +321,8 @@ export const POST: APIRoute = async ({ request }) => {
     const notes = textValue(formData, "notes", 5000);
     const itemType = textValue(formData, "itemType", 160);
     const customItem = textValue(formData, "customItem", 160);
+    const projectPurpose = textValue(formData, "projectPurpose", 160);
+    const productSource = textValue(formData, "productSource", 200);
     const dueDate = textValue(formData, "dueDate", 40);
     const units = textValue(formData, "units", 40);
     const itemDimensions = textValue(formData, "itemDimensions", 160);
@@ -459,6 +461,8 @@ export const POST: APIRoute = async ({ request }) => {
     const projectDetailsText = [
       notes && `Notes: ${notes}`,
       itemType && `Item Type: ${itemType}`,
+      projectPurpose && `Project Goal: ${projectPurpose}`,
+      productSource && `Product Sourcing: ${productSource}`,
       customItem && `Custom Item: ${customItem}`,
       itemDimensions && `Item Dimensions: ${itemDimensions}`,
       printArea && `Print Area: ${printArea}`,
