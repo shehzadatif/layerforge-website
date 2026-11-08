@@ -3,7 +3,6 @@ import "../styles/global.css";
 import Navbar from "../components/layout/Navbar.astro";
 import AppToaster from "../components/layout/AppToaster";
 import Footer from "../components/Footer.astro";
-import ServiceAnnouncement from "../components/ServiceAnnouncement.astro";
 import GoogleAnalytics from "../components/GoogleAnalytics.astro";
 
 interface Props {
@@ -59,7 +58,6 @@ const socialImageUrl = new URL(image, siteUrl).toString();
 
   <body>
 <AppToaster client:load />
-    <ServiceAnnouncement />
     <Navbar />
 
     <main>
