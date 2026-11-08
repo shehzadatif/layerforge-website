@@ -5,7 +5,6 @@ import AppToaster from "../components/layout/AppToaster";
 import Footer from "../components/Footer.astro";
 import ServiceAnnouncement from "../components/ServiceAnnouncement.astro";
 import GoogleAnalytics from "../components/GoogleAnalytics.astro";
-import LaunchSplash from "../components/LaunchSplash.astro";
 
 interface Props {
   title?: string;
@@ -60,7 +59,6 @@ const socialImageUrl = new URL(image, siteUrl).toString();
 
   <body>
 <AppToaster client:load />
-    <LaunchSplash />
     <ServiceAnnouncement />
     <Navbar />
 
