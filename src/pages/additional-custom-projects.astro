@@ -1,0 +1,32 @@
+---
+import MainLayout from "../layouts/MainLayout.astro";
+
+const projects = [
+  ["Laser Engraving", "Permanent personalization and branding on suitable wood, acrylic, leatherette, coated metal, glass, slate, and other materials."],
+  ["Customer-Supplied Items", "Selected items can be reviewed for printing or engraving after we confirm the material, surface, size, and condition."],
+  ["One-Off Ideas", "Unusual gifts, displays, accessories, and creative concepts that need a practical production plan."],
+  ["Prototypes & Replacement Parts", "Early concepts, discontinued components, fit checks, and functional parts made for a specific use."],
+  ["Small Production Runs", "Repeatable custom pieces produced in practical quantities after the design and specifications are approved."],
+  ["Projects Still Taking Shape", "If you know the outcome you need but not the material or process, we can help identify a sensible next step."],
+];
+---
+
+<MainLayout title="Additional Custom Projects | Layer Forge Canada" description="Discuss one-off, engraved, customer-supplied, prototype, replacement, and other custom projects with Layer Forge Canada.">
+  <section class="bg-slate-950 py-24 text-white">
+    <div class="mx-auto max-w-7xl px-6">
+      <p class="font-bold uppercase tracking-[0.28em] text-yellow-400">Additional custom projects</p>
+      <h1 class="mt-5 max-w-4xl text-5xl font-black tracking-tight sm:text-6xl">Have an idea that does not fit a standard category?</h1>
+      <p class="mt-7 max-w-3xl text-xl leading-8 text-slate-300">Tell us what you are trying to accomplish. We’ll review the item, material, design, quantity, and intended use before confirming whether the project is a good fit.</p>
+      <a href="/contact" class="mt-9 inline-flex rounded-xl bg-yellow-400 px-7 py-4 text-lg font-bold text-slate-950 transition hover:bg-yellow-300">Tell Us About Your Idea</a>
+    </div>
+  </section>
+  <section class="bg-slate-50 py-24">
+    <div class="mx-auto max-w-7xl px-6">
+      <div class="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+        {projects.map(([title, description]) => (
+          <article class="rounded-3xl bg-white p-8 shadow-sm ring-1 ring-slate-200"><h2 class="text-2xl font-bold text-slate-950">{title}</h2><p class="mt-4 leading-7 text-slate-600">{description}</p></article>
+        ))}
+      </div>
+    </div>
+  </section>
+</MainLayout>
