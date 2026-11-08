@@ -1,0 +1,37 @@
+---
+import MainLayout from "../layouts/MainLayout.astro";
+
+const solutions = [
+  ["Signs & Displays", "Reception signs, plaques, point-of-sale displays, event signage, and branded visual pieces."],
+  ["Branded Merchandise", "Promotional products, client gifts, employee items, and giveaways carrying your logo or campaign."],
+  ["Workwear & Apparel", "Custom shirts, hoodies, uniforms, and event apparel for teams and organizations."],
+  ["Labels & Stickers", "Product labels, packaging stickers, window decals, equipment labels, and custom-shaped graphics."],
+  ["Events & Campaigns", "Coordinated signage, apparel, giveaways, and display items for launches, events, and promotions."],
+  ["Repeat & Quantity Orders", "Practical planning for consistent reorders, multiple products, and larger quantities."],
+];
+---
+
+<MainLayout title="Custom Business Branding | Layer Forge Canada" description="Custom signs, branded merchandise, apparel, labels, event materials, and coordinated business projects from Layer Forge Canada.">
+  <section class="bg-slate-950 py-24 text-white">
+    <div class="mx-auto max-w-7xl px-6">
+      <p class="font-bold uppercase tracking-[0.28em] text-yellow-400">For businesses</p>
+      <h1 class="mt-5 max-w-4xl text-5xl font-black tracking-tight sm:text-6xl">Custom branding that works across your business.</h1>
+      <p class="mt-7 max-w-3xl text-xl leading-8 text-slate-300">From one branded item to a coordinated set, we help you choose practical products and finishes that support your team, customers, events, and everyday operations.</p>
+      <a href="/contact" class="mt-9 inline-flex rounded-xl bg-yellow-400 px-7 py-4 text-lg font-bold text-slate-950 transition hover:bg-yellow-300">Discuss a Business Project</a>
+    </div>
+  </section>
+  <section class="bg-white py-24">
+    <div class="mx-auto max-w-7xl px-6">
+      <div class="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+        {solutions.map(([title, description]) => (
+          <article class="rounded-3xl border border-slate-200 p-8 shadow-sm"><div class="h-2 w-14 rounded-full bg-yellow-400"></div><h2 class="mt-6 text-2xl font-bold text-slate-950">{title}</h2><p class="mt-4 leading-7 text-slate-600">{description}</p></article>
+        ))}
+      </div>
+      <div class="mt-16 rounded-3xl bg-slate-100 p-8 sm:p-12">
+        <h2 class="text-3xl font-bold text-slate-950">Every business project starts with a conversation.</h2>
+        <p class="mt-4 max-w-3xl text-lg leading-8 text-slate-600">Share your logo, approximate quantity, deadline, and intended use. We’ll review the requirements with you and recommend the right approach before providing a quote.</p>
+        <a href="/contact" class="mt-7 inline-flex font-bold text-slate-950 underline decoration-yellow-400 decoration-4 underline-offset-4">Contact us about your project →</a>
+      </div>
+    </div>
+  </section>
+</MainLayout>
