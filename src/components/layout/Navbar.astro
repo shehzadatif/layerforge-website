@@ -4,11 +4,12 @@ import CartBadge from "./CartBadge";
 const pathname = Astro.url.pathname;
 const isActive = (href: string) => href === "/" ? pathname === "/" : pathname === href || pathname.startsWith(`${href}/`);
 const links = [
-  { href: "/what-we-make", label: "Custom Products" },
-  { href: "/for-businesses", label: "For Businesses" },
+  { href: "/what-we-make#apparel", label: "Apparel" },
+  { href: "/uv-printing", label: "Custom Product Printing" },
+  { href: "/laser-engraving", label: "Laser Engraving" },
+  { href: "/3d-printing", label: "3D Printing" },
+  { href: "/for-businesses", label: "Business Branding" },
   { href: "/shop", label: "Shop" },
-  { href: "/additional-custom-projects", label: "Additional Custom Projects" },
-  { href: "/gallery", label: "Our Work" },
 ];
 const linkClass = (href: string) => `transition hover:text-yellow-400 ${isActive(href) ? "font-semibold text-yellow-400" : "text-white"}`;
 ---
@@ -19,7 +20,7 @@ const linkClass = (href: string) => `transition hover:text-yellow-400 ${isActive
       <img src="/brand/logos/layerforge-horizontal-new-reverse.png" alt="" class="w-44 sm:w-52" />
       <span class="border-l border-white/30 pl-2 text-[10px] font-black uppercase tracking-[0.18em] text-yellow-400 sm:text-xs">Canada</span>
     </a>
-    <div class="hidden items-center gap-4 text-sm xl:gap-6 xl:text-base lg:flex">
+    <div class="hidden items-center gap-3 text-sm xl:gap-5 lg:flex">
       {links.map((link) => (
         <a href={link.href} class={linkClass(link.href)} aria-current={isActive(link.href) ? "page" : undefined}>{link.label}</a>
       ))}
