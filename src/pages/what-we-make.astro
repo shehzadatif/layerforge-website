@@ -1,29 +1,42 @@
 ---
-import MainLayout from '../layouts/MainLayout.astro';
+import MainLayout from "../layouts/MainLayout.astro";
+
+const categories = [
+  { id: "personalized-products", eyebrow: "Personalized products", title: "Products made around your message, artwork, or occasion", description: "Create thoughtful gifts, keepsakes, drinkware, phone cases, plaques, signs, and other personalized pieces. We’ll help confirm the right item, finish, size, and artwork setup.", image: "/images/uv-printing/uv-tumbler.webp", examples: ["Drinkware and tumblers", "Phone cases", "Gifts and keepsakes", "Signs and plaques", "Photo and artwork products"] },
+  { id: "apparel", eyebrow: "Apparel, stickers & labels", title: "Custom pieces for people, packaging, events, and everyday use", description: "Bring your artwork or brand to shirts, workwear, transfers, stickers, decals, and labels. The right approach depends on the item, artwork, quantity, and intended use.", image: "/images/uv-printing/dtf-apparel.webp", examples: ["T-shirts and hoodies", "Team and event apparel", "Workwear", "Stickers and decals", "Product and packaging labels"] },
+  { id: "business-branding", eyebrow: "Business branding", title: "Coordinated custom materials that help your business look consistent", description: "We help businesses combine signs, branded products, apparel, labels, displays, and promotional pieces around a clear goal and visual identity.", image: "/images/solutions/promotional-products.png", examples: ["Logo signs and displays", "Branded merchandise", "Employee and client gifts", "Events and giveaways", "Repeat and quantity orders"], href: "/for-businesses" },
+  { id: "functional-products", eyebrow: "3D-printed products & custom parts", title: "Order a proven design or discuss a custom solution", description: "Our established workshop, tool-storage, automotive, and functional designs can be configured and ordered online. Prototypes, replacements, and new designs begin with a project discussion.", image: "/images/3d-printing/functional-products.webp", examples: ["Workshop and tool organization", "Automotive and EV accessories", "Online product ordering", "Custom replacement parts", "Prototypes and new designs"], href: "/shop" },
+];
 ---
 
-<MainLayout title="What We Make | Layer Forge Canada">
+<MainLayout title="What We Make | Layer Forge Canada" description="Explore custom products, business branding, apparel, stickers, labels, signs, and functional 3D-printed solutions from Layer Forge Canada.">
+  <section class="bg-slate-950 py-24 text-white">
+    <div class="mx-auto max-w-7xl px-6 text-center">
+      <p class="font-bold uppercase tracking-[0.28em] text-yellow-400">What we make</p>
+      <h1 class="mx-auto mt-5 max-w-4xl text-5xl font-black tracking-tight sm:text-6xl">Explore what Layer Forge can help you create.</h1>
+      <p class="mx-auto mt-7 max-w-3xl text-xl leading-8 text-slate-300">Everything we make is custom. Browse common project types for inspiration, then contact us to discuss the details before pricing or production.</p>
+    </div>
+  </section>
 
-<section class="bg-gray-950 text-white">
-
-  <div class="mx-auto max-w-7xl px-6 py-24 text-center">
-
-    <p class="font-semibold uppercase tracking-[0.3em] text-yellow-400">
-      WHAT WE MAKE
-    </p>
-
-    <h1 class="mt-4 text-5xl font-bold md:text-6xl">
-      Custom Solutions for Every Idea
-    </h1>
-
-    <p class="mx-auto mt-6 max-w-3xl text-xl text-gray-300">
-      Whether you need a one-of-a-kind gift, a functional workshop accessory,
-      business branding, custom apparel, or a production-ready part,
-      Layer Forge Canada helps bring your ideas to life.
-    </p>
-
-  </div>
-
-</section>
-
+  {categories.map((category, index) => (
+    <section id={category.id} class={index % 2 === 0 ? "bg-white py-24" : "bg-slate-100 py-24"}>
+      <div class="mx-auto grid max-w-7xl items-center gap-12 px-6 lg:grid-cols-2">
+        <div class={index % 2 === 0 ? "lg:order-1" : "lg:order-2"}>
+          <img src={category.image} alt="" loading="lazy" class="aspect-[4/3] w-full rounded-3xl object-cover shadow-xl" />
+        </div>
+        <div class={index % 2 === 0 ? "lg:order-2" : "lg:order-1"}>
+          <p class="font-bold uppercase tracking-[0.25em] text-yellow-600">{category.eyebrow}</p>
+          <h2 class="mt-4 text-4xl font-bold tracking-tight text-slate-950">{category.title}</h2>
+          <p class="mt-6 text-lg leading-8 text-slate-600">{category.description}</p>
+          <ul class="mt-7 grid gap-3 sm:grid-cols-2">
+            {category.examples.map((example) => <li class="flex gap-3 text-slate-700"><span class="font-bold text-yellow-500">✓</span>{example}</li>)}
+          </ul>
+          <div class="mt-9 flex flex-wrap gap-4">
+            <a href="/contact" class="inline-flex rounded-xl bg-slate-950 px-6 py-3 font-bold text-white transition hover:bg-slate-800">Discuss a Project</a>
+            {category.href && <a href={category.href} class="inline-flex px-3 py-3 font-bold text-slate-950 underline decoration-yellow-400 decoration-4 underline-offset-4">Learn more</a>}
+          </div>
+        </div>
+      </div>
+    </section>
+  ))}
 </MainLayout>
