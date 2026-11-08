@@ -1,0 +1,172 @@
+---
+import MainLayout from "../layouts/MainLayout.astro";
+
+const productGroups = [
+  {
+    id: "apparel",
+    eyebrow: "Wear your brand",
+    title: "Apparel & workwear",
+    description: "Create coordinated clothing for staff, teams, events, promotions, and merchandise.",
+    image: "/images/apparel/custom-apparel-layerforge.webp",
+    alt: "Custom branded hoodie and tote bag",
+    examples: ["T-shirts", "Polos", "Hoodies", "Workwear", "Tote bags"],
+    href: "/custom-apparel",
+    action: "Explore custom apparel",
+  },
+  {
+    id: "drinkware-gifts",
+    eyebrow: "Use it every day",
+    title: "Drinkware & personalized gifts",
+    description: "Put your logo, artwork, names, or messages on useful products people will keep.",
+    image: "/images/uv-printing/uv-tumbler.webp",
+    alt: "Layer Forge branded stainless steel bottle",
+    examples: ["Bottles", "Tumblers", "Mugs", "Keepsakes", "Recognition gifts"],
+    href: "/quote/custom-branding-printing?project=drinkware-gifts",
+    action: "Plan a drinkware or gift project",
+  },
+  {
+    id: "labels-promotions",
+    eyebrow: "Make every touchpoint yours",
+    title: "Labels, stickers & promotional pieces",
+    description: "Carry your identity across packaging, giveaways, launches, events, and customer-facing spaces.",
+    image: "/images/uv-printing/uv-phone-cases.webp",
+    alt: "Collection of products featuring detailed custom artwork",
+    examples: ["Product labels", "Logo stickers", "Giveaways", "Phone cases", "Event items"],
+    href: "/quote/custom-branding-printing?project=labels-promotions",
+    action: "Discuss promotional products",
+  },
+];
+
+const projectOptions = [
+  ["01", "Choose the product", "Start with an item you already have in mind, or tell us the audience and purpose so we can suggest practical choices.", ["We source the products", "You supply the items", "Help me choose"]],
+  ["02", "Choose what goes on it", "Use a company logo, campaign artwork, names, roles, numbers, messages, or a different detail on each item.", ["One logo or design", "Individual names", "Multiple designs"]],
+  ["03", "Choose the presentation", "We’ll help confirm the available colours, placement, size, finish, and packaging for the selected product.", ["Brand colours", "Placement options", "Gift-ready presentation"]],
+  ["04", "Choose the quantity & timing", "Order one personalized piece, prepare a small team run, or plan repeat and quantity orders for your business.", ["Single items", "Small batches", "Repeat & quantity orders"]],
+];
+
+const packages = [
+  ["Team & workplace", "Build a consistent everyday look for employees and customer-facing teams.", ["Branded shirts or workwear", "Name or role personalization", "Drinkware or employee items"]],
+  ["Client & welcome gifts", "Create thoughtful sets for new clients, employees, milestones, and thank-you gifts.", ["Personalized drinkware", "Branded keepsakes", "Labels, cards, or packaging details"]],
+  ["Events & promotions", "Bring a campaign together across apparel, handouts, giveaways, and event materials.", ["Event apparel", "Stickers or labels", "Giveaways and promotional products"]],
+];
+---
+
+<MainLayout
+  title="Custom Branding & Printing | Layer Forge Canada"
+  description="Explore custom apparel, drinkware, gifts, labels, stickers, promotional products, and coordinated business branding from Layer Forge Canada."
+  image="/images/uv-printing/uv-printing-hero.webp"
+>
+  <section class="relative isolate min-h-[680px] overflow-hidden bg-slate-950 text-white">
+    <img src="/images/uv-printing/uv-printing-hero.webp" alt="A collection of custom branded products" class="absolute inset-0 h-full w-full object-cover object-[62%_center] lg:object-right" fetchpriority="high" />
+    <div class="absolute inset-0 bg-gradient-to-r from-black via-black/90 to-black/20"></div>
+    <div class="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-black/10"></div>
+    <div class="relative mx-auto flex min-h-[680px] max-w-7xl items-center px-6 py-24">
+      <div class="max-w-3xl">
+        <p class="text-sm font-black uppercase tracking-[0.3em] text-yellow-400">Custom Branding &amp; Printing</p>
+        <h1 class="mt-5 text-5xl font-black leading-[1.02] tracking-tight sm:text-6xl lg:text-7xl">Your brand, on products people use.</h1>
+        <p class="mt-7 max-w-2xl text-lg leading-8 text-slate-200 sm:text-xl">Create apparel, drinkware, gifts, labels, promotional products, and coordinated branding sets for your team, customers, events, or next big idea.</p>
+        <div class="mt-10 flex flex-col gap-4 sm:flex-row">
+          <a href="#products" class="inline-flex items-center justify-center rounded-xl bg-yellow-400 px-8 py-4 text-lg font-bold text-slate-950 transition hover:-translate-y-0.5 hover:bg-yellow-300">See What We Can Brand</a>
+          <a href="/quote/custom-branding-printing" class="inline-flex items-center justify-center rounded-xl border border-white/35 bg-white/10 px-8 py-4 text-lg font-semibold text-white backdrop-blur transition hover:-translate-y-0.5 hover:bg-white/20">Plan Your Project</a>
+        </div>
+        <ul class="mt-12 flex flex-wrap gap-x-7 gap-y-3 border-t border-white/20 pt-7 text-sm font-semibold text-slate-200" aria-label="Project support">
+          <li>Product sourcing</li><li>Artwork guidance</li><li>Personalization</li><li>Quantity orders</li><li>Pickup or shipping</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <nav class="sticky top-0 z-40 border-b border-slate-200 bg-white/95 shadow-sm backdrop-blur" aria-label="Custom branding page sections">
+    <div class="mx-auto flex max-w-7xl gap-2 overflow-x-auto px-6 py-3 text-sm font-bold text-slate-700">
+      <a href="#products" class="whitespace-nowrap rounded-full px-4 py-2 transition hover:bg-yellow-100 hover:text-slate-950">Products</a>
+      <a href="#options" class="whitespace-nowrap rounded-full px-4 py-2 transition hover:bg-yellow-100 hover:text-slate-950">Your options</a>
+      <a href="#packages" class="whitespace-nowrap rounded-full px-4 py-2 transition hover:bg-yellow-100 hover:text-slate-950">Branding packages</a>
+      <a href="#process" class="whitespace-nowrap rounded-full px-4 py-2 transition hover:bg-yellow-100 hover:text-slate-950">How it works</a>
+    </div>
+  </nav>
+
+  <section id="products" class="scroll-mt-20 bg-white py-24 sm:py-28">
+    <div class="mx-auto max-w-7xl px-6">
+      <div class="max-w-3xl">
+        <p class="text-sm font-black uppercase tracking-[0.26em] text-yellow-600">Start with the product</p>
+        <h2 class="mt-4 text-4xl font-black tracking-tight text-slate-950 sm:text-5xl">What would you like to brand?</h2>
+        <p class="mt-6 text-lg leading-8 text-slate-600">Choose a category to see common possibilities. If you are planning a coordinated project, you can mix products from several categories.</p>
+      </div>
+      <div class="mt-14 grid gap-7 lg:grid-cols-3">
+        {productGroups.map((group) => (
+          <article id={group.id} class="group flex scroll-mt-28 flex-col overflow-hidden rounded-3xl border border-slate-200 bg-slate-50 shadow-sm transition hover:-translate-y-1 hover:shadow-xl">
+            <div class="aspect-square overflow-hidden bg-slate-100"><img src={group.image} alt={group.alt} loading="lazy" class="h-full w-full object-cover transition duration-500 group-hover:scale-[1.03]" /></div>
+            <div class="flex flex-1 flex-col p-7">
+              <p class="text-xs font-black uppercase tracking-[0.22em] text-yellow-700">{group.eyebrow}</p>
+              <h3 class="mt-3 text-3xl font-black text-slate-950">{group.title}</h3>
+              <p class="mt-4 leading-7 text-slate-600">{group.description}</p>
+              <ul class="mt-6 flex flex-wrap gap-2" aria-label={`${group.title} examples`}>{group.examples.map((example) => <li class="rounded-full border border-slate-200 bg-white px-3 py-1.5 text-sm font-semibold text-slate-700">{example}</li>)}</ul>
+              <a href={group.href} class="mt-7 inline-flex font-bold text-slate-950 underline decoration-yellow-400 decoration-4 underline-offset-4">{group.action} →</a>
+            </div>
+          </article>
+        ))}
+      </div>
+      <div class="mt-8 flex flex-col gap-5 rounded-3xl bg-slate-950 p-8 text-white sm:flex-row sm:items-center sm:justify-between sm:p-10">
+        <div><p class="text-sm font-black uppercase tracking-[0.22em] text-yellow-400">Something different?</p><h3 class="mt-2 text-2xl font-black">We also review customer-supplied items and one-off ideas.</h3><p class="mt-3 max-w-3xl leading-7 text-slate-300">Tell us about the item, intended use, quantity, and deadline. We’ll confirm whether it is a suitable fit before accepting the project.</p></div>
+        <a href="/additional-custom-projects" class="shrink-0 rounded-xl border border-white/25 px-6 py-3 text-center font-bold transition hover:border-yellow-400 hover:text-yellow-400">Additional Custom Projects</a>
+      </div>
+    </div>
+  </section>
+
+  <section id="options" class="scroll-mt-20 bg-slate-100 py-24 sm:py-28">
+    <div class="mx-auto max-w-7xl px-6">
+      <div class="grid gap-12 lg:grid-cols-[0.72fr_1.28fr] lg:items-start">
+        <div class="lg:sticky lg:top-28">
+          <p class="text-sm font-black uppercase tracking-[0.26em] text-yellow-700">Build your project</p>
+          <h2 class="mt-4 text-4xl font-black tracking-tight text-slate-950 sm:text-5xl">Your brand. Your choices.</h2>
+          <p class="mt-6 text-lg leading-8 text-slate-600">You do not need to know how the product is made. Tell us the result you want, and we’ll help turn it into a clear, practical plan.</p>
+          <a href="/quote/custom-branding-printing" class="mt-8 inline-flex rounded-xl bg-slate-950 px-7 py-4 font-bold text-white transition hover:bg-slate-800">Tell Us About Your Project</a>
+        </div>
+        <div class="grid gap-5 sm:grid-cols-2">
+          {projectOptions.map(([number, title, description, choices]) => (
+            <article class="rounded-3xl border border-slate-200 bg-white p-7 shadow-sm">
+              <div class="text-4xl font-black text-yellow-400">{number}</div><h3 class="mt-5 text-2xl font-black text-slate-950">{title}</h3><p class="mt-3 leading-7 text-slate-600">{description}</p>
+              <ul class="mt-6 space-y-2 border-t border-slate-200 pt-5 text-sm font-semibold text-slate-700">{(choices as string[]).map((choice) => <li class="flex gap-3"><span class="text-yellow-600">✓</span>{choice}</li>)}</ul>
+            </article>
+          ))}
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="packages" class="scroll-mt-20 bg-slate-950 py-24 text-white sm:py-28">
+    <div class="mx-auto max-w-7xl px-6">
+      <div class="grid gap-10 lg:grid-cols-[1fr_0.8fr] lg:items-end">
+        <div><p class="text-sm font-black uppercase tracking-[0.26em] text-yellow-400">Corporate branding packages</p><h2 class="mt-4 max-w-4xl text-4xl font-black tracking-tight sm:text-5xl">One brand, carried across the whole project.</h2></div>
+        <p class="text-lg leading-8 text-slate-300">Combine products around a team, gift, campaign, or event. We’ll help coordinate the product mix, artwork, colours, quantities, and presentation.</p>
+      </div>
+      <div class="mt-14 grid gap-6 lg:grid-cols-3">
+        {packages.map(([title, description, includes]) => (
+          <article class="rounded-3xl border border-white/15 bg-white/5 p-8"><h3 class="text-2xl font-black">{title}</h3><p class="mt-4 leading-7 text-slate-300">{description}</p><ul class="mt-7 space-y-3 border-t border-white/10 pt-6 text-sm font-semibold text-slate-100">{(includes as string[]).map((item) => <li class="flex gap-3"><span class="text-yellow-400">+</span>{item}</li>)}</ul></article>
+        ))}
+      </div>
+      <div class="mt-10 rounded-3xl bg-yellow-400 p-8 text-slate-950 sm:flex sm:items-center sm:justify-between sm:gap-8 sm:p-10">
+        <div><h3 class="text-2xl font-black">Planning for a business, organization, or event?</h3><p class="mt-2 text-slate-800">Share your audience, budget range, quantity, and deadline. We’ll help shape a coordinated package.</p></div>
+        <a href="/quote/custom-branding-printing?project=branding-package" class="mt-6 inline-flex shrink-0 rounded-xl bg-slate-950 px-7 py-4 font-bold text-white transition hover:bg-slate-800 sm:mt-0">Plan a Branding Package</a>
+      </div>
+    </div>
+  </section>
+
+  <section id="process" class="scroll-mt-20 bg-white py-24 sm:py-28">
+    <div class="mx-auto max-w-7xl px-6">
+      <div class="mx-auto max-w-3xl text-center"><p class="text-sm font-black uppercase tracking-[0.26em] text-yellow-700">A clear path forward</p><h2 class="mt-4 text-4xl font-black tracking-tight text-slate-950 sm:text-5xl">From branding idea to finished order.</h2></div>
+      <div class="mt-14 grid gap-8 md:grid-cols-3">
+        <article class="border-t-4 border-yellow-400 pt-7"><p class="text-sm font-black uppercase tracking-[0.2em] text-slate-500">Step 1</p><h3 class="mt-3 text-2xl font-black text-slate-950">Share the goal</h3><p class="mt-3 leading-7 text-slate-600">Tell us who the products are for, what you want to brand, the approximate quantity, and when you need them.</p></article>
+        <article class="border-t-4 border-yellow-400 pt-7"><p class="text-sm font-black uppercase tracking-[0.2em] text-slate-500">Step 2</p><h3 class="mt-3 text-2xl font-black text-slate-950">Confirm the choices</h3><p class="mt-3 leading-7 text-slate-600">We’ll confirm suitable products, available options, artwork requirements, pricing, and production timing.</p></article>
+        <article class="border-t-4 border-yellow-400 pt-7"><p class="text-sm font-black uppercase tracking-[0.2em] text-slate-500">Step 3</p><h3 class="mt-3 text-2xl font-black text-slate-950">Approve & receive</h3><p class="mt-3 leading-7 text-slate-600">After you approve the project details, we create and quality-check the order for pickup or shipping.</p></article>
+      </div>
+    </div>
+  </section>
+
+  <section class="bg-yellow-400 py-20">
+    <div class="mx-auto flex max-w-7xl flex-col gap-8 px-6 lg:flex-row lg:items-center lg:justify-between">
+      <div><p class="font-black uppercase tracking-[0.25em] text-slate-700">Ready when you are</p><h2 class="mt-3 max-w-3xl text-4xl font-black tracking-tight text-slate-950 sm:text-5xl">Tell us what your branding project needs to accomplish.</h2></div>
+      <a href="/quote/custom-branding-printing" class="shrink-0 rounded-xl bg-slate-950 px-8 py-4 text-center text-lg font-bold text-white transition hover:-translate-y-0.5 hover:bg-slate-800">Start Your Project</a>
+    </div>
+  </section>
+</MainLayout>

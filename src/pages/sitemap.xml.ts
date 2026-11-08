@@ -9,7 +9,7 @@ const routes = [
   "/services",
   "/3d-printing",
   "/laser-engraving",
-  "/uv-printing",
+  "/custom-branding-printing",
   "/shop",
   "/gallery",
   "/solutions",
@@ -17,7 +17,7 @@ const routes = [
   "/quote",
   "/quote/3d-printing",
   "/quote/laser-engraving",
-  "/quote/uv-printing",
+  "/quote/custom-branding-printing",
   "/contact",
   "/terms",
 ];
