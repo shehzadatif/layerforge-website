@@ -4,9 +4,9 @@ import CartBadge from "./CartBadge";
 const pathname = Astro.url.pathname;
 const isActive = (href: string) => href === "/" ? pathname === "/" : pathname === href || pathname.startsWith(`${href}/`);
 const links = [
-  { href: "/what-we-make", label: "What We Make" },
+  { href: "/what-we-make", label: "Custom Products" },
   { href: "/for-businesses", label: "For Businesses" },
-  { href: "/shop", label: "3D-Printed Products" },
+  { href: "/shop", label: "Shop" },
   { href: "/additional-custom-projects", label: "Additional Custom Projects" },
   { href: "/gallery", label: "Our Work" },
 ];
