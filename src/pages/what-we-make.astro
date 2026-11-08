@@ -22,7 +22,12 @@ const categories = [
     <section id={category.id} class={index % 2 === 0 ? "bg-white py-24" : "bg-slate-100 py-24"}>
       <div class="mx-auto grid max-w-7xl items-center gap-12 px-6 lg:grid-cols-2">
         <div class={index % 2 === 0 ? "lg:order-1" : "lg:order-2"}>
-          <img src={category.image} alt="" loading="lazy" class="aspect-[4/3] w-full rounded-3xl object-cover shadow-xl" />
+          <img
+            src={category.image}
+            alt=""
+            loading="lazy"
+            class={`w-full rounded-3xl shadow-xl ${category.id === "apparel" ? "aspect-square object-contain" : "aspect-[4/3] object-cover"}`}
+          />
         </div>
         <div class={index % 2 === 0 ? "lg:order-2" : "lg:order-1"}>
           <p class="font-bold uppercase tracking-[0.25em] text-yellow-600">{category.eyebrow}</p>
