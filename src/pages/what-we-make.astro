@@ -26,7 +26,7 @@ const categories = [
             src={category.image}
             alt=""
             loading="lazy"
-            class={`w-full rounded-3xl shadow-xl ${category.id === "apparel" ? "aspect-square object-contain" : "aspect-[4/3] object-cover"}`}
+            class={`w-full rounded-3xl shadow-xl ${category.id === "apparel" || category.id === "personalized-products" ? "aspect-square object-contain" : "aspect-[4/3] object-cover"}`}
           />
         </div>
         <div class={index % 2 === 0 ? "lg:order-2" : "lg:order-1"}>
