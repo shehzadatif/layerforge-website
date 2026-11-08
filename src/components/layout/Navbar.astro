@@ -2,185 +2,42 @@
 import CartBadge from "./CartBadge";
 
 const pathname = Astro.url.pathname;
-
-const isActive = (href: string) =>
-  href === "/"
-    ? pathname === "/"
-    : pathname === href || pathname.startsWith(`${href}/`);
-
-const services = [
-  {
-    href: "/3d-printing",
-    label: "3D Printing",
-    description: "Parts, prototypes, and production",
-  },
-  {
-    href: "/laser-engraving",
-    label: "Laser Engraving",
-    description: "Gifts, branding, and personalization",
-  },
-  {
-    href: "/uv-printing",
-    label: "Custom Branding & Printing",
-    description: "Products, signage, and business branding",
-  },
-  {
-    href: "/custom-apparel",
-    label: "T-Shirt Printing",
-    description: "DTF, DTG, and ready-to-press gang sheets",
-  },
-  {
-    href: "/uv-printing#stickers-decals",
-    label: "Stickers & Decals",
-    description: "Custom stickers, labels, and branded decals",
-  },
+const isActive = (href: string) => href === "/" ? pathname === "/" : pathname === href || pathname.startsWith(`${href}/`);
+const links = [
+  { href: "/what-we-make", label: "What We Make" },
+  { href: "/for-businesses", label: "For Businesses" },
+  { href: "/shop", label: "3D-Printed Products" },
+  { href: "/additional-custom-projects", label: "Additional Custom Projects" },
+  { href: "/gallery", label: "Our Work" },
 ];
-
-const serviceIsActive =
-  pathname === "/services" ||
-  services.some((service) => isActive(service.href));
-
-const linkClass = (href: string) =>
-  `transition hover:text-yellow-400 ${
-    isActive(href) ? "font-semibold text-yellow-400" : "text-white"
-  }`;
+const linkClass = (href: string) => `transition hover:text-yellow-400 ${isActive(href) ? "font-semibold text-yellow-400" : "text-white"}`;
 ---
 
 <nav class="relative z-50 bg-black text-white" aria-label="Main navigation">
   <div class="mx-auto flex max-w-7xl items-center justify-between px-5 py-3 sm:px-6">
     <a href="/" class="flex shrink-0 items-center gap-2" aria-label="Layer Forge Canada home">
-      <img
-        src="/brand/logos/layerforge-horizontal-new-reverse.png"
-        alt=""
-        class="w-44 sm:w-52"
-      />
-      <span class="border-l border-white/30 pl-2 text-[10px] font-black uppercase tracking-[0.18em] text-yellow-400 sm:text-xs">
-        Canada
-      </span>
+      <img src="/brand/logos/layerforge-horizontal-new-reverse.png" alt="" class="w-44 sm:w-52" />
+      <span class="border-l border-white/30 pl-2 text-[10px] font-black uppercase tracking-[0.18em] text-yellow-400 sm:text-xs">Canada</span>
     </a>
-
-    <div class="hidden items-center gap-4 text-sm lg:gap-6 lg:text-base md:flex">
-      <a href="/" class={linkClass("/")} aria-current={isActive("/") ? "page" : undefined}>
-        Home
-      </a>
-
-      <details class="group relative">
-        <summary
-          class={`flex cursor-pointer list-none items-center gap-2 py-3 transition hover:text-yellow-400 [&::-webkit-details-marker]:hidden ${
-            serviceIsActive ? "font-semibold text-yellow-400" : "text-white"
-          }`}
-        >
-          Services
-          <svg class="h-4 w-4 transition group-open:rotate-180" viewBox="0 0 20 20" fill="none" aria-hidden="true">
-            <path d="m5 7.5 5 5 5-5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"></path>
-          </svg>
-        </summary>
-
-        <div class="absolute left-1/2 top-full w-96 max-w-[calc(100vw-2rem)] -translate-x-1/2 pt-2">
-          <div class="overflow-hidden rounded-2xl border border-white/10 bg-slate-950 p-2 shadow-2xl">
-            <a href="/services" class="block rounded-xl px-4 py-3 transition hover:bg-white/10">
-              <span class="block font-semibold text-white">All Services</span>
-              <span class="mt-1 block text-sm text-slate-400">Explore every Layer Forge Canada capability</span>
-            </a>
-            <div class="my-1 border-t border-white/10"></div>
-            {
-              services.map((service) => (
-                <a href={service.href} class="block rounded-xl px-4 py-3 transition hover:bg-white/10">
-                  <span class="flex items-center justify-between gap-3">
-                    <span class={`block whitespace-nowrap font-semibold ${isActive(service.href) ? "text-yellow-400" : "text-white"}`}>
-                      {service.label}
-                    </span>
-                  </span>
-                  <span class="mt-1 block text-sm text-slate-400">{service.description}</span>
-                </a>
-              ))
-            }
-          </div>
-        </div>
-      </details>
-
-      <a
-        href="/custom-apparel"
-        class={linkClass("/custom-apparel")}
-        aria-current={isActive("/custom-apparel") ? "page" : undefined}
-      >
-        Design T-Shirts
-      </a>
-
-      <a href="/shop" class={linkClass("/shop")} aria-current={isActive("/shop") ? "page" : undefined}>
-        Shop
-      </a>
-      <a href="/quote" class={linkClass("/quote")} aria-current={isActive("/quote") ? "page" : undefined}>
-        Request Quote
-      </a>
-      <a href="/contact" class={linkClass("/contact")} aria-current={isActive("/contact") ? "page" : undefined}>
-        Contact
-      </a>
+    <div class="hidden items-center gap-4 text-sm xl:gap-6 xl:text-base lg:flex">
+      {links.map((link) => (
+        <a href={link.href} class={linkClass(link.href)} aria-current={isActive(link.href) ? "page" : undefined}>{link.label}</a>
+      ))}
+      <a href="/contact" class={`inline-flex items-center justify-center rounded-xl px-5 py-3 font-bold transition hover:-translate-y-0.5 hover:bg-yellow-300 ${isActive("/contact") ? "bg-yellow-300 text-slate-950" : "bg-yellow-400 text-slate-950"}`} aria-current={isActive("/contact") ? "page" : undefined}>Contact Us</a>
       <CartBadge client:load />
     </div>
-
-    <button
-      id="mobile-menu-button"
-      type="button"
-      class="inline-flex h-12 w-12 items-center justify-center rounded-xl border border-white/20 text-white transition hover:border-yellow-400 hover:text-yellow-400 md:hidden"
-      aria-controls="mobile-menu"
-      aria-expanded="false"
-      aria-label="Open navigation menu"
-    >
-      <svg data-menu-open class="h-6 w-6" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-        <path d="M4 7h16M4 12h16M4 17h16" stroke="currentColor" stroke-width="2" stroke-linecap="round"></path>
-      </svg>
-      <svg data-menu-close class="hidden h-6 w-6" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-        <path d="m6 6 12 12M18 6 6 18" stroke="currentColor" stroke-width="2" stroke-linecap="round"></path>
-      </svg>
+    <button id="mobile-menu-button" type="button" class="inline-flex h-12 w-12 items-center justify-center rounded-xl border border-white/20 text-white transition hover:border-yellow-400 hover:text-yellow-400 lg:hidden" aria-controls="mobile-menu" aria-expanded="false" aria-label="Open navigation menu">
+      <svg data-menu-open class="h-6 w-6" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16" stroke="currentColor" stroke-width="2" stroke-linecap="round"></path></svg>
+      <svg data-menu-close class="hidden h-6 w-6" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18" stroke="currentColor" stroke-width="2" stroke-linecap="round"></path></svg>
     </button>
   </div>
-
-  <div id="mobile-menu" class="hidden border-t border-white/10 bg-slate-950 px-5 pb-6 pt-4 md:hidden">
+  <div id="mobile-menu" class="hidden border-t border-white/10 bg-slate-950 px-5 pb-6 pt-4 lg:hidden">
     <div class="mx-auto max-w-7xl space-y-1">
-      <a href="/" class={`block rounded-xl px-4 py-3 font-semibold transition hover:bg-white/10 ${isActive("/") ? "bg-white/10 text-yellow-400" : "text-white"}`}>
-        Home
-      </a>
-
-      <a
-        href="/custom-apparel"
-        class={`block rounded-xl px-4 py-3 font-semibold transition hover:bg-white/10 ${isActive("/custom-apparel") ? "bg-white/10 text-yellow-400" : "text-white"}`}
-      >
-        Design T-Shirts
-      </a>
-
-      <div class="px-4 pb-2 pt-4 text-xs font-bold uppercase tracking-[0.25em] text-slate-500">
-        Services
-      </div>
-      <a href="/services" class="block rounded-xl px-4 py-3 font-semibold text-white transition hover:bg-white/10">
-        All Services
-      </a>
-      {
-        services.map((service) => (
-          <a href={service.href} class={`block rounded-xl px-4 py-3 transition hover:bg-white/10 ${isActive(service.href) ? "bg-white/10" : ""}`}>
-            <span class="flex items-center justify-between gap-3">
-              <span class={`block font-semibold ${isActive(service.href) ? "text-yellow-400" : "text-white"}`}>
-                {service.label}
-              </span>
-            </span>
-            <span class="mt-1 block text-sm text-slate-400">{service.description}</span>
-          </a>
-        ))
-      }
-
-      <div class="my-3 border-t border-white/10"></div>
-      <a href="/shop" class={`block rounded-xl px-4 py-3 font-semibold transition hover:bg-white/10 ${isActive("/shop") ? "bg-white/10 text-yellow-400" : "text-white"}`}>
-        Shop
-      </a>
-      <a href="/quote" class={`block rounded-xl px-4 py-3 font-semibold transition hover:bg-white/10 ${isActive("/quote") ? "bg-white/10 text-yellow-400" : "text-white"}`}>
-        Request Quote
-      </a>
-      <a href="/contact" class={`block rounded-xl px-4 py-3 font-semibold transition hover:bg-white/10 ${isActive("/contact") ? "bg-white/10 text-yellow-400" : "text-white"}`}>
-        Contact
-      </a>
-      <div class="px-4 py-4">
-        <CartBadge client:load />
-      </div>
+      {links.map((link) => (
+        <a href={link.href} class={`block rounded-xl px-4 py-3 font-semibold transition hover:bg-white/10 ${isActive(link.href) ? "bg-white/10 text-yellow-400" : "text-white"}`}>{link.label}</a>
+      ))}
+      <div class="pt-3"><a href="/contact" class="block rounded-xl bg-yellow-400 px-4 py-3 text-center font-bold text-slate-950 transition hover:bg-yellow-300">Contact Us</a></div>
+      <div class="px-4 py-4"><CartBadge client:load /></div>
     </div>
   </div>
 </nav>
@@ -190,7 +47,6 @@ const linkClass = (href: string) =>
   const mobileMenu = document.getElementById("mobile-menu");
   const openIcon = menuButton?.querySelector("[data-menu-open]");
   const closeIcon = menuButton?.querySelector("[data-menu-close]");
-
   const closeMenu = () => {
     mobileMenu?.classList.add("hidden");
     openIcon?.classList.remove("hidden");
@@ -198,32 +54,14 @@ const linkClass = (href: string) =>
     menuButton?.setAttribute("aria-expanded", "false");
     menuButton?.setAttribute("aria-label", "Open navigation menu");
   };
-
   menuButton?.addEventListener("click", () => {
-    const isOpen = menuButton.getAttribute("aria-expanded") === "true";
-
-    if (isOpen) {
-      closeMenu();
-      return;
-    }
-
+    if (menuButton.getAttribute("aria-expanded") === "true") return closeMenu();
     mobileMenu?.classList.remove("hidden");
     openIcon?.classList.add("hidden");
     closeIcon?.classList.remove("hidden");
     menuButton.setAttribute("aria-expanded", "true");
     menuButton.setAttribute("aria-label", "Close navigation menu");
   });
-
-  document.addEventListener("keydown", (event) => {
-    if (event.key === "Escape") {
-      closeMenu();
-      menuButton?.focus();
-    }
-  });
-
-  window.addEventListener("resize", () => {
-    if (window.matchMedia("(min-width: 768px)").matches) {
-      closeMenu();
-    }
-  });
+  document.addEventListener("keydown", (event) => { if (event.key === "Escape") { closeMenu(); menuButton?.focus(); } });
+  window.addEventListener("resize", () => { if (window.matchMedia("(min-width: 1024px)").matches) closeMenu(); });
 </script>
