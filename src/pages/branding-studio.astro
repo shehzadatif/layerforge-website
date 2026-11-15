@@ -50,11 +50,11 @@ const products = [
     id: "drinkware",
     title: "Drinkware",
     description: "Tumblers, bottles and mugs",
-    image: "/images/uv-printing/uv-tumbler.webp",
-    alt: "Custom branded stainless steel drinkware",
+    image: "/images/branding-studio/drinkware-blank-mockup.webp",
+    alt: "Blank black insulated drink bottle for a branding concept",
     logoX: 50,
-    logoY: 49,
-    logoSize: 18,
+    logoY: 53,
+    logoSize: 20,
   },
   {
     id: "gifts",
@@ -340,10 +340,10 @@ const products = [
             <div data-preview-frame class="studio-preview relative aspect-square touch-none overflow-hidden bg-slate-200">
               <img data-preview-product src={products[0].image} alt={products[0].alt} class="h-full w-full object-cover" />
               <div data-preview-shade class="absolute inset-0 bg-black/5"></div>
-              <div data-preview-placeholder class="absolute inset-0 grid place-items-center p-8 text-center">
+              <div data-preview-placeholder class="absolute inset-0 z-10 grid place-items-center p-8 text-center">
                 <div data-preview-placeholder-copy class="rounded-2xl border border-white/60 bg-black/65 px-5 py-4 text-sm font-bold text-white shadow-lg backdrop-blur">Upload artwork to place it on this concept</div>
               </div>
-              <img data-preview-logo alt="Uploaded artwork concept preview" class="studio-preview__logo absolute hidden max-h-none max-w-none cursor-move select-none object-contain drop-shadow-[0_3px_5px_rgba(0,0,0,0.45)]" draggable="false" />
+              <img data-preview-logo alt="Uploaded artwork concept preview" class="studio-preview__logo absolute z-20 max-h-none max-w-none cursor-move select-none object-contain drop-shadow-[0_3px_5px_rgba(0,0,0,0.45)]" draggable="false" hidden />
               <span class="absolute bottom-3 left-3 rounded-full bg-black/70 px-3 py-1.5 text-[10px] font-black uppercase tracking-[0.13em] text-white backdrop-blur">Concept only</span>
             </div>
             <div class="p-5">
@@ -561,8 +561,7 @@ const products = [
       }));
       productInputs.forEach((input) => input.addEventListener("change", () => {
         productsError?.classList.add("hidden");
-        const products = selectedProducts();
-        if (input.checked && products.length === 1) setPreviewProduct(input.value);
+        if (input.checked) setPreviewProduct(input.value);
         updateSummary();
         saveState();
       }));
@@ -593,10 +592,12 @@ const products = [
         artworkUrl = "";
         if (artwork) artwork.value = "";
         if (previewLogo) {
+          previewLogo.onload = null;
+          previewLogo.onerror = null;
           previewLogo.removeAttribute("src");
-          previewLogo.classList.add("hidden");
+          previewLogo.hidden = true;
         }
-        previewPlaceholder?.classList.remove("hidden");
+        if (previewPlaceholder) previewPlaceholder.hidden = false;
         if (previewPlaceholderCopy) previewPlaceholderCopy.textContent = "Upload artwork to place it on this concept";
         clearArtwork?.classList.add("hidden");
         if (fileName) fileName.textContent = "No file selected";
@@ -612,23 +613,33 @@ const products = [
         }
         if (fileName) fileName.textContent = file.name;
         clearArtwork?.classList.remove("hidden");
-        const previewable = file.type.startsWith("image/") || /\.svg$/i.test(file.name);
+        const previewable = file.type.startsWith("image/") || /\.(?:png|jpe?g|webp|gif|svg)$/i.test(file.name);
         if (previewable && previewLogo) {
           artworkUrl = URL.createObjectURL(file);
+          previewLogo.hidden = true;
+          if (previewPlaceholderCopy) previewPlaceholderCopy.textContent = "Preparing your artwork preview…";
+          if (previewPlaceholder) previewPlaceholder.hidden = false;
+          previewLogo.onload = () => {
+            previewLogo.hidden = false;
+            if (previewPlaceholder) previewPlaceholder.hidden = true;
+            applyLogoPosition();
+          };
+          previewLogo.onerror = () => {
+            previewLogo.hidden = true;
+            if (previewPlaceholderCopy) previewPlaceholderCopy.textContent = "This image is attached, but the browser could not display a preview.";
+            if (previewPlaceholder) previewPlaceholder.hidden = false;
+          };
           previewLogo.src = artworkUrl;
-          previewLogo.classList.remove("hidden");
-          previewPlaceholder?.classList.add("hidden");
-          applyLogoPosition();
         } else {
-          previewLogo?.classList.add("hidden");
+          if (previewLogo) previewLogo.hidden = true;
           if (previewPlaceholderCopy) previewPlaceholderCopy.textContent = `${file.name} is attached for review but cannot be previewed here.`;
-          previewPlaceholder?.classList.remove("hidden");
+          if (previewPlaceholder) previewPlaceholder.hidden = false;
         }
       });
       clearArtwork?.addEventListener("click", clearArtworkPreview);
 
       const moveLogo = (clientX: number, clientY: number) => {
-        if (!previewFrame || !previewLogo || previewLogo.classList.contains("hidden")) return;
+        if (!previewFrame || !previewLogo || previewLogo.hidden) return;
         const bounds = previewFrame.getBoundingClientRect();
         logoX = Math.min(90, Math.max(10, ((clientX - bounds.left) / bounds.width) * 100));
         logoY = Math.min(90, Math.max(10, ((clientY - bounds.top) / bounds.height) * 100));
@@ -723,6 +734,8 @@ const products = [
     }
 
     .studio-preview__logo {
+      outline: 2px dashed rgb(250 204 21 / 0.95);
+      outline-offset: 5px;
       user-select: none;
       -webkit-user-drag: none;
     }
