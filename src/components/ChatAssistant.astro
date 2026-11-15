@@ -1,0 +1,786 @@
+---
+import {
+  CHAT_HOME_TOPIC_IDS,
+  CHAT_MORE_TOPIC_IDS,
+  CHAT_TOPICS,
+} from "../lib/chatAssistant";
+
+const homeTopics = CHAT_HOME_TOPIC_IDS.map((id) =>
+  CHAT_TOPICS.find((topic) => topic.id === id),
+).filter((topic) => topic !== undefined);
+
+const moreTopics = CHAT_MORE_TOPIC_IDS.map((id) =>
+  CHAT_TOPICS.find((topic) => topic.id === id),
+).filter((topic) => topic !== undefined);
+---
+
+<aside class="lf-chat" data-chat-root>
+  <section
+    class="lf-chat__panel"
+    data-chat-panel
+    aria-label="Layer Forge Assistant"
+    hidden
+  >
+    <header class="lf-chat__header">
+      <div class="lf-chat__identity">
+        <span class="lf-chat__brand-mark" aria-hidden="true">
+          <img
+            src="/brand/logos/layer-forge-icon-white.png"
+            alt=""
+            width="28"
+            height="28"
+          />
+        </span>
+        <div>
+          <p class="lf-chat__title">Layer Forge Assistant</p>
+          <p class="lf-chat__status">
+            <span aria-hidden="true"></span>
+            Instant answers
+          </p>
+        </div>
+      </div>
+      <button
+        type="button"
+        class="lf-chat__close"
+        data-chat-close
+        aria-label="Close chat assistant"
+      >
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <path d="m6 6 12 12M18 6 6 18"></path>
+        </svg>
+      </button>
+    </header>
+
+    <div class="lf-chat__conversation" data-chat-conversation>
+      <div class="lf-chat__message lf-chat__message--bot">
+        <p>
+          Hi! What can we help you create? Choose a topic or ask a question.
+        </p>
+      </div>
+
+      <div class="lf-chat__topics" data-chat-topics>
+        {
+          homeTopics.map((topic) => (
+            <button
+              type="button"
+              class="lf-chat__topic"
+              data-chat-topic={topic.id}
+            >
+              <span>{topic.title}</span>
+              <small>{topic.summary}</small>
+            </button>
+          ))
+        }
+      </div>
+
+      <div class="lf-chat__more" data-chat-more>
+        <p>More questions</p>
+        <div>
+          {
+            moreTopics.map((topic) => (
+              <button
+                type="button"
+                class="lf-chat__chip"
+                data-chat-topic={topic.id}
+              >
+                {topic.title}
+              </button>
+            ))
+          }
+        </div>
+      </div>
+
+      <div class="lf-chat__messages" data-chat-messages aria-live="polite"></div>
+    </div>
+
+    <div class="lf-chat__help">
+      Need a person? <a href="/contact">Contact the Layer Forge team</a>
+    </div>
+
+    <form class="lf-chat__form" data-chat-form>
+      <label class="sr-only" for="layerforge-chat-question">Ask a question</label>
+      <input
+        id="layerforge-chat-question"
+        data-chat-input
+        name="question"
+        type="text"
+        inputmode="text"
+        autocomplete="off"
+        maxlength="240"
+        placeholder="Ask about products, pricing…"
+      />
+      <button type="submit" aria-label="Send question">
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <path d="m22 2-7 20-4-9-9-4Z"></path>
+          <path d="M22 2 11 13"></path>
+        </svg>
+      </button>
+    </form>
+  </section>
+
+  <button
+    type="button"
+    class="lf-chat__toggle"
+    data-chat-toggle
+    aria-label="Open Layer Forge Assistant"
+    aria-expanded="false"
+  >
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <path d="M21 15a4 4 0 0 1-4 4H8l-5 3V7a4 4 0 0 1 4-4h10a4 4 0 0 1 4 4Z"></path>
+      <path d="M8 9h.01M12 9h.01M16 9h.01"></path>
+    </svg>
+    <span>
+      <small>Questions?</small>
+      Chat with us
+    </span>
+  </button>
+</aside>
+
+<script>
+  import {
+    findChatTopic,
+    getChatTopic,
+    type ChatAction,
+  } from "../lib/chatAssistant";
+
+  interface StoredMessage {
+    role: "user" | "bot";
+    text: string;
+    actions?: ChatAction[];
+  }
+
+  const STORAGE_KEY = "layerforge-assistant-history-v1";
+  const roots = document.querySelectorAll<HTMLElement>("[data-chat-root]");
+
+  roots.forEach((root) => {
+    if (root.dataset.ready === "true") return;
+    root.dataset.ready = "true";
+
+    const panel = root.querySelector<HTMLElement>("[data-chat-panel]");
+    const toggle = root.querySelector<HTMLButtonElement>("[data-chat-toggle]");
+    const close = root.querySelector<HTMLButtonElement>("[data-chat-close]");
+    const form = root.querySelector<HTMLFormElement>("[data-chat-form]");
+    const input = root.querySelector<HTMLInputElement>("[data-chat-input]");
+    const conversation = root.querySelector<HTMLElement>(
+      "[data-chat-conversation]",
+    );
+    const messages = root.querySelector<HTMLElement>("[data-chat-messages]");
+
+    if (
+      !panel ||
+      !toggle ||
+      !close ||
+      !form ||
+      !input ||
+      !conversation ||
+      !messages
+    ) {
+      return;
+    }
+
+    let history: StoredMessage[] = [];
+    let responding = false;
+
+    try {
+      const saved = sessionStorage.getItem(STORAGE_KEY);
+      const parsed = saved ? JSON.parse(saved) : [];
+      if (Array.isArray(parsed)) history = parsed.slice(-20);
+    } catch {
+      history = [];
+    }
+
+    const scrollToLatest = () => {
+      requestAnimationFrame(() => {
+        conversation.scrollTop = conversation.scrollHeight;
+      });
+    };
+
+    const saveHistory = () => {
+      try {
+        sessionStorage.setItem(STORAGE_KEY, JSON.stringify(history.slice(-20)));
+      } catch {
+        // The assistant still works when browser storage is unavailable.
+      }
+    };
+
+    const addMessage = (
+      message: StoredMessage,
+      { persist = true }: { persist?: boolean } = {},
+    ) => {
+      const bubble = document.createElement("div");
+      bubble.className = `lf-chat__message lf-chat__message--${message.role}`;
+
+      const copy = document.createElement("p");
+      copy.textContent = message.text;
+      bubble.append(copy);
+
+      if (message.actions?.length) {
+        const actions = document.createElement("div");
+        actions.className = "lf-chat__actions";
+
+        message.actions.forEach((action) => {
+          const link = document.createElement("a");
+          link.href = action.href;
+          link.textContent = action.label;
+          actions.append(link);
+        });
+
+        bubble.append(actions);
+      }
+
+      messages.append(bubble);
+
+      if (persist) {
+        history.push(message);
+        history = history.slice(-20);
+        saveHistory();
+      }
+
+      scrollToLatest();
+    };
+
+    history.forEach((message) => addMessage(message, { persist: false }));
+
+    const showTyping = () => {
+      const typing = document.createElement("div");
+      typing.className =
+        "lf-chat__message lf-chat__message--bot lf-chat__typing";
+      typing.dataset.chatTyping = "true";
+      typing.setAttribute("aria-label", "Layer Forge Assistant is typing");
+      typing.innerHTML = "<span></span><span></span><span></span>";
+      messages.append(typing);
+      scrollToLatest();
+      return typing;
+    };
+
+    const answer = (message: StoredMessage) => {
+      responding = true;
+      input.disabled = true;
+      const typing = showTyping();
+
+      window.setTimeout(() => {
+        typing.remove();
+        addMessage(message);
+        responding = false;
+        input.disabled = false;
+        if (!panel.hidden) input.focus();
+      }, 420);
+    };
+
+    const askTopic = (topicId: string) => {
+      if (responding) return;
+      const topic = getChatTopic(topicId);
+      if (!topic) return;
+
+      addMessage({ role: "user", text: topic.title });
+      answer({ role: "bot", text: topic.answer, actions: topic.actions });
+    };
+
+    root.addEventListener("click", (event) => {
+      const target = event.target as Element;
+      const topicButton = target.closest<HTMLButtonElement>("[data-chat-topic]");
+      if (topicButton) askTopic(topicButton.dataset.chatTopic ?? "");
+    });
+
+    const openPanel = () => {
+      panel.hidden = false;
+      toggle.setAttribute("aria-expanded", "true");
+      toggle.setAttribute("aria-label", "Close Layer Forge Assistant");
+      root.classList.add("lf-chat--open");
+      scrollToLatest();
+      window.setTimeout(() => input.focus(), 50);
+    };
+
+    const closePanel = () => {
+      panel.hidden = true;
+      toggle.setAttribute("aria-expanded", "false");
+      toggle.setAttribute("aria-label", "Open Layer Forge Assistant");
+      root.classList.remove("lf-chat--open");
+      toggle.focus();
+    };
+
+    toggle.addEventListener("click", () => {
+      if (panel.hidden) openPanel();
+      else closePanel();
+    });
+    close.addEventListener("click", closePanel);
+
+    form.addEventListener("submit", (event) => {
+      event.preventDefault();
+      const question = input.value.trim();
+      if (!question || responding) return;
+
+      addMessage({ role: "user", text: question });
+      input.value = "";
+
+      const topic = findChatTopic(question);
+      if (topic) {
+        answer({ role: "bot", text: topic.answer, actions: topic.actions });
+        return;
+      }
+
+      answer({
+        role: "bot",
+        text: "I’m not certain about that one yet. Send the Layer Forge team your question and we’ll point you in the right direction.",
+        actions: [
+          { label: "Contact the team", href: "/contact" },
+          { label: "Request a quote", href: "/quote" },
+        ],
+      });
+    });
+
+    document.addEventListener("keydown", (event) => {
+      if (event.key === "Escape" && !panel.hidden) closePanel();
+    });
+  });
+</script>
+
+<style is:global>
+  .lf-chat {
+    --lf-yellow: #facc15;
+    --lf-yellow-dark: #eab308;
+    --lf-ink: #09090b;
+    position: fixed;
+    right: max(1rem, env(safe-area-inset-right));
+    bottom: max(1rem, env(safe-area-inset-bottom));
+    z-index: 80;
+    font-family: inherit;
+  }
+
+  .lf-chat__toggle {
+    display: flex;
+    align-items: center;
+    gap: 0.65rem;
+    min-height: 3.65rem;
+    border: 1px solid rgba(9, 9, 11, 0.2);
+    border-radius: 999px;
+    padding: 0.7rem 1rem 0.7rem 0.85rem;
+    color: var(--lf-ink);
+    background: var(--lf-yellow);
+    box-shadow: 0 14px 35px rgba(2, 6, 23, 0.28);
+    cursor: pointer;
+    transition:
+      transform 160ms ease,
+      background-color 160ms ease,
+      box-shadow 160ms ease;
+  }
+
+  .lf-chat__toggle:hover {
+    transform: translateY(-2px);
+    background: #fde047;
+    box-shadow: 0 18px 40px rgba(2, 6, 23, 0.32);
+  }
+
+  .lf-chat__toggle:focus-visible,
+  .lf-chat button:focus-visible,
+  .lf-chat a:focus-visible,
+  .lf-chat input:focus-visible {
+    outline: 3px solid #38bdf8;
+    outline-offset: 2px;
+  }
+
+  .lf-chat__toggle svg {
+    width: 1.55rem;
+    height: 1.55rem;
+    fill: none;
+    stroke: currentColor;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    stroke-width: 1.9;
+  }
+
+  .lf-chat__toggle > span {
+    display: grid;
+    text-align: left;
+    font-size: 0.95rem;
+    font-weight: 800;
+    line-height: 1.05;
+  }
+
+  .lf-chat__toggle small {
+    margin-bottom: 0.18rem;
+    font-size: 0.68rem;
+    font-weight: 650;
+    letter-spacing: 0.03em;
+  }
+
+  .lf-chat--open .lf-chat__toggle {
+    display: none;
+  }
+
+  .lf-chat__panel {
+    display: grid;
+    grid-template-rows: auto minmax(0, 1fr) auto auto;
+    width: min(25rem, calc(100vw - 2rem));
+    height: min(39rem, calc(100vh - 3rem));
+    max-height: 39rem;
+    overflow: hidden;
+    border: 1px solid #d4d4d8;
+    border-radius: 1.25rem;
+    color: #18181b;
+    background: #fff;
+    box-shadow: 0 24px 65px rgba(2, 6, 23, 0.28);
+    animation: lf-chat-enter 180ms ease-out;
+  }
+
+  .lf-chat__panel[hidden] {
+    display: none;
+  }
+
+  .lf-chat__header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    min-height: 4.6rem;
+    padding: 0.85rem 0.85rem 0.85rem 1rem;
+    color: #fff;
+    background: var(--lf-ink);
+  }
+
+  .lf-chat__identity {
+    display: flex;
+    align-items: center;
+    gap: 0.7rem;
+  }
+
+  .lf-chat__brand-mark {
+    display: grid;
+    width: 2.55rem;
+    height: 2.55rem;
+    place-items: center;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 0.8rem;
+    background: #18181b;
+  }
+
+  .lf-chat__brand-mark img {
+    width: 1.75rem;
+    height: 1.75rem;
+    object-fit: contain;
+  }
+
+  .lf-chat__title,
+  .lf-chat__status,
+  .lf-chat__message p,
+  .lf-chat__more p {
+    margin: 0;
+  }
+
+  .lf-chat__title {
+    font-size: 0.98rem;
+    font-weight: 800;
+  }
+
+  .lf-chat__status {
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+    margin-top: 0.15rem;
+    color: #d4d4d8;
+    font-size: 0.72rem;
+  }
+
+  .lf-chat__status span {
+    width: 0.42rem;
+    height: 0.42rem;
+    border-radius: 999px;
+    background: #4ade80;
+  }
+
+  .lf-chat__close {
+    display: grid;
+    width: 2.75rem;
+    height: 2.75rem;
+    place-items: center;
+    border: 0;
+    border-radius: 999px;
+    color: #fff;
+    background: transparent;
+    cursor: pointer;
+  }
+
+  .lf-chat__close:hover {
+    background: rgba(255, 255, 255, 0.1);
+  }
+
+  .lf-chat__close svg,
+  .lf-chat__form button svg {
+    width: 1.25rem;
+    height: 1.25rem;
+    fill: none;
+    stroke: currentColor;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    stroke-width: 2;
+  }
+
+  .lf-chat__conversation {
+    overflow-x: hidden;
+    overflow-y: auto;
+    padding: 1rem;
+    background: #fafafa;
+    scrollbar-width: thin;
+  }
+
+  .lf-chat__message {
+    width: fit-content;
+    max-width: 89%;
+    margin-bottom: 0.7rem;
+    border-radius: 1rem;
+    padding: 0.72rem 0.85rem;
+    font-size: 0.84rem;
+    line-height: 1.48;
+  }
+
+  .lf-chat__message--bot {
+    border: 1px solid #e4e4e7;
+    border-top-left-radius: 0.25rem;
+    background: #fff;
+  }
+
+  .lf-chat__message--user {
+    margin-left: auto;
+    border-top-right-radius: 0.25rem;
+    color: #09090b;
+    background: var(--lf-yellow);
+  }
+
+  .lf-chat__topics {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.5rem;
+    margin: 0.85rem 0;
+  }
+
+  .lf-chat__topic {
+    min-height: 4.25rem;
+    border: 1px solid #d4d4d8;
+    border-radius: 0.75rem;
+    padding: 0.65rem;
+    text-align: left;
+    color: #18181b;
+    background: #fff;
+    cursor: pointer;
+    transition:
+      border-color 150ms ease,
+      background-color 150ms ease,
+      transform 150ms ease;
+  }
+
+  .lf-chat__topic:hover {
+    transform: translateY(-1px);
+    border-color: var(--lf-yellow-dark);
+    background: #fefce8;
+  }
+
+  .lf-chat__topic span {
+    display: block;
+    font-size: 0.78rem;
+    font-weight: 800;
+  }
+
+  .lf-chat__topic small {
+    display: block;
+    margin-top: 0.25rem;
+    color: #71717a;
+    font-size: 0.67rem;
+    line-height: 1.3;
+  }
+
+  .lf-chat__more {
+    margin-bottom: 0.85rem;
+  }
+
+  .lf-chat__more > p {
+    margin-bottom: 0.4rem;
+    color: #71717a;
+    font-size: 0.68rem;
+    font-weight: 750;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+  }
+
+  .lf-chat__more > div {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+  }
+
+  .lf-chat__chip {
+    min-height: 2rem;
+    border: 1px solid #d4d4d8;
+    border-radius: 999px;
+    padding: 0.35rem 0.65rem;
+    color: #3f3f46;
+    background: #fff;
+    font-size: 0.7rem;
+    font-weight: 650;
+    cursor: pointer;
+  }
+
+  .lf-chat__chip:hover {
+    border-color: #a1a1aa;
+    color: #09090b;
+  }
+
+  .lf-chat__actions {
+    display: grid;
+    gap: 0.4rem;
+    margin-top: 0.7rem;
+  }
+
+  .lf-chat__actions a {
+    display: block;
+    border: 1px solid var(--lf-yellow-dark);
+    border-radius: 0.55rem;
+    padding: 0.48rem 0.62rem;
+    color: #18181b;
+    background: #fefce8;
+    font-size: 0.72rem;
+    font-weight: 750;
+    text-align: center;
+    text-decoration: none;
+  }
+
+  .lf-chat__actions a:hover {
+    background: #fef9c3;
+  }
+
+  .lf-chat__typing {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+    min-height: 2.4rem;
+  }
+
+  .lf-chat__typing span {
+    width: 0.38rem;
+    height: 0.38rem;
+    border-radius: 999px;
+    background: #71717a;
+    animation: lf-chat-dot 900ms ease-in-out infinite;
+  }
+
+  .lf-chat__typing span:nth-child(2) {
+    animation-delay: 120ms;
+  }
+
+  .lf-chat__typing span:nth-child(3) {
+    animation-delay: 240ms;
+  }
+
+  .lf-chat__help {
+    border-top: 1px solid #e4e4e7;
+    padding: 0.48rem 1rem;
+    color: #71717a;
+    background: #fff;
+    font-size: 0.68rem;
+    text-align: center;
+  }
+
+  .lf-chat__help a {
+    color: #27272a;
+    font-weight: 750;
+  }
+
+  .lf-chat__form {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 0.5rem;
+    border-top: 1px solid #e4e4e7;
+    padding: 0.7rem;
+    background: #fff;
+  }
+
+  .lf-chat__form input {
+    min-width: 0;
+    height: 2.75rem;
+    border: 1px solid #d4d4d8;
+    border-radius: 0.7rem;
+    padding: 0 0.8rem;
+    color: #18181b;
+    background: #fff;
+    font: inherit;
+    font-size: 0.8rem;
+  }
+
+  .lf-chat__form input::placeholder {
+    color: #71717a;
+  }
+
+  .lf-chat__form button {
+    display: grid;
+    width: 2.75rem;
+    height: 2.75rem;
+    place-items: center;
+    border: 0;
+    border-radius: 0.7rem;
+    color: #09090b;
+    background: var(--lf-yellow);
+    cursor: pointer;
+  }
+
+  .lf-chat__form button:hover {
+    background: #fde047;
+  }
+
+  .lf-chat__form input:disabled,
+  .lf-chat__form input:disabled + button {
+    cursor: wait;
+    opacity: 0.62;
+  }
+
+  @keyframes lf-chat-enter {
+    from {
+      transform: translateY(0.75rem) scale(0.98);
+      opacity: 0;
+    }
+  }
+
+  @keyframes lf-chat-dot {
+    0%,
+    60%,
+    100% {
+      transform: translateY(0);
+      opacity: 0.45;
+    }
+    30% {
+      transform: translateY(-0.18rem);
+      opacity: 1;
+    }
+  }
+
+  @media (max-width: 520px) {
+    .lf-chat {
+      right: max(0.75rem, env(safe-area-inset-right));
+      bottom: max(0.75rem, env(safe-area-inset-bottom));
+      left: max(0.75rem, env(safe-area-inset-left));
+    }
+
+    .lf-chat__toggle {
+      margin-left: auto;
+    }
+
+    .lf-chat__panel {
+      width: 100%;
+      height: min(42rem, calc(100vh - 1.5rem));
+      max-height: calc(100dvh - 1.5rem);
+    }
+
+    .lf-chat__topic small {
+      font-size: 0.64rem;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .lf-chat__panel,
+    .lf-chat__typing span {
+      animation: none;
+    }
+
+    .lf-chat__toggle,
+    .lf-chat__topic {
+      transition: none;
+    }
+  }
+</style>
