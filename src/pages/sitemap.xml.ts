@@ -10,6 +10,7 @@ const routes = [
   "/3d-printing",
   "/laser-engraving",
   "/custom-branding-printing",
+  "/branding-studio",
   "/shop",
   "/gallery",
   "/solutions",
