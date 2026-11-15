@@ -40,7 +40,7 @@ describe("chat assistant topic matching", () => {
 
   it("retrieves configured topics by id", () => {
     expect(getChatTopic("products")?.actions?.[0]?.href).toBe(
-      "/branding-studio",
+      "/custom-branding-printing",
     );
     expect(getChatTopic("missing")).toBeNull();
   });
