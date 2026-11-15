@@ -4,6 +4,7 @@ import Navbar from "../components/layout/Navbar.astro";
 import AppToaster from "../components/layout/AppToaster";
 import Footer from "../components/Footer.astro";
 import GoogleAnalytics from "../components/GoogleAnalytics.astro";
+import ChatAssistant from "../components/ChatAssistant.astro";
 
 interface Props {
   title?: string;
@@ -66,6 +67,7 @@ const socialImageUrl = new URL(image, siteUrl).toString();
     </main>
 
     <Footer />
+    <ChatAssistant />
 
   </body>
 </html>
