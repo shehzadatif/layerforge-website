@@ -39,8 +39,8 @@ export const CHAT_TOPICS: ChatTopic[] = [
     answer:
       "We create branded apparel and workwear, drinkware, personalized gifts, labels, stickers, promotional pieces, and coordinated branding packages. We also make engraved products and functional 3D-printed items.",
     actions: [
+      { label: "Open the Branding Studio", href: "/branding-studio" },
       { label: "Explore branding options", href: "/custom-branding-printing" },
-      { label: "Browse the shop", href: "/shop" },
     ],
   },
   {
@@ -148,7 +148,7 @@ export const CHAT_TOPICS: ChatTopic[] = [
     answer:
       "You can upload a logo, finished artwork, or a visual reference with your request. We’ll review quality, placement, sizing, colours, and any names or variable details before confirming the project.",
     actions: [
-      { label: "Plan your branding", href: "/quote/custom-branding-printing" },
+      { label: "Preview your branding", href: "/branding-studio" },
     ],
   },
   {
@@ -168,7 +168,7 @@ export const CHAT_TOPICS: ChatTopic[] = [
       "Start by choosing a shop product or sharing your project details. We review the product, artwork, quantity, and timing, then confirm the plan and pricing. Production begins after the details are approved.",
     actions: [
       { label: "Browse what we make", href: "/what-we-make" },
-      { label: "Request a quote", href: "/quote" },
+      { label: "Build a project", href: "/branding-studio" },
     ],
   },
   {
@@ -192,8 +192,8 @@ export const CHAT_TOPICS: ChatTopic[] = [
     actions: [
       { label: "View business branding", href: "/for-businesses" },
       {
-        label: "Plan a branding package",
-        href: "/quote/custom-branding-printing?project=branding-package",
+        label: "Build a branding package",
+        href: "/branding-studio?goal=client-gifts",
       },
     ],
   },
