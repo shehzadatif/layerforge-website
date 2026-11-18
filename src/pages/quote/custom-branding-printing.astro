@@ -3,10 +3,13 @@ import MainLayout from "../../layouts/MainLayout.astro";
 import { getPacificDateInputValue } from "../../lib/dateUtils";
 
 const project = Astro.url.searchParams.get("project") ?? "";
+const selectedItem = Astro.url.searchParams.get("item")?.trim().slice(0, 160) ?? "";
 const projectDefaults: Record<string, string> = {
+  apparel: "Custom apparel or workwear",
   "drinkware-gifts": "Drinkware or personalized gifts",
   "labels-promotions": "Labels, stickers or promotional products",
   "branding-package": "Coordinated branding package",
+  "custom-item": "Something else",
 };
 const selectedProject = projectDefaults[project] ?? "";
 ---
@@ -42,6 +45,10 @@ const selectedProject = projectDefaults[project] ?? "";
                 <option value="">Choose the main goal</option>
                 <option>Outfit a team or workplace</option><option>Promote a business or campaign</option><option>Prepare for an event</option><option>Create client or employee gifts</option><option>Brand products or packaging</option><option>Create personalized gifts</option><option>Other</option>
               </select>
+            </label>
+            <label class="block sm:col-span-2">
+              <span class="text-sm font-bold text-slate-700">Product or item</span>
+              <input name="customItem" type="text" maxlength="160" value={selectedItem} placeholder="For example: tumblers, mouse pads, or gift boxes" class="mt-2 w-full rounded-xl border border-slate-300 px-4 py-3.5 focus:border-yellow-400 focus:outline-none focus:ring-2 focus:ring-yellow-200" />
             </label>
             <label class="block"><span class="text-sm font-bold text-slate-700">Approximate quantity *</span><input name="quantity" type="number" min="1" max="10000" value="1" required class="mt-2 w-full rounded-xl border border-slate-300 px-4 py-3.5 focus:border-yellow-400 focus:outline-none focus:ring-2 focus:ring-yellow-200" /></label>
             <label class="block"><span class="text-sm font-bold text-slate-700">Preferred completion date</span><input name="dueDate" type="date" min={getPacificDateInputValue(3)} class="mt-2 w-full rounded-xl border border-slate-300 px-4 py-3.5 focus:border-yellow-400 focus:outline-none focus:ring-2 focus:ring-yellow-200" /></label>
