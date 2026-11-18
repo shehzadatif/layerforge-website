@@ -2,24 +2,15 @@
 import MainLayout from "../../layouts/MainLayout.astro";
 import { getPacificDateInputValue } from "../../lib/dateUtils";
 
-const project = Astro.url.searchParams.get("project") ?? "";
 const selectedItem = Astro.url.searchParams.get("item")?.trim().slice(0, 160) ?? "";
-const projectDefaults: Record<string, string> = {
-  apparel: "Custom apparel or workwear",
-  "drinkware-gifts": "Drinkware or personalized gifts",
-  "labels-promotions": "Labels, stickers or promotional products",
-  "branding-package": "Coordinated branding package",
-  "custom-item": "Something else",
-};
-const selectedProject = projectDefaults[project] ?? "";
 ---
 
-<MainLayout title="Plan a Custom Branding Project | Layer Forge Canada" description="Tell Layer Forge Canada about your custom apparel, branded products, gifts, labels, promotional items, or corporate branding project.">
+<MainLayout title="Request a Custom Product Quote | Layer Forge Canada" description="Tell Layer Forge Canada what item you want customized, the quantity, and what should go on it.">
   <section class="bg-slate-950 py-16 text-white sm:py-20">
     <div class="mx-auto max-w-4xl px-6">
       <p class="text-sm font-black uppercase tracking-[0.26em] text-yellow-400">Custom Branding &amp; Printing</p>
-      <h1 class="mt-4 text-4xl font-black tracking-tight sm:text-5xl">Tell us about your branding project.</h1>
-      <p class="mt-5 max-w-3xl text-lg leading-8 text-slate-300">Share the goal, products, quantity, and timing. You do not need production measurements or technical details—we’ll help confirm the right options.</p>
+      <h1 class="mt-4 text-4xl font-black tracking-tight sm:text-5xl">Request a quote.</h1>
+      <p class="mt-5 max-w-3xl text-lg leading-8 text-slate-300">Tell us what you want, how many you need, and what should go on it. We’ll reply with the available options, price, and timing.</p>
     </div>
   </section>
 
@@ -30,48 +21,39 @@ const selectedProject = projectDefaults[project] ?? "";
         <input type="text" name="website" tabindex="-1" autocomplete="off" class="hidden" aria-hidden="true" />
 
         <fieldset>
-          <legend class="text-2xl font-black text-slate-950">1. What are you planning?</legend>
+          <legend class="text-2xl font-black text-slate-950">What do you need?</legend>
           <div class="mt-6 grid gap-5 sm:grid-cols-2">
+            {selectedItem ? (
+              <div class="sm:col-span-2">
+                <span class="text-sm font-bold text-slate-700">Selected item</span>
+                <div class="mt-2 flex flex-wrap items-center justify-between gap-3 rounded-xl border-2 border-yellow-400 bg-yellow-50 px-5 py-4">
+                  <strong class="text-lg text-slate-950">{selectedItem}</strong>
+                  <a href="/what-we-make" class="text-sm font-bold text-slate-700 underline decoration-yellow-500 decoration-2 underline-offset-4">Choose a different item</a>
+                </div>
+                <input name="customItem" type="hidden" value={selectedItem} />
+              </div>
+            ) : (
+              <label class="block sm:col-span-2">
+                <span class="text-sm font-bold text-slate-700">Item *</span>
+                <input name="customItem" type="text" maxlength="160" required placeholder="For example: tumblers, mouse pads, or gift boxes" class="mt-2 w-full rounded-xl border border-slate-300 px-4 py-3.5 focus:border-yellow-400 focus:outline-none focus:ring-2 focus:ring-yellow-200" />
+              </label>
+            )}
+            <label class="block"><span class="text-sm font-bold text-slate-700">Quantity *</span><input name="quantity" type="number" min="1" max="10000" value="1" required class="mt-2 w-full rounded-xl border border-slate-300 px-4 py-3.5 focus:border-yellow-400 focus:outline-none focus:ring-2 focus:ring-yellow-200" /></label>
+            <label class="block"><span class="text-sm font-bold text-slate-700">Needed by <span class="font-normal text-slate-500">(optional)</span></span><input name="dueDate" type="date" min={getPacificDateInputValue(3)} class="mt-2 w-full rounded-xl border border-slate-300 px-4 py-3.5 focus:border-yellow-400 focus:outline-none focus:ring-2 focus:ring-yellow-200" /></label>
             <label class="block sm:col-span-2">
-              <span class="text-sm font-bold text-slate-700">Project type *</span>
-              <select name="itemType" required class="mt-2 w-full rounded-xl border border-slate-300 bg-white px-4 py-3.5 focus:border-yellow-400 focus:outline-none focus:ring-2 focus:ring-yellow-200">
-                <option value="">Choose a project type</option>
-                {["Custom apparel or workwear", "Drinkware or personalized gifts", "Labels, stickers or promotional products", "Coordinated branding package", "Customer-supplied products", "Something else"].map((option) => <option value={option} selected={selectedProject === option}>{option}</option>)}
-              </select>
-            </label>
-            <label class="block sm:col-span-2">
-              <span class="text-sm font-bold text-slate-700">What should this project accomplish? *</span>
-              <select name="projectPurpose" required class="mt-2 w-full rounded-xl border border-slate-300 bg-white px-4 py-3.5 focus:border-yellow-400 focus:outline-none focus:ring-2 focus:ring-yellow-200">
-                <option value="">Choose the main goal</option>
-                <option>Outfit a team or workplace</option><option>Promote a business or campaign</option><option>Prepare for an event</option><option>Create client or employee gifts</option><option>Brand products or packaging</option><option>Create personalized gifts</option><option>Other</option>
-              </select>
-            </label>
-            <label class="block sm:col-span-2">
-              <span class="text-sm font-bold text-slate-700">Product or item</span>
-              <input name="customItem" type="text" maxlength="160" value={selectedItem} placeholder="For example: tumblers, mouse pads, or gift boxes" class="mt-2 w-full rounded-xl border border-slate-300 px-4 py-3.5 focus:border-yellow-400 focus:outline-none focus:ring-2 focus:ring-yellow-200" />
-            </label>
-            <label class="block"><span class="text-sm font-bold text-slate-700">Approximate quantity *</span><input name="quantity" type="number" min="1" max="10000" value="1" required class="mt-2 w-full rounded-xl border border-slate-300 px-4 py-3.5 focus:border-yellow-400 focus:outline-none focus:ring-2 focus:ring-yellow-200" /></label>
-            <label class="block"><span class="text-sm font-bold text-slate-700">Preferred completion date</span><input name="dueDate" type="date" min={getPacificDateInputValue(3)} class="mt-2 w-full rounded-xl border border-slate-300 px-4 py-3.5 focus:border-yellow-400 focus:outline-none focus:ring-2 focus:ring-yellow-200" /></label>
-            <label class="block sm:col-span-2">
-              <span class="text-sm font-bold text-slate-700">Product sourcing</span>
+              <span class="text-sm font-bold text-slate-700">Do you already have the item?</span>
               <select name="productSource" class="mt-2 w-full rounded-xl border border-slate-300 bg-white px-4 py-3.5 focus:border-yellow-400 focus:outline-none focus:ring-2 focus:ring-yellow-200">
-                <option value="">Help me decide</option><option>I would like Layer Forge to source the products</option><option>I already have the products</option><option>I need a mix of sourced and supplied products</option>
+                <option value="">I’m not sure</option><option>I need Layer Forge to supply it</option><option>I already have it</option>
               </select>
             </label>
-          </div>
-        </fieldset>
-
-        <fieldset class="border-t border-slate-200 pt-8">
-          <legend class="text-2xl font-black text-slate-950">2. Tell us about the branding</legend>
-          <div class="mt-6 space-y-6">
-            <label class="block">
-              <span class="text-sm font-bold text-slate-700">Project details *</span>
-              <textarea name="notes" rows="6" required placeholder="What products are you considering? Who are they for? What would you like on them? Include any colour, placement, packaging, budget, or deadline details that matter." class="mt-2 w-full rounded-xl border border-slate-300 px-4 py-3.5 focus:border-yellow-400 focus:outline-none focus:ring-2 focus:ring-yellow-200"></textarea>
+            <label class="block sm:col-span-2">
+              <span class="text-sm font-bold text-slate-700">What would you like on it? *</span>
+              <textarea name="notes" rows="4" required placeholder="For example: our logo on one side, individual names on the other side, printed in black." class="mt-2 w-full rounded-xl border border-slate-300 px-4 py-3.5 focus:border-yellow-400 focus:outline-none focus:ring-2 focus:ring-yellow-200"></textarea>
             </label>
-            <div>
+            <div class="sm:col-span-2">
               <span class="text-sm font-bold text-slate-700">Artwork or reference file <span class="font-normal text-slate-500">(optional)</span></span>
-              <label for="branding-file" class="mt-2 flex cursor-pointer flex-col items-center justify-center rounded-2xl border-2 border-dashed border-slate-300 bg-slate-50 px-6 py-8 text-center transition hover:border-yellow-400 hover:bg-yellow-50">
-                <span class="text-3xl" aria-hidden="true">↑</span><span class="mt-2 font-bold text-slate-800">Upload your logo, artwork, or reference</span><span class="mt-1 text-sm text-slate-500">AI, SVG, EPS, PDF, PNG, JPG, JPEG or WEBP · up to 50 MB</span>
+              <label for="branding-file" class="mt-2 flex cursor-pointer flex-col items-center justify-center rounded-2xl border-2 border-dashed border-slate-300 bg-slate-50 px-6 py-6 text-center transition hover:border-yellow-400 hover:bg-yellow-50">
+                <span class="font-bold text-slate-800">Choose a file</span><span class="mt-1 text-sm text-slate-500">Logo, artwork, photo, or reference · up to 50 MB</span>
               </label>
               <input id="branding-file" name="file" type="file" accept=".ai,.svg,.eps,.pdf,.png,.jpg,.jpeg,.webp" class="hidden" />
               <p data-file-name class="mt-2 text-sm font-semibold text-slate-600" aria-live="polite"></p>
@@ -80,18 +62,17 @@ const selectedProject = projectDefaults[project] ?? "";
         </fieldset>
 
         <fieldset class="border-t border-slate-200 pt-8">
-          <legend class="text-2xl font-black text-slate-950">3. How should we reach you?</legend>
+          <legend class="text-2xl font-black text-slate-950">Your contact details</legend>
           <div class="mt-6 grid gap-5 sm:grid-cols-2">
             <label class="block"><span class="text-sm font-bold text-slate-700">Full name *</span><input name="name" type="text" required autocomplete="name" class="mt-2 w-full rounded-xl border border-slate-300 px-4 py-3.5 focus:border-yellow-400 focus:outline-none focus:ring-2 focus:ring-yellow-200" /></label>
             <label class="block"><span class="text-sm font-bold text-slate-700">Email *</span><input name="email" type="email" required autocomplete="email" class="mt-2 w-full rounded-xl border border-slate-300 px-4 py-3.5 focus:border-yellow-400 focus:outline-none focus:ring-2 focus:ring-yellow-200" /></label>
             <label class="block"><span class="text-sm font-bold text-slate-700">Phone</span><input name="phone" type="tel" autocomplete="tel" class="mt-2 w-full rounded-xl border border-slate-300 px-4 py-3.5 focus:border-yellow-400 focus:outline-none focus:ring-2 focus:ring-yellow-200" /></label>
             <label class="block"><span class="text-sm font-bold text-slate-700">Business or organization</span><input name="company" type="text" autocomplete="organization" class="mt-2 w-full rounded-xl border border-slate-300 px-4 py-3.5 focus:border-yellow-400 focus:outline-none focus:ring-2 focus:ring-yellow-200" /></label>
-            <label class="block sm:col-span-2"><span class="text-sm font-bold text-slate-700">Delivery preference</span><select name="deliveryMethod" class="mt-2 w-full rounded-xl border border-slate-300 bg-white px-4 py-3.5 focus:border-yellow-400 focus:outline-none focus:ring-2 focus:ring-yellow-200"><option value="">Not sure yet</option><option>Pickup</option><option>Local Delivery</option><option>Shipping</option></select></label>
           </div>
         </fieldset>
 
-        <div class="rounded-2xl bg-yellow-50 p-5 text-sm leading-6 text-slate-700 ring-1 ring-yellow-200">We’ll review your project and reply with the suitable product options, artwork requirements, pricing, and expected timing before anything moves into production.</div>
-        <button type="submit" class="w-full rounded-xl bg-yellow-400 px-8 py-4 text-lg font-black text-slate-950 transition hover:bg-yellow-300 disabled:cursor-wait disabled:opacity-70">Send Project Details</button>
+        <div class="rounded-2xl bg-yellow-50 p-5 text-sm leading-6 text-slate-700 ring-1 ring-yellow-200">We’ll check the item and reply with the price, available options, and timing.</div>
+        <button type="submit" class="w-full rounded-xl bg-yellow-400 px-8 py-4 text-lg font-black text-slate-950 transition hover:bg-yellow-300 disabled:cursor-wait disabled:opacity-70">Request a Quote</button>
         <p data-form-error class="hidden rounded-xl border border-red-200 bg-red-50 p-4 text-sm font-semibold text-red-800" role="alert"></p>
       </form>
     </div>
@@ -115,7 +96,7 @@ const selectedProject = projectDefaults[project] ?? "";
         throw new Error(result.error || "Unable to send your project details.");
       } catch (error) {
         if (errorMessage) { errorMessage.textContent = error instanceof Error ? error.message : "Unable to send your project details."; errorMessage.classList.remove("hidden"); }
-        button.disabled = false; button.textContent = "Send Project Details";
+        button.disabled = false; button.textContent = "Request a Quote";
       }
     });
   </script>
