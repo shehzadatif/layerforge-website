@@ -190,7 +190,7 @@ export const CHAT_TOPICS: ChatTopic[] = [
     answer:
       "We can coordinate apparel, employee items, client gifts, labels, giveaways, and event products around one brand. Share your audience, approximate quantity, budget range, and deadline so we can shape a practical package.",
     actions: [
-      { label: "View business branding", href: "/for-businesses" },
+      { label: "View business packages", href: "/custom-branding-printing#packages" },
       {
         label: "Plan a branding package",
         href: "/quote/custom-branding-printing?project=branding-package",
@@ -243,7 +243,7 @@ export const CHAT_TOPICS: ChatTopic[] = [
       { label: "Design apparel online", href: "/custom-apparel" },
       {
         label: "Discuss team apparel",
-        href: "/for-businesses#corporate-apparel",
+        href: "/custom-apparel",
       },
     ],
   },

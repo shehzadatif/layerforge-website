@@ -2,46 +2,335 @@
 import MainLayout from "../layouts/MainLayout.astro";
 
 const categories = [
-  { id: "personalized-products", eyebrow: "Personalized products", title: "Products made around your message, artwork, or occasion", description: "Create thoughtful gifts, keepsakes, drinkware, phone cases, awards, plaques, and other personalized pieces. We’ll help confirm the right item, finish, size, and artwork setup.", image: "/images/uv-printing/uv-tumbler.webp", examples: ["Drinkware and tumblers", "Phone cases", "Gifts and keepsakes", "Awards and plaques", "Photo and artwork products"] },
-  { id: "apparel", eyebrow: "Custom apparel", title: "Branded apparel for businesses, teams, events, and everyday wear", description: "Add your logo, artwork, names, or event design to garments and fabric products. We’ll help choose the right apparel, placement, colour, and finish for your quantity and intended use.", image: "/images/apparel/custom-apparel-layerforge.webp", examples: ["T-shirts", "Polo shirts", "Hoodies", "Sweatshirts", "Caps and hats", "Aprons", "Tote bags", "Workwear and uniforms", "Team and event apparel", "Jackets and outerwear"] },
-  { id: "business-branding", eyebrow: "Business branding", title: "Coordinated custom products that help your business look consistent", description: "We help businesses combine branded products, apparel, labels, employee gifts, and promotional pieces around a clear goal and visual identity.", image: "/images/solutions/promotional-products.png", examples: ["Branded merchandise", "Custom apparel", "Employee and client gifts", "Events and giveaways", "Repeat and quantity orders"], href: "/for-businesses" },
-  { id: "functional-products", eyebrow: "3D-printed products & custom parts", title: "Order a proven design or discuss a custom solution", description: "Our established workshop, tool-storage, automotive, and functional designs can be configured and ordered online. Prototypes, replacements, and new designs begin with a project discussion.", image: "/images/3d-printing/functional-products.webp", examples: ["Workshop and tool organization", "Automotive and EV accessories", "Online product ordering", "Custom replacement parts", "Prototypes and new designs"], href: "/shop" },
-];
+  { id: "all", label: "All items" },
+  { id: "drinkware", label: "Cups & drinkware" },
+  { id: "apparel", label: "Clothing & bags" },
+  { id: "home-office", label: "Home & office" },
+  { id: "boxes", label: "Boxes & packaging" },
+  { id: "signs", label: "Signs & displays" },
+  { id: "labels", label: "Stickers & labels" },
+  { id: "gifts", label: "Gifts & small items" },
+  { id: "packages", label: "Business & events" },
+  { id: "custom", label: "Custom projects" },
+] as const;
+
+const items = [
+  { category: "drinkware", name: "Tumblers", detail: "Add a logo, name, photo, or full-colour design.", terms: "cup stainless insulated" },
+  { category: "drinkware", name: "Insulated cups", detail: "Straight or tapered cups for work, gifts, and events.", terms: "rambler ramblers yeti style cup" },
+  { category: "drinkware", name: "Handled travel mugs", detail: "Large insulated mugs with handles and lids.", terms: "yeti style mugs rambler ramblers travel cup" },
+  { category: "drinkware", name: "Coffee mugs", detail: "Ceramic and other suitable mugs.", terms: "tea cup ceramic" },
+  { category: "drinkware", name: "Water bottles", detail: "Reusable bottles for teams, staff, and gifts.", terms: "sports bottle flask" },
+  { category: "drinkware", name: "Glass cups", detail: "Suitable smooth glass cups and drinkware.", terms: "glassware drinking glass" },
+  { category: "drinkware", name: "Wine glasses", detail: "Names, dates, logos, and event designs.", terms: "stemless wedding glassware" },
+  { category: "drinkware", name: "Espresso cups", detail: "Small cups with names, logos, or designs.", terms: "coffee ceramic cafe" },
+  { category: "drinkware", name: "Cups with straws", detail: "Cold drink cups with names, logos, or artwork.", terms: "cold cup straw tumbler" },
+  { category: "drinkware", name: "Can-shaped glasses", detail: "Popular glass cups for gifts, cafes, and events.", terms: "beer can glass iced coffee" },
+  { category: "drinkware", name: "Beer glasses", detail: "Logos, names, dates, or event designs.", terms: "pint glass brewery pub" },
+  { category: "drinkware", name: "Shot glasses", detail: "Small personalized glasses for gifts and events.", terms: "party wedding bar" },
+  { category: "drinkware", name: "Cocktail glasses", detail: "Names, logos, and designs on suitable glassware.", terms: "bar drink event" },
+  { category: "drinkware", name: "Thermos bottles", detail: "Insulated bottles for work, travel, and gifts.", terms: "flask hot drink travel bottle" },
+  { category: "drinkware", name: "Travel bottles", detail: "Logos, names, or full-colour designs.", terms: "sports bottle gym flask" },
+
+  { category: "apparel", name: "T-shirts", detail: "Logos, artwork, names, and event designs.", terms: "tee shirt clothing uniform merch" },
+  { category: "apparel", name: "Polo shirts", detail: "For staff, teams, and business clothing.", terms: "golf shirt uniform" },
+  { category: "apparel", name: "Hoodies", detail: "Custom front, back, or sleeve designs.", terms: "sweater pullover" },
+  { category: "apparel", name: "Sweatshirts", detail: "Crewnecks and other suitable sweatshirts.", terms: "sweater crewneck" },
+  { category: "apparel", name: "Caps & hats", detail: "Logos, names, and simple designs.", terms: "baseball cap toque headwear" },
+  { category: "apparel", name: "Tote bags", detail: "Reusable bags for stores, events, and gifts.", terms: "canvas shopping bag" },
+  { category: "apparel", name: "Aprons", detail: "For restaurants, markets, makers, and events.", terms: "cooking kitchen cafe" },
+  { category: "apparel", name: "Workwear", detail: "Branded clothing for employees and crews.", terms: "uniform staff trades" },
+  { category: "apparel", name: "Jackets", detail: "Selected jackets and outerwear for teams and staff.", terms: "coat vest outerwear" },
+  { category: "apparel", name: "Long-sleeve shirts", detail: "Logos, artwork, and team or event designs.", terms: "long sleeve tee clothing" },
+  { category: "apparel", name: "Tank tops", detail: "Custom designs for teams, events, and everyday wear.", terms: "sleeveless shirt gym" },
+  { category: "apparel", name: "Sports jerseys", detail: "Team logos, names, and numbers on suitable jerseys.", terms: "team uniform player number" },
+  { category: "apparel", name: "Baby clothes", detail: "Names and designs on suitable baby clothing.", terms: "onesie bodysuit infant gift" },
+  { category: "apparel", name: "Fabric patches", detail: "Logo, name, or artwork patches for clothing and bags.", terms: "badge clothing patch" },
+  { category: "apparel", name: "Leather patches", detail: "Printed or engraved patches for hats, clothing, and bags.", terms: "cap patch leatherette" },
+  { category: "apparel", name: "Shoes", detail: "Selected shoes can be checked for suitable print areas.", terms: "sneakers footwear custom" },
+  { category: "apparel", name: "Backpacks", detail: "Logos, names, and designs on suitable fabric areas.", terms: "school bag travel" },
+  { category: "apparel", name: "Drawstring bags", detail: "Simple branded bags for teams and events.", terms: "gym sack promo bag" },
+  { category: "apparel", name: "Pencil cases", detail: "Names, logos, or artwork on suitable cases.", terms: "school pouch bag" },
+  { category: "apparel", name: "Makeup bags", detail: "Names, artwork, or logos on suitable fabric bags.", terms: "cosmetic pouch gift" },
+
+  { category: "home-office", name: "Mouse pads", detail: "Logos, artwork, photos, or gaming designs.", terms: "desk mat computer office gaming" },
+  { category: "home-office", name: "Canvas prints", detail: "Photos, artwork, business graphics, or messages.", terms: "wall art picture photo canvas" },
+  { category: "home-office", name: "Fridge magnets", detail: "Photos, logos, contact details, or small designs.", terms: "refrigerator magnet promotional" },
+  { category: "home-office", name: "Coasters", detail: "Suitable wood, cork, slate, acrylic, or other coasters.", terms: "drink mat table office home" },
+  { category: "home-office", name: "Desk name plates", detail: "Names, job titles, departments, or logos.", terms: "office nameplate employee" },
+  { category: "home-office", name: "Photo panels", detail: "Photos and artwork on suitable flat panels.", terms: "picture display wall art" },
+  { category: "home-office", name: "Notebook covers", detail: "Logos, names, artwork, or event designs.", terms: "journal book cover office" },
+  { category: "home-office", name: "Desk mats", detail: "Large printed mats for offices, gaming, and workspaces.", terms: "large mouse pad gaming mat" },
+  { category: "home-office", name: "Wall panels", detail: "Photos, artwork, signs, or business graphics.", terms: "wall art display panel" },
+  { category: "home-office", name: "Ceramic tiles", detail: "Photos, patterns, signs, and display pieces.", terms: "tile art decor" },
+  { category: "home-office", name: "Photo frames", detail: "Names, dates, messages, or small designs.", terms: "picture frame gift" },
+  { category: "home-office", name: "Clock faces", detail: "Photos, logos, numbers, or artwork on suitable clock faces.", terms: "wall clock desk clock" },
+  { category: "home-office", name: "Decorative trays", detail: "Print on suitable trays for display and gifting.", terms: "vanity tray desk tray" },
+  { category: "home-office", name: "Plant pots", detail: "Names, artwork, or logos on suitable smooth pots.", terms: "planter ceramic plastic" },
+  { category: "home-office", name: "Candle jars", detail: "Logos, names, labels, or designs on suitable jars.", terms: "glass candle business" },
+  { category: "home-office", name: "Bookmarks", detail: "Names, artwork, photos, or business details.", terms: "book marker teacher gift" },
+  { category: "home-office", name: "Pens", detail: "Names or logos on suitable pens.", terms: "office promotional pen" },
+  { category: "home-office", name: "Pen holders", detail: "Logos, names, or designs for desks and gifts.", terms: "pencil cup desk organizer" },
+  { category: "home-office", name: "Business card holders", detail: "Names and logos on suitable desk holders.", terms: "office card stand" },
+  { category: "home-office", name: "Light switch covers", detail: "Artwork, patterns, or room labels on suitable covers.", terms: "wall plate home decor" },
+
+  { category: "boxes", name: "Gift boxes", detail: "Names, logos, messages, or artwork on suitable boxes.", terms: "present box packaging" },
+  { category: "boxes", name: "Wooden boxes", detail: "Print or personalize suitable smooth wooden boxes.", terms: "wood keepsake storage box" },
+  { category: "boxes", name: "Plastic boxes", detail: "Print on suitable flat plastic boxes and cases.", terms: "storage case container" },
+  { category: "boxes", name: "Metal tins", detail: "Logos, artwork, and labels on suitable tins.", terms: "metal box container gift" },
+  { category: "boxes", name: "Product packaging", detail: "Brand suitable boxes, sleeves, tags, and inserts.", terms: "retail package unboxing" },
+  { category: "boxes", name: "Gift set packaging", detail: "Match the box and inside items to one design.", terms: "corporate package bundle" },
+  { category: "boxes", name: "Keepsake boxes", detail: "Names, dates, photos, or messages.", terms: "memory box gift" },
+  { category: "boxes", name: "Jewelry boxes", detail: "Names, initials, dates, or small designs.", terms: "ring necklace gift box" },
+  { category: "boxes", name: "Mailer boxes", detail: "Logos and simple designs for customer orders.", terms: "shipping ecommerce box" },
+  { category: "boxes", name: "Presentation boxes", detail: "Branded boxes for gifts, samples, and special products.", terms: "corporate sample box" },
+  { category: "boxes", name: "Storage cases", detail: "Names, labels, artwork, or logos on suitable cases.", terms: "plastic box organizer case" },
+  { category: "boxes", name: "Acrylic boxes", detail: "Print on suitable flat acrylic box surfaces.", terms: "clear plastic display box" },
+  { category: "boxes", name: "Cardboard boxes", detail: "Logos, labels, and artwork on suitable boxes.", terms: "paper box product packaging" },
+  { category: "boxes", name: "Gift bags", detail: "Names, logos, and event designs on suitable bags.", terms: "paper bag present packaging" },
+  { category: "boxes", name: "Packaging sleeves", detail: "Branded sleeves for boxes, products, and gift sets.", terms: "paper wrap belly band" },
+
+  { category: "signs", name: "Acrylic signs", detail: "Business, counter, door, desk, and event signs.", terms: "clear plastic sign logo" },
+  { category: "signs", name: "Wood signs", detail: "Business, home, wedding, and event signs.", terms: "wooden sign decor" },
+  { category: "signs", name: "Metal signs", detail: "Print on suitable coated or prepared metal signs.", terms: "aluminum business sign" },
+  { category: "signs", name: "Counter signs", detail: "Small signs for prices, services, menus, or messages.", terms: "table retail desk display" },
+  { category: "signs", name: "QR code signs", detail: "Link customers to menus, reviews, websites, or contact details.", terms: "scan google review social media" },
+  { category: "signs", name: "Wedding & event signs", detail: "Welcome signs, table signs, names, and dates.", terms: "party bridal reception" },
+  { category: "signs", name: "Table numbers", detail: "Matching numbers and signs for events and restaurants.", terms: "wedding restaurant reserved" },
+  { category: "signs", name: "Door signs", detail: "Names, room labels, hours, and simple directions.", terms: "office room wayfinding" },
+  { category: "signs", name: "Reception signs", detail: "Business names and logos for front desks and waiting areas.", terms: "office lobby logo sign" },
+  { category: "signs", name: "Menu signs", detail: "Food, drink, service, or price lists for counters and tables.", terms: "restaurant cafe salon price list" },
+  { category: "signs", name: "Business hours signs", detail: "Opening hours, contact details, and simple notices.", terms: "storefront door open closed" },
+  { category: "signs", name: "House number signs", detail: "Numbers, street names, or family names.", terms: "address home property" },
+  { category: "signs", name: "Direction signs", detail: "Simple arrows, room names, and wayfinding.", terms: "directional office event" },
+  { category: "signs", name: "Safety signs", detail: "Warnings, instructions, and workplace notices.", terms: "caution workplace instruction" },
+  { category: "signs", name: "Price signs", detail: "Prices, product names, and offers for counters and shelves.", terms: "retail market menu" },
+  { category: "signs", name: "Reserved signs", detail: "Table, room, parking, or event reservations.", terms: "restaurant wedding parking" },
+  { category: "signs", name: "Market signs", detail: "Business names, prices, and product details for vendors.", terms: "craft market booth table" },
+  { category: "signs", name: "Memorial signs", detail: "Names, dates, photos, and messages on suitable materials.", terms: "tribute remembrance plaque" },
+
+  { category: "labels", name: "Logo stickers", detail: "For products, packaging, handouts, and orders.", terms: "brand decal" },
+  { category: "labels", name: "Product labels", detail: "Names, details, logos, and product information.", terms: "bottle jar candle retail" },
+  { category: "labels", name: "Packaging labels", detail: "For boxes, bags, mailers, and gift packaging.", terms: "shipping thank you seal" },
+  { category: "labels", name: "Bottle labels", detail: "Custom labels for suitable bottles and containers.", terms: "drink jar product" },
+  { category: "labels", name: "Window decals", detail: "Business names, hours, logos, and simple messages.", terms: "glass door sticker storefront" },
+  { category: "labels", name: "Equipment labels", detail: "Names, numbers, instructions, and identification.", terms: "asset tag tool machine inventory" },
+  { category: "labels", name: "Jar labels", detail: "Brand names, product details, and designs.", terms: "food candle cosmetic container" },
+  { category: "labels", name: "Candle labels", detail: "Logos, scent names, warnings, and product details.", terms: "jar business product" },
+  { category: "labels", name: "Name stickers", detail: "Names for school, work, events, and personal items.", terms: "kids office label" },
+  { category: "labels", name: "Barcode labels", detail: "Printed barcodes with product names or numbers.", terms: "retail inventory sku" },
+  { category: "labels", name: "Serial number labels", detail: "Numbered labels for products and equipment.", terms: "asset inventory id" },
+  { category: "labels", name: "Warning labels", detail: "Clear safety, care, and instruction labels.", terms: "caution instruction product" },
+  { category: "labels", name: "Wall decals", detail: "Logos, names, quotes, or simple wall graphics.", terms: "wall sticker decor business" },
+  { category: "labels", name: "Floor decals", detail: "Directions, spacing marks, logos, or short messages.", terms: "floor sticker directional" },
+  { category: "labels", name: "Sticker sheets", detail: "Several matching or different stickers on one sheet.", terms: "kiss cut decals labels" },
+  { category: "labels", name: "Car window stickers", detail: "Logos, contact details, or simple designs for suitable windows.", terms: "vehicle decal auto glass" },
+
+  { category: "gifts", name: "Keychains", detail: "Names, logos, photos, or small designs.", terms: "key ring acrylic wood leather" },
+  { category: "gifts", name: "Phone cases", detail: "Photos, artwork, names, and business designs.", terms: "mobile cover smartphone" },
+  { category: "gifts", name: "Ornaments", detail: "Holiday, memorial, family, and event designs.", terms: "christmas decoration keepsake" },
+  { category: "gifts", name: "Luggage tags", detail: "Names, contact details, logos, or travel designs.", terms: "bag tag travel" },
+  { category: "gifts", name: "Leather tags", detail: "Print on suitable leather and leather-like tags.", terms: "bag label keychain patch" },
+  { category: "gifts", name: "Plaques & awards", detail: "For staff, teams, volunteers, and special events.", terms: "recognition trophy achievement" },
+  { category: "gifts", name: "Personalized gifts", detail: "Add a name, date, photo, message, or artwork.", terms: "birthday anniversary wedding keepsake" },
+  { category: "gifts", name: "Employee gifts", detail: "Single gifts or matching sets for staff.", terms: "team recognition onboarding" },
+  { category: "gifts", name: "Client gifts", detail: "Useful branded gifts for customers and partners.", terms: "corporate thank you appreciation" },
+  { category: "gifts", name: "Wallets & card holders", detail: "Names, initials, or logos on suitable leather goods.", terms: "leather wallet business card" },
+  { category: "gifts", name: "Compact mirrors", detail: "Names, photos, artwork, or event designs.", terms: "pocket mirror wedding gift" },
+  { category: "gifts", name: "Badges", detail: "Names, roles, logos, or small designs.", terms: "name badge staff event" },
+  { category: "gifts", name: "Pins", detail: "Logos, artwork, names, or event designs on suitable blanks.", terms: "button pin badge" },
+  { category: "gifts", name: "Bag charms", detail: "Names, initials, photos, or small designs.", terms: "keychain backpack charm" },
+  { category: "gifts", name: "Pet tags", detail: "Names and contact details on suitable tags.", terms: "dog cat collar tag" },
+  { category: "gifts", name: "Medals", detail: "Names, event details, or award information.", terms: "sports award race achievement" },
+  { category: "gifts", name: "Memorial pieces", detail: "Photos, names, dates, and personal messages.", terms: "remembrance tribute keepsake" },
+  { category: "gifts", name: "Graduation gifts", detail: "Names, school details, dates, and messages.", terms: "graduate student keepsake" },
+  { category: "gifts", name: "Teacher gifts", detail: "Names, messages, and school-themed designs.", terms: "school appreciation" },
+  { category: "gifts", name: "Holiday gifts", detail: "Personalized items and gift sets for holidays.", terms: "christmas seasonal corporate" },
+
+  { category: "packages", name: "Employee welcome kits", detail: "Combine clothing, drinkware, gifts, and packaging.", terms: "staff onboarding box" },
+  { category: "packages", name: "Client gift sets", detail: "Matching branded items packed as one gift.", terms: "customer corporate box" },
+  { category: "packages", name: "Event giveaways", detail: "Small branded items for events and promotions.", terms: "promo swag trade show handout" },
+  { category: "packages", name: "Team clothing packages", detail: "Matching shirts, hoodies, hats, or workwear.", terms: "uniform staff apparel" },
+  { category: "packages", name: "Event product sets", detail: "Match signs, clothing, gifts, and small items.", terms: "wedding conference fundraiser party" },
+  { category: "packages", name: "Repeat business orders", detail: "Reorder approved items with the same design.", terms: "restock recurring reorder" },
+  { category: "packages", name: "Restaurant sets", detail: "Match signs, menus, labels, staff items, and table pieces.", terms: "cafe food truck hospitality" },
+  { category: "packages", name: "Market vendor sets", detail: "Signs, price tags, bags, labels, and staff clothing.", terms: "craft market booth popup" },
+  { category: "packages", name: "Conference kits", detail: "Name items, drinkware, bags, signs, and giveaways.", terms: "trade show meeting event" },
+  { category: "packages", name: "School & club sets", detail: "Clothing, bottles, gifts, and event items.", terms: "team student parent group" },
+  { category: "packages", name: "Fundraiser products", detail: "Items made for school, team, charity, and community sales.", terms: "nonprofit campaign merch" },
+  { category: "packages", name: "Volunteer kits", detail: "Matching clothing, name items, and thank-you gifts.", terms: "event nonprofit staff" },
+  { category: "packages", name: "Real estate closing gifts", detail: "Personalized gifts and sets for new homeowners.", terms: "realtor house client" },
+  { category: "packages", name: "Sponsor gifts", detail: "Branded thank-you items for sponsors and partners.", terms: "corporate appreciation event" },
+  { category: "packages", name: "Wedding party gifts", detail: "Matching gifts for bridesmaids, groomsmen, and guests.", terms: "bridal groom wedding favour" },
+  { category: "packages", name: "Holiday business gifts", detail: "Matching gifts for staff, clients, and partners.", terms: "corporate christmas seasonal" },
+  { category: "packages", name: "New store opening sets", detail: "Signs, staff items, labels, and giveaways for a launch.", terms: "grand opening business launch" },
+
+  { category: "custom", name: "Customer-supplied items", detail: "Bring an item for us to check before we accept the job.", terms: "own item supplied print" },
+  { category: "custom", name: "One-off ideas", detail: "Show us the item and the result you want.", terms: "unique special project" },
+  { category: "custom", name: "Replacement parts", detail: "Selected plastic parts made from a sample or measurements.", terms: "repair discontinued broken" },
+  { category: "custom", name: "Sample parts & products", detail: "A first physical version of a part or product idea.", terms: "prototype sample invention test model" },
+  { category: "custom", name: "Tool & battery holders", detail: "Custom holders for workshops and garages.", terms: "mount dewalt makita milwaukee storage" },
+  { category: "custom", name: "Small batches", detail: "Repeat the same approved item in a practical quantity.", terms: "short run quantity production" },
+  { category: "custom", name: "Display pieces", detail: "Custom stands, holders, and parts for products or signs.", terms: "retail counter stand" },
+  { category: "custom", name: "Brackets & mounts", detail: "Simple custom parts made for a specific fit or use.", terms: "holder adapter fixture" },
+  { category: "custom", name: "Workshop organizers", detail: "Storage and holders made around your tools and space.", terms: "garage rack tool storage" },
+  { category: "custom", name: "Car accessories", detail: "Selected organizers, mounts, and custom-fit pieces.", terms: "automotive vehicle holder" },
+] as const;
+
+const categoryNames = Object.fromEntries(categories.map((category) => [category.id, category.label]));
+const projectTypes: Record<string, string> = {
+  apparel: "apparel",
+  drinkware: "drinkware-gifts",
+  "home-office": "custom-item",
+  boxes: "custom-item",
+  signs: "custom-item",
+  labels: "labels-promotions",
+  gifts: "drinkware-gifts",
+  packages: "branding-package",
+  custom: "custom-item",
+};
 ---
 
-<MainLayout title="What We Make | Layer Forge Canada" description="Explore custom products, business branding, apparel, stickers, labels, and functional 3D-printed solutions from Layer Forge Canada.">
-  <section class="bg-slate-950 py-24 text-white">
-    <div class="mx-auto max-w-7xl px-6 text-center">
-      <p class="font-bold uppercase tracking-[0.28em] text-yellow-400">What we make</p>
-      <h1 class="mx-auto mt-5 max-w-4xl text-5xl font-black tracking-tight sm:text-6xl">Explore what Layer Forge can help you create.</h1>
-      <p class="mx-auto mt-7 max-w-3xl text-xl leading-8 text-slate-300">Everything we make is custom. Browse common project types for inspiration, then contact us to discuss the details before pricing or production.</p>
+<MainLayout
+  title="What We Customize | Layer Forge Canada"
+  description="Search items Layer Forge Canada can customize for businesses, gifts, events, teams, home, and office."
+  image="/images/home/layer-forge-hero.webp"
+>
+  <section class="bg-slate-950 py-20 text-white sm:py-24">
+    <div class="mx-auto max-w-7xl px-6">
+      <p class="text-sm font-black uppercase tracking-[0.26em] text-yellow-400">What we customize</p>
+      <h1 class="mt-5 max-w-4xl text-5xl font-black tracking-tight sm:text-6xl">Find an item for your project.</h1>
+      <p class="mt-6 max-w-3xl text-lg leading-8 text-slate-300">Search the list or choose a category. If you do not see your item, send us a photo and we will check it.</p>
+
+      <div class="relative mt-10 max-w-4xl">
+        <label for="item-search" class="sr-only">Search items</label>
+        <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" class="pointer-events-none absolute left-5 top-1/2 h-6 w-6 -translate-y-1/2 text-slate-500"><circle cx="11" cy="11" r="7" stroke="currentColor" stroke-width="2"></circle><path d="m16 16 4 4" stroke="currentColor" stroke-width="2" stroke-linecap="round"></path></svg>
+        <input id="item-search" type="search" autocomplete="off" placeholder="Search tumblers, mouse pads, gift boxes…" class="w-full rounded-2xl border-2 border-transparent bg-white py-5 pl-14 pr-14 text-lg font-semibold text-slate-950 shadow-xl outline-none placeholder:font-normal placeholder:text-slate-500 focus:border-yellow-400 focus:ring-4 focus:ring-yellow-400/20" />
+        <button id="clear-search" type="button" class="absolute right-4 top-1/2 hidden h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full text-slate-500 hover:bg-slate-100 hover:text-slate-950" aria-label="Clear search">
+          <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" class="h-5 w-5"><path d="m7 7 10 10M17 7 7 17" stroke="currentColor" stroke-width="2" stroke-linecap="round"></path></svg>
+        </button>
+      </div>
     </div>
   </section>
 
-  {categories.map((category, index) => (
-    <section id={category.id} class={index % 2 === 0 ? "bg-white py-24" : "bg-slate-100 py-24"}>
-      <div class="mx-auto grid max-w-7xl items-center gap-12 px-6 lg:grid-cols-2">
-        <div class={index % 2 === 0 ? "lg:order-1" : "lg:order-2"}>
-          <img
-            src={category.image}
-            alt=""
-            loading="lazy"
-            class={`w-full rounded-3xl shadow-xl ${category.id === "apparel" || category.id === "personalized-products" ? "aspect-square object-contain" : "aspect-[4/3] object-cover"}`}
-          />
-        </div>
-        <div class={index % 2 === 0 ? "lg:order-2" : "lg:order-1"}>
-          <p class="font-bold uppercase tracking-[0.25em] text-yellow-600">{category.eyebrow}</p>
-          <h2 class="mt-4 text-4xl font-bold tracking-tight text-slate-950">{category.title}</h2>
-          <p class="mt-6 text-lg leading-8 text-slate-600">{category.description}</p>
-          <ul class="mt-7 grid gap-3 sm:grid-cols-2">
-            {category.examples.map((example) => <li class="flex gap-3 text-slate-700"><span class="font-bold text-yellow-500">✓</span>{example}</li>)}
-          </ul>
-          <div class="mt-9 flex flex-wrap gap-4">
-            <a href="/contact" class="inline-flex rounded-xl bg-slate-950 px-6 py-3 font-bold text-white transition hover:bg-slate-800">Discuss a Project</a>
-            {category.href && <a href={category.href} class="inline-flex px-3 py-3 font-bold text-slate-950 underline decoration-yellow-400 decoration-4 underline-offset-4">Learn more</a>}
-          </div>
-        </div>
+  <div class="border-b border-slate-200 bg-white">
+    <div class="mx-auto max-w-7xl px-6 py-5">
+      <div class="flex gap-2 overflow-x-auto pb-1" role="group" aria-label="Filter items by category">
+        {categories.map((category, index) => (
+          <button type="button" data-filter={category.id} aria-pressed={index === 0 ? "true" : "false"} class={`whitespace-nowrap rounded-full border px-4 py-2.5 text-sm font-bold transition ${index === 0 ? "border-slate-950 bg-slate-950 text-white" : "border-slate-300 bg-white text-slate-700 hover:border-slate-950"}`}>
+            {category.label}
+          </button>
+        ))}
       </div>
-    </section>
-  ))}
+    </div>
+  </div>
+
+  <section class="bg-slate-100 py-14 sm:py-18">
+    <div class="mx-auto max-w-7xl px-6">
+      <div class="flex flex-wrap items-end justify-between gap-4">
+        <div>
+          <p class="text-sm font-black uppercase tracking-[0.22em] text-yellow-700">Item list</p>
+          <h2 class="mt-2 text-3xl font-black text-slate-950">Choose what you want to customize</h2>
+        </div>
+        <p id="result-count" class="font-semibold text-slate-600" aria-live="polite">Showing all {items.length} items</p>
+      </div>
+
+      <div class="mt-10 space-y-14">
+        {categories.slice(1).map((category) => {
+          const categoryItems = items.filter((item) => item.category === category.id);
+          return (
+            <section id={category.id} data-category-group={category.id} class="scroll-mt-8">
+              <div class="flex items-end justify-between gap-4 border-b border-slate-300 pb-4">
+                <h3 class="text-2xl font-black text-slate-950 sm:text-3xl">{category.label}</h3>
+                <p class="text-sm font-bold text-slate-500">{categoryItems.length} items</p>
+              </div>
+              <div class="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                {categoryItems.map((item) => {
+                  const query = new URLSearchParams({ project: projectTypes[item.category], item: item.name });
+                  return (
+                    <article data-item data-category={item.category} data-search={`${item.name} ${item.detail} ${item.terms} ${categoryNames[item.category]}`.toLowerCase()} class="flex min-h-52 flex-col rounded-2xl border border-slate-200 bg-white p-6 shadow-sm transition hover:border-yellow-400 hover:shadow-lg">
+                      <h4 class="text-2xl font-black text-slate-950">{item.name}</h4>
+                      <p class="mt-3 flex-1 leading-7 text-slate-600">{item.detail}</p>
+                      <a href={`/quote/custom-branding-printing?${query.toString()}`} class="mt-5 inline-flex w-fit rounded-lg border border-slate-300 px-4 py-2.5 text-sm font-bold text-slate-950 transition hover:border-slate-950 hover:bg-slate-950 hover:text-white">Ask about this item</a>
+                    </article>
+                  );
+                })}
+              </div>
+            </section>
+          );
+        })}
+      </div>
+
+      <div id="no-results" class="mt-8 hidden rounded-3xl border-2 border-dashed border-slate-300 bg-white px-6 py-12 text-center">
+        <h3 class="text-2xl font-black text-slate-950">Item not listed?</h3>
+        <p class="mx-auto mt-3 max-w-2xl leading-7 text-slate-600">Send us a photo, the quantity, and what you want printed on it. We will check whether we can do it.</p>
+        <a href="/additional-custom-projects" class="mt-6 inline-flex rounded-xl bg-slate-950 px-6 py-3 font-bold text-white hover:bg-slate-800">Ask About Another Item</a>
+      </div>
+
+      <div class="mt-12 rounded-3xl bg-yellow-400 p-8 text-slate-950 sm:flex sm:items-center sm:justify-between sm:gap-8 sm:p-10">
+        <div>
+          <h2 class="text-3xl font-black">Need several items for one project?</h2>
+          <p class="mt-3 max-w-3xl leading-7 text-slate-800">Tell us what you need, how many, and when you need it. We can put the items together in one quote.</p>
+        </div>
+        <a href="/quote/custom-branding-printing?project=branding-package" class="mt-6 inline-flex shrink-0 rounded-xl bg-slate-950 px-7 py-4 font-black text-white hover:bg-slate-800 sm:mt-0">Request a Quote</a>
+      </div>
+
+      <p class="mt-7 text-center text-sm leading-6 text-slate-500">We check the item, material, size, artwork, quantity, and deadline before confirming the order.</p>
+    </div>
+  </section>
+
+  <script>
+    const searchInput = document.querySelector<HTMLInputElement>("#item-search");
+    const clearButton = document.querySelector<HTMLButtonElement>("#clear-search");
+    const count = document.querySelector<HTMLElement>("#result-count");
+    const noResults = document.querySelector<HTMLElement>("#no-results");
+    const itemCards = Array.from(document.querySelectorAll<HTMLElement>("[data-item]"));
+    const categoryGroups = Array.from(document.querySelectorAll<HTMLElement>("[data-category-group]"));
+    const filters = Array.from(document.querySelectorAll<HTMLButtonElement>("[data-filter]"));
+    let selectedCategory = "all";
+
+    const clean = (value: string) => value.toLowerCase().trim().replace(/[^a-z0-9]+/g, " ");
+
+    const update = () => {
+      const search = clean(searchInput?.value ?? "");
+      let visible = 0;
+      itemCards.forEach((card) => {
+        const categoryMatch = selectedCategory === "all" || card.dataset.category === selectedCategory;
+        const itemText = clean(card.dataset.search ?? "");
+        const searchMatch = !search || search.split(" ").every((word) => itemText.includes(word));
+        const show = categoryMatch && searchMatch;
+        card.classList.toggle("hidden", !show);
+        if (show) visible += 1;
+      });
+      categoryGroups.forEach((group) => {
+        const hasVisibleItems = Array.from(group.querySelectorAll<HTMLElement>("[data-item]")).some((card) => !card.classList.contains("hidden"));
+        group.classList.toggle("hidden", !hasVisibleItems);
+      });
+      clearButton?.classList.toggle("hidden", !searchInput?.value);
+      clearButton?.classList.toggle("flex", Boolean(searchInput?.value));
+      noResults?.classList.toggle("hidden", visible > 0);
+      if (count) count.textContent = search ? `${visible} ${visible === 1 ? "match" : "matches"}` : `Showing ${visible} ${visible === 1 ? "item" : "items"}`;
+    };
+
+    filters.forEach((button) => button.addEventListener("click", () => {
+      selectedCategory = button.dataset.filter ?? "all";
+      filters.forEach((filter) => {
+        const active = filter === button;
+        filter.setAttribute("aria-pressed", String(active));
+        filter.classList.toggle("border-slate-950", active);
+        filter.classList.toggle("bg-slate-950", active);
+        filter.classList.toggle("text-white", active);
+        filter.classList.toggle("border-slate-300", !active);
+        filter.classList.toggle("bg-white", !active);
+        filter.classList.toggle("text-slate-700", !active);
+      });
+      update();
+    }));
+    searchInput?.addEventListener("input", update);
+    clearButton?.addEventListener("click", () => {
+      if (!searchInput) return;
+      searchInput.value = "";
+      searchInput.focus();
+      update();
+    });
+  </script>
 </MainLayout>
