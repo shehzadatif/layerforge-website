@@ -1,4 +1,5 @@
 import type { APIRoute } from "astro";
+import { env } from "cloudflare:workers";
 
 import { isSameOriginRequest } from "../../../lib/isSameOriginRequest";
 import { supabaseAdmin } from "../../../lib/supabaseAdmin";
@@ -68,6 +69,8 @@ export const POST: APIRoute = async ({ request }) => {
           conversationId: conversation.id,
           visitorName: conversation.visitor_name,
           message: body,
+          vapidPublicKey: env.VAPID_PUBLIC_KEY,
+          vapidPrivateKey: env.VAPID_PRIVATE_KEY,
         });
       }
     }

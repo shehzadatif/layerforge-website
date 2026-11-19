@@ -166,12 +166,15 @@ export async function hashTeamChatValue(value: string): Promise<string> {
   ).join("");
 }
 
-export async function requestFingerprint(request: Request): Promise<string> {
+export async function requestFingerprint(
+  request: Request,
+  rateLimitSecret?: string,
+): Promise<string> {
   const address =
     request.headers.get("CF-Connecting-IP")?.trim() ||
     request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
     "unknown";
-  const salt = import.meta.env.TEAM_CHAT_RATE_LIMIT_SECRET?.trim() || "layer-forge";
+  const salt = rateLimitSecret?.trim() || "layer-forge";
   return hashTeamChatValue(`${salt}:${address}`);
 }
 
@@ -186,9 +189,11 @@ export async function notifyTeamOfChat(input: {
   conversationId: string;
   visitorName: string;
   message: string;
+  vapidPublicKey?: string;
+  vapidPrivateKey?: string;
 }): Promise<void> {
-  const publicKey = import.meta.env.VAPID_PUBLIC_KEY?.trim();
-  const privateKey = import.meta.env.VAPID_PRIVATE_KEY?.trim();
+  const publicKey = input.vapidPublicKey?.trim();
+  const privateKey = input.vapidPrivateKey?.trim();
 
   if (!publicKey || !privateKey) {
     console.warn("Team chat push keys are not configured.");

@@ -1,5 +1,6 @@
 ---
 import AdminLayout from "../../../layouts/AdminLayout.astro";
+import { env } from "cloudflare:workers";
 import { formatPacificDateTime } from "../../../lib/dateUtils";
 import { loadTeamChatSettings, teamChatAvailability } from "../../../lib/teamChat";
 import { supabaseAdmin } from "../../../lib/supabaseAdmin";
@@ -14,7 +15,7 @@ if (error) console.error("Unable to load team chat inbox.", { error });
 
 const settings = await loadTeamChatSettings();
 const availability = teamChatAvailability(settings);
-const vapidPublicKey = import.meta.env.VAPID_PUBLIC_KEY?.trim() ?? "";
+const vapidPublicKey = env.VAPID_PUBLIC_KEY?.trim() ?? "";
 const saved = Astro.url.searchParams.get("saved") === "1";
 const dayOptions = [
   [1, "Mon"], [2, "Tue"], [3, "Wed"], [4, "Thu"], [5, "Fri"], [6, "Sat"], [0, "Sun"],
@@ -73,7 +74,7 @@ const dayOptions = [
     <div class="space-y-7">
       <section class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
         <h2 class="text-xl font-bold text-slate-900">iPhone notifications</h2>
-        <p class="mt-2 text-sm leading-6 text-slate-600">In Safari, add this admin site to your Home Screen. Open it from the new icon, then enable notifications below.</p>
+        <p class="mt-2 text-sm leading-6 text-slate-600">On iPhone, use your browser’s Share menu to add this admin site to your Home Screen. Open it from the new icon, then enable notifications below.</p>
         <button id="enable-push" type="button" data-vapid-key={vapidPublicKey} disabled={!vapidPublicKey} class="mt-5 w-full rounded-xl bg-slate-950 px-5 py-3 font-bold text-white disabled:cursor-not-allowed disabled:bg-slate-300">
           Enable phone notifications
         </button>
@@ -116,8 +117,8 @@ const dayOptions = [
     };
 
     button?.addEventListener("click", async () => {
-      if (!status || !("serviceWorker" in navigator) || !("PushManager" in window)) {
-        if (status) status.textContent = "This browser does not support phone notifications.";
+      if (!status || !("serviceWorker" in navigator) || !("PushManager" in window) || !("Notification" in window)) {
+        if (status) status.textContent = "On iPhone, open this site from its Home Screen icon before enabling notifications.";
         return;
       }
       button.disabled = true;
