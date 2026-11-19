@@ -3,6 +3,10 @@
 import type { SupabaseClient, User } from "@supabase/supabase-js";
 import type { AdminActivityRecord } from "./lib/adminIdleSession";
 
+declare module "cloudflare:workers" {
+  export const env: Record<string, string | undefined>;
+}
+
 declare global {
   namespace App {
     interface SessionData {

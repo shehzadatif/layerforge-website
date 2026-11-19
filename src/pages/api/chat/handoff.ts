@@ -1,4 +1,5 @@
 import type { APIRoute } from "astro";
+import { env } from "cloudflare:workers";
 
 import { isSameOriginRequest } from "../../../lib/isSameOriginRequest";
 import { supabaseAdmin } from "../../../lib/supabaseAdmin";
@@ -44,7 +45,10 @@ export const POST: APIRoute = async ({ request }) => {
       return Response.json({ error: "Enter a valid email address." }, { status: 400 });
     }
 
-    const fingerprint = await requestFingerprint(request);
+    const fingerprint = await requestFingerprint(
+      request,
+      env.TEAM_CHAT_RATE_LIMIT_SECRET,
+    );
     const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000).toISOString();
     const { count, error: rateError } = await supabaseAdmin
       .from("team_chat_conversations")
@@ -106,6 +110,8 @@ export const POST: APIRoute = async ({ request }) => {
         conversationId: conversation.id,
         visitorName,
         message,
+        vapidPublicKey: env.VAPID_PUBLIC_KEY,
+        vapidPrivateKey: env.VAPID_PRIVATE_KEY,
       });
     }
 
