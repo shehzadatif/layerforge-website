@@ -138,8 +138,9 @@ const moreTopics = CHAT_MORE_TOPIC_IDS.map((id) =>
 
 <script>
   import {
-    findChatTopic,
+    answerSiteQuestion,
     getChatTopic,
+    type CatalogueItem,
     type ChatAction,
   } from "../lib/chatAssistant";
 
@@ -150,7 +151,42 @@ const moreTopics = CHAT_MORE_TOPIC_IDS.map((id) =>
   }
 
   const STORAGE_KEY = "layerforge-assistant-history-v1";
+  let cataloguePromise: Promise<CatalogueItem[]> | null = null;
   const roots = document.querySelectorAll<HTMLElement>("[data-chat-root]");
+
+  const parseCatalogue = (documentRoot: Document): CatalogueItem[] => {
+    const data = documentRoot.querySelector<HTMLScriptElement>(
+      "#catalogue-assistant-data",
+    );
+
+    if (!data?.textContent) return [];
+
+    try {
+      const parsed = JSON.parse(data.textContent);
+      return Array.isArray(parsed) ? parsed : [];
+    } catch {
+      return [];
+    }
+  };
+
+  const loadCatalogue = (): Promise<CatalogueItem[]> => {
+    const currentPageItems = parseCatalogue(document);
+    if (currentPageItems.length) return Promise.resolve(currentPageItems);
+
+    cataloguePromise ??= fetch("/what-we-make", {
+      headers: { Accept: "text/html" },
+    })
+      .then((response) => {
+        if (!response.ok) throw new Error("Catalogue unavailable");
+        return response.text();
+      })
+      .then((html) =>
+        parseCatalogue(new DOMParser().parseFromString(html, "text/html")),
+      )
+      .catch(() => []);
+
+    return cataloguePromise;
+  };
 
   roots.forEach((root) => {
     if (root.dataset.ready === "true") return;
@@ -305,7 +341,7 @@ const moreTopics = CHAT_MORE_TOPIC_IDS.map((id) =>
     });
     close.addEventListener("click", closePanel);
 
-    form.addEventListener("submit", (event) => {
+    form.addEventListener("submit", async (event) => {
       event.preventDefault();
       const question = input.value.trim();
       if (!question || responding) return;
@@ -313,20 +349,24 @@ const moreTopics = CHAT_MORE_TOPIC_IDS.map((id) =>
       addMessage({ role: "user", text: question });
       input.value = "";
 
-      const topic = findChatTopic(question);
-      if (topic) {
-        answer({ role: "bot", text: topic.answer, actions: topic.actions });
-        return;
-      }
+      responding = true;
+      input.disabled = true;
+      const typing = showTyping();
+      const startedAt = Date.now();
 
-      answer({
-        role: "bot",
-        text: "I’m not certain about that one yet. Send the Layer Forge team your question and we’ll point you in the right direction.",
-        actions: [
-          { label: "Contact the team", href: "/contact" },
-          { label: "Request a quote", href: "/quote" },
-        ],
-      });
+      const response = answerSiteQuestion(question, await loadCatalogue());
+      const remainingDelay = Math.max(0, 420 - (Date.now() - startedAt));
+      window.setTimeout(() => {
+        typing.remove();
+        addMessage({
+          role: "bot",
+          text: response.text,
+          actions: response.actions,
+        });
+        responding = false;
+        input.disabled = false;
+        if (!panel.hidden) input.focus();
+      }, remainingDelay);
     });
 
     document.addEventListener("keydown", (event) => {
