@@ -527,7 +527,7 @@ function editDistance(left: string, right: string): number {
 function tokensMatch(questionToken: string, contentToken: string): boolean {
   if (questionToken === contentToken) return true;
   if (
-    questionToken.length > 3 &&
+    questionToken.length > 2 &&
     (questionToken === `${contentToken}s` || contentToken === `${questionToken}s`)
   ) {
     return true;
@@ -574,10 +574,12 @@ function itemScore(question: string, item: CatalogueItem): number {
   );
   const itemTokens = questionTokens(question);
   const nameTokens = normalizedName.split(" ");
+  const compactName = nameTokens.join("");
   const searchableTokens = searchable.split(" ");
   let score = 0;
 
   if (` ${normalizedQuestion} `.includes(` ${normalizedName} `)) score += 120;
+  if (itemTokens.some((token) => tokensMatch(token, compactName))) score += 90;
 
   for (const token of itemTokens) {
     if (nameTokens.some((candidate) => tokensMatch(token, candidate))) {
