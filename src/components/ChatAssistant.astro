@@ -94,7 +94,8 @@ const moreTopics = CHAT_MORE_TOPIC_IDS.map((id) =>
     </div>
 
     <div class="lf-chat__help">
-      Need a person? <a href="/contact">Contact the Layer Forge team</a>
+      <span data-chat-availability>Checking team availability…</span>
+      <button type="button" data-chat-handoff>Message the team</button>
     </div>
 
     <form class="lf-chat__form" data-chat-form>
@@ -150,7 +151,20 @@ const moreTopics = CHAT_MORE_TOPIC_IDS.map((id) =>
     actions?: ChatAction[];
   }
 
+  interface TeamMessage {
+    id: string;
+    sender: "visitor" | "team";
+    body: string;
+  }
+
+  interface Availability {
+    available: boolean;
+    message: string;
+  }
+
   const STORAGE_KEY = "layerforge-assistant-history-v1";
+  const TEAM_TOKEN_KEY = "layerforge-team-chat-token-v1";
+  const TEAM_SEEN_KEY = "layerforge-team-chat-seen-v1";
   let cataloguePromise: Promise<CatalogueItem[]> | null = null;
   const roots = document.querySelectorAll<HTMLElement>("[data-chat-root]");
 
@@ -201,6 +215,12 @@ const moreTopics = CHAT_MORE_TOPIC_IDS.map((id) =>
       "[data-chat-conversation]",
     );
     const messages = root.querySelector<HTMLElement>("[data-chat-messages]");
+    const availabilityLabel = root.querySelector<HTMLElement>(
+      "[data-chat-availability]",
+    );
+    const handoffButton = root.querySelector<HTMLButtonElement>(
+      "[data-chat-handoff]",
+    );
 
     if (
       !panel ||
@@ -209,13 +229,35 @@ const moreTopics = CHAT_MORE_TOPIC_IDS.map((id) =>
       !form ||
       !input ||
       !conversation ||
-      !messages
+      !messages ||
+      !availabilityLabel ||
+      !handoffButton
     ) {
       return;
     }
 
     let history: StoredMessage[] = [];
     let responding = false;
+    let teamToken = "";
+    let seenTeamMessages = new Set<string>();
+    let pollingTimer = 0;
+
+    try {
+      teamToken = localStorage.getItem(TEAM_TOKEN_KEY) ?? "";
+      const storedSeen = JSON.parse(localStorage.getItem(TEAM_SEEN_KEY) ?? "[]");
+      if (Array.isArray(storedSeen)) seenTeamMessages = new Set(storedSeen);
+    } catch {
+      seenTeamMessages = new Set();
+    }
+
+    const storeTeamToken = (value: string) => {
+      try {
+        if (value) localStorage.setItem(TEAM_TOKEN_KEY, value);
+        else localStorage.removeItem(TEAM_TOKEN_KEY);
+      } catch {
+        // The active page can continue even when storage is unavailable.
+      }
+    };
 
     try {
       const saved = sessionStorage.getItem(STORAGE_KEY);
@@ -276,6 +318,171 @@ const moreTopics = CHAT_MORE_TOPIC_IDS.map((id) =>
     };
 
     history.forEach((message) => addMessage(message, { persist: false }));
+
+    const updateAvailability = (availability: Availability) => {
+      availabilityLabel.textContent = availability.message;
+      availabilityLabel.dataset.available = String(availability.available);
+      handoffButton.textContent = teamToken
+        ? "Continue team chat"
+        : availability.available
+          ? "Message the team"
+          : "Leave a message";
+    };
+
+    const loadAvailability = async () => {
+      try {
+        const response = await fetch("/api/chat/availability", {
+          headers: { Accept: "application/json" },
+        });
+        if (response.ok) updateAvailability(await response.json());
+      } catch {
+        availabilityLabel.textContent = "Team availability could not be checked";
+      }
+    };
+
+    const renderTeamMessages = (teamMessages: TeamMessage[]) => {
+      teamMessages.forEach((message) => {
+        if (seenTeamMessages.has(message.id)) return;
+        seenTeamMessages.add(message.id);
+
+        addMessage(
+          {
+            role: message.sender === "team" ? "bot" : "user",
+            text:
+              message.sender === "team"
+                ? `Layer Forge Team: ${message.body}`
+                : message.body,
+          },
+          { persist: false },
+        );
+      });
+
+      try {
+        localStorage.setItem(TEAM_SEEN_KEY, JSON.stringify([...seenTeamMessages]));
+      } catch {
+        // Team chat still works when browser storage is unavailable.
+      }
+    };
+
+    const pollTeamMessages = async () => {
+      if (!teamToken) return;
+      try {
+        const response = await fetch("/api/chat/messages", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ token: teamToken, action: "read" }),
+        });
+        if (response.status === 404) {
+          teamToken = "";
+          storeTeamToken("");
+          input.placeholder = "Ask about products, pricing…";
+          void loadAvailability();
+          return;
+        }
+        if (!response.ok) return;
+        const result = await response.json();
+        updateAvailability(result.availability);
+        renderTeamMessages(result.messages ?? []);
+      } catch {
+        // Retry quietly on the next polling interval.
+      }
+    };
+
+    const beginPolling = () => {
+      window.clearInterval(pollingTimer);
+      void pollTeamMessages();
+      pollingTimer = window.setInterval(pollTeamMessages, 12000);
+    };
+
+    const showHandoffForm = () => {
+      const existing = root.querySelector<HTMLElement>("[data-chat-handoff-form]");
+      if (existing) {
+        existing.scrollIntoView({ block: "nearest" });
+        return;
+      }
+
+      const wrapper = document.createElement("div");
+      wrapper.className = "lf-chat__handoff";
+      wrapper.dataset.chatHandoffForm = "true";
+      wrapper.innerHTML = `
+        <p class="lf-chat__handoff-title">Message the Layer Forge team</p>
+        <p class="lf-chat__handoff-note">Send your question here. Your contact details are only used to respond.</p>
+        <form data-team-form>
+          <label>Name <span>(optional)</span><input name="name" maxlength="120" autocomplete="name"></label>
+          <label>Email <span>(optional)</span><input name="email" type="email" maxlength="254" autocomplete="email"></label>
+          <label>Your message<textarea name="message" maxlength="2000" required rows="3"></textarea></label>
+          <input class="lf-chat__trap" name="website" tabindex="-1" autocomplete="off" aria-hidden="true">
+          <button type="submit">Send to the team</button>
+          <p class="lf-chat__handoff-error" data-team-error role="alert"></p>
+        </form>`;
+      messages.append(wrapper);
+      scrollToLatest();
+
+      const teamForm = wrapper.querySelector<HTMLFormElement>("[data-team-form]");
+      const error = wrapper.querySelector<HTMLElement>("[data-team-error]");
+      teamForm?.addEventListener("submit", async (event) => {
+        event.preventDefault();
+        if (!teamForm || !error) return;
+        const submit = teamForm.querySelector<HTMLButtonElement>("button[type=submit]");
+        const data = new FormData(teamForm);
+        error.textContent = "";
+        if (submit) submit.disabled = true;
+
+        try {
+          const response = await fetch("/api/chat/handoff", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              name: data.get("name"),
+              email: data.get("email"),
+              message: data.get("message"),
+              website: data.get("website"),
+              sourcePage: window.location.pathname,
+            }),
+          });
+          const result = await response.json();
+          if (!response.ok) throw new Error(result.error ?? "Message not sent.");
+
+          teamToken = result.token;
+          storeTeamToken(teamToken);
+          const initial = result.message as TeamMessage;
+          if (initial?.id) seenTeamMessages.add(initial.id);
+          addMessage(
+            { role: "user", text: String(data.get("message") ?? "") },
+            { persist: false },
+          );
+          addMessage(
+            { role: "bot", text: result.availability.message },
+            { persist: false },
+          );
+          wrapper.remove();
+          updateAvailability(result.availability);
+          input.placeholder = "Message the Layer Forge team…";
+          beginPolling();
+        } catch (problem) {
+          error.textContent =
+            problem instanceof Error ? problem.message : "Message not sent.";
+        } finally {
+          if (submit) submit.disabled = false;
+        }
+      });
+    };
+
+    handoffButton.addEventListener("click", () => {
+      if (teamToken) {
+        input.placeholder = "Message the Layer Forge team…";
+        input.focus();
+        beginPolling();
+      } else {
+        showHandoffForm();
+      }
+    });
+
+    void loadAvailability();
+    if (teamToken) {
+      input.placeholder = "Message the Layer Forge team…";
+      beginPolling();
+    }
 
     const showTyping = () => {
       const typing = document.createElement("div");
@@ -345,6 +552,43 @@ const moreTopics = CHAT_MORE_TOPIC_IDS.map((id) =>
       event.preventDefault();
       const question = input.value.trim();
       if (!question || responding) return;
+
+      if (teamToken) {
+        responding = true;
+        input.disabled = true;
+        try {
+          const response = await fetch("/api/chat/messages", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              token: teamToken,
+              action: "send",
+              message: question,
+            }),
+          });
+          const result = await response.json();
+          if (!response.ok) throw new Error(result.error ?? "Message not sent.");
+          input.value = "";
+          updateAvailability(result.availability);
+          renderTeamMessages(result.messages ?? []);
+        } catch (problem) {
+          addMessage(
+            {
+              role: "bot",
+              text:
+                problem instanceof Error
+                  ? problem.message
+                  : "Your message could not be sent. Please try again.",
+            },
+            { persist: false },
+          );
+        } finally {
+          responding = false;
+          input.disabled = false;
+          input.focus();
+        }
+        return;
+      }
 
       addMessage({ role: "user", text: question });
       input.value = "";
@@ -710,17 +954,130 @@ const moreTopics = CHAT_MORE_TOPIC_IDS.map((id) =>
   }
 
   .lf-chat__help {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.65rem;
     border-top: 1px solid #e4e4e7;
-    padding: 0.48rem 1rem;
+    padding: 0.52rem 0.7rem 0.52rem 1rem;
     color: #71717a;
     background: #fff;
     font-size: 0.68rem;
-    text-align: center;
+    text-align: left;
   }
 
-  .lf-chat__help a {
+  .lf-chat__help [data-chat-availability]::before {
+    display: inline-block;
+    width: 0.45rem;
+    height: 0.45rem;
+    margin-right: 0.35rem;
+    border-radius: 999px;
+    background: #a1a1aa;
+    content: "";
+  }
+
+  .lf-chat__help [data-chat-availability][data-available="true"]::before {
+    background: #22c55e;
+  }
+
+  .lf-chat__help button {
+    flex: 0 0 auto;
+    border: 0;
+    border-radius: 999px;
+    padding: 0.42rem 0.65rem;
     color: #27272a;
+    background: #facc15;
+    font: inherit;
     font-weight: 750;
+    cursor: pointer;
+  }
+
+  .lf-chat__handoff {
+    margin-top: 0.8rem;
+    border: 1px solid #d4d4d8;
+    border-radius: 0.85rem;
+    padding: 0.85rem;
+    background: #fff;
+  }
+
+  .lf-chat__handoff-title {
+    margin: 0;
+    font-size: 0.84rem;
+    font-weight: 800;
+  }
+
+  .lf-chat__handoff-note {
+    margin: 0.25rem 0 0.7rem;
+    color: #71717a;
+    font-size: 0.69rem;
+    line-height: 1.4;
+  }
+
+  .lf-chat__handoff form,
+  .lf-chat__handoff label {
+    display: grid;
+    gap: 0.3rem;
+  }
+
+  .lf-chat__handoff form {
+    gap: 0.6rem;
+  }
+
+  .lf-chat__handoff label {
+    color: #3f3f46;
+    font-size: 0.69rem;
+    font-weight: 750;
+  }
+
+  .lf-chat__handoff label span {
+    color: #71717a;
+    font-weight: 500;
+  }
+
+  .lf-chat__handoff input,
+  .lf-chat__handoff textarea {
+    box-sizing: border-box;
+    width: 100%;
+    border: 1px solid #d4d4d8;
+    border-radius: 0.55rem;
+    padding: 0.55rem 0.65rem;
+    color: #18181b;
+    background: #fff;
+    font: inherit;
+    font-size: 0.76rem;
+  }
+
+  .lf-chat__handoff textarea {
+    resize: vertical;
+  }
+
+  .lf-chat__handoff button {
+    border: 0;
+    border-radius: 0.6rem;
+    padding: 0.65rem;
+    color: #09090b;
+    background: #facc15;
+    font: inherit;
+    font-size: 0.76rem;
+    font-weight: 800;
+    cursor: pointer;
+  }
+
+  .lf-chat__handoff button:disabled {
+    cursor: wait;
+    opacity: 0.65;
+  }
+
+  .lf-chat__handoff-error {
+    min-height: 1em;
+    margin: 0;
+    color: #b91c1c;
+    font-size: 0.68rem;
+  }
+
+  .lf-chat__trap {
+    position: absolute !important;
+    left: -9999px !important;
   }
 
   .lf-chat__form {
