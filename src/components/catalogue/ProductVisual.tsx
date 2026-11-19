@@ -62,7 +62,11 @@ type Props = {
 };
 
 const productPhotos: Record<string, string> = {
-  Tumblers: "/images/uv-printing/uv-tumbler.webp",
+  Tumblers: "/images/catalogue/facebook/layer-forge-custom-tumbler.jpg",
+  "Water bottles": "/images/catalogue/facebook/layer-forge-branded-water-bottle.jpg",
+  "Thermos bottles": "/images/catalogue/facebook/layer-forge-engraved-bottle.jpg",
+  "Travel bottles": "/images/catalogue/facebook/layer-forge-engraved-bottle.jpg",
+  Pens: "/images/catalogue/facebook/layer-forge-personalized-pens.jpg",
   "T-shirts": "/images/apparel/custom-apparel-layerforge.webp",
   "Phone cases": "/images/uv-printing/uv-phone-cases.webp",
   "Tool & battery holders": "/images/3d-printing/functional-products.webp",
