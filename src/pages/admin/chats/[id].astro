@@ -1,0 +1,58 @@
+---
+import AdminLayout from "../../../layouts/AdminLayout.astro";
+import { formatPacificDateTime } from "../../../lib/dateUtils";
+import { supabaseAdmin } from "../../../lib/supabaseAdmin";
+
+const id = Astro.params.id ?? "";
+const { data: conversation, error } = await supabaseAdmin
+  .from("team_chat_conversations")
+  .select("id, visitor_name, visitor_email, source_page, status, created_at, team_chat_messages(id, sender, body, created_at)")
+  .eq("id", id)
+  .maybeSingle();
+
+if (error || !conversation) return Astro.redirect("/admin/chats", 303);
+
+await supabaseAdmin
+  .from("team_chat_conversations")
+  .update({ admin_seen_at: new Date().toISOString() })
+  .eq("id", conversation.id);
+
+const messages = [...(conversation.team_chat_messages ?? [])].sort((a, b) => String(a.created_at).localeCompare(String(b.created_at)));
+const sent = Astro.url.searchParams.get("sent") === "1";
+---
+
+<AdminLayout title="Visitor Chat | Layer Forge Admin" active="chats">
+  <a href="/admin/chats" class="font-bold text-slate-700 hover:text-slate-950">Back to Team Chat</a>
+  <div class="mt-6 grid gap-7 xl:grid-cols-[1fr_0.35fr]">
+    <section class="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+      <div class="border-b border-slate-200 px-6 py-5">
+        <h1 class="text-2xl font-bold text-slate-950">{conversation.visitor_name || "Website visitor"}</h1>
+        <p class="mt-1 text-sm text-slate-500">Started {formatPacificDateTime(conversation.created_at)}</p>
+      </div>
+      <div class="space-y-4 bg-slate-50 p-6">
+        {messages.map((message) => (
+          <div class={`max-w-[85%] rounded-2xl px-5 py-4 ${message.sender === "team" ? "ml-auto bg-yellow-400 text-slate-950" : "bg-white text-slate-800 shadow-sm ring-1 ring-slate-200"}`}>
+            <p class="whitespace-pre-wrap leading-6">{message.body}</p>
+            <p class="mt-2 text-xs opacity-60">{message.sender === "team" ? "Layer Forge Team" : conversation.visitor_name || "Visitor"} · {formatPacificDateTime(message.created_at)}</p>
+          </div>
+        ))}
+      </div>
+      <form action="/api/admin/chat-reply" method="POST" class="border-t border-slate-200 p-6">
+        <input type="hidden" name="conversation_id" value={conversation.id} />
+        <label class="block font-bold text-slate-800" for="team-reply">Reply as Layer Forge Team</label>
+        <textarea id="team-reply" name="message" required maxlength="2000" rows="4" class="mt-2 w-full rounded-xl border border-slate-300 px-4 py-3" placeholder="Type your reply…"></textarea>
+        {sent && <p class="mt-3 text-sm font-semibold text-emerald-700">Reply sent to the visitor’s website chat.</p>}
+        <button class="mt-4 rounded-xl bg-slate-950 px-6 py-3 font-bold text-white hover:bg-slate-800">Send reply</button>
+      </form>
+    </section>
+    <aside class="h-fit rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+      <h2 class="text-lg font-bold text-slate-900">Visitor details</h2>
+      <dl class="mt-5 space-y-4 text-sm">
+        <div><dt class="font-bold text-slate-500">Name</dt><dd class="mt-1 text-slate-900">{conversation.visitor_name || "Not provided"}</dd></div>
+        <div><dt class="font-bold text-slate-500">Email</dt><dd class="mt-1 break-all text-slate-900">{conversation.visitor_email || "Not provided"}</dd></div>
+        <div><dt class="font-bold text-slate-500">Page</dt><dd class="mt-1 break-all text-slate-900">{conversation.source_page || "Not recorded"}</dd></div>
+      </dl>
+    </aside>
+  </div>
+</AdminLayout>
+

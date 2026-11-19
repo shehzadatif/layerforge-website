@@ -1,0 +1,148 @@
+---
+import AdminLayout from "../../../layouts/AdminLayout.astro";
+import { formatPacificDateTime } from "../../../lib/dateUtils";
+import { loadTeamChatSettings, teamChatAvailability } from "../../../lib/teamChat";
+import { supabaseAdmin } from "../../../lib/supabaseAdmin";
+
+const { data: conversations, error } = await supabaseAdmin
+  .from("team_chat_conversations")
+  .select("id, visitor_name, visitor_email, status, admin_seen_at, last_visitor_message_at, updated_at, team_chat_messages(body, sender, created_at)")
+  .order("updated_at", { ascending: false })
+  .limit(60);
+
+if (error) console.error("Unable to load team chat inbox.", { error });
+
+const settings = await loadTeamChatSettings();
+const availability = teamChatAvailability(settings);
+const vapidPublicKey = import.meta.env.VAPID_PUBLIC_KEY?.trim() ?? "";
+const saved = Astro.url.searchParams.get("saved") === "1";
+const dayOptions = [
+  [1, "Mon"], [2, "Tue"], [3, "Wed"], [4, "Thu"], [5, "Fri"], [6, "Sat"], [0, "Sun"],
+] as const;
+---
+
+<AdminLayout title="Team Chat | Layer Forge Admin" active="chats">
+  <div class="mb-8 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+    <div>
+      <h1 class="text-4xl font-bold text-slate-900">Team Chat</h1>
+      <p class="mt-2 text-slate-500">Private visitor conversations and phone notifications.</p>
+    </div>
+    <span class={`inline-flex w-fit rounded-full px-4 py-2 text-sm font-bold ${availability.available ? "bg-emerald-100 text-emerald-800" : "bg-slate-200 text-slate-700"}`}>
+      {availability.available ? "Available now" : "Currently unavailable"}
+    </span>
+  </div>
+
+  {saved && <div class="mb-6 rounded-xl border border-emerald-200 bg-emerald-50 p-4 font-semibold text-emerald-800">Availability settings saved.</div>}
+
+  <div class="grid gap-7 xl:grid-cols-[1fr_0.72fr]">
+    <section class="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+      <div class="border-b border-slate-200 px-6 py-5">
+        <h2 class="text-2xl font-bold text-slate-900">Inbox</h2>
+      </div>
+      {(conversations ?? []).length ? (
+        <div class="divide-y divide-slate-200">
+          {(conversations ?? []).map((conversation) => {
+            const messages = [...(conversation.team_chat_messages ?? [])].sort((a, b) => String(a.created_at).localeCompare(String(b.created_at)));
+            const latest = messages.at(-1);
+            const unread = !conversation.admin_seen_at || new Date(conversation.last_visitor_message_at).getTime() > new Date(conversation.admin_seen_at).getTime();
+            return (
+              <a href={`/admin/chats/${conversation.id}`} class="block px-6 py-5 transition hover:bg-slate-50">
+                <div class="flex items-start justify-between gap-4">
+                  <div class="min-w-0">
+                    <div class="flex items-center gap-2">
+                      <h3 class="truncate font-bold text-slate-950">{conversation.visitor_name || "Website visitor"}</h3>
+                      {unread && <span class="h-2.5 w-2.5 rounded-full bg-yellow-400" aria-label="Unread"></span>}
+                    </div>
+                    <p class="mt-1 truncate text-sm text-slate-600">{latest?.body || "No messages"}</p>
+                    {conversation.visitor_email && <p class="mt-1 truncate text-xs text-slate-400">{conversation.visitor_email}</p>}
+                  </div>
+                  <div class="shrink-0 text-right text-xs text-slate-500">
+                    <div>{formatPacificDateTime(conversation.updated_at)}</div>
+                    <div class="mt-2 capitalize">{conversation.status}</div>
+                  </div>
+                </div>
+              </a>
+            );
+          })}
+        </div>
+      ) : (
+        <div class="px-6 py-16 text-center text-slate-500">No visitor conversations yet.</div>
+      )}
+    </section>
+
+    <div class="space-y-7">
+      <section class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+        <h2 class="text-xl font-bold text-slate-900">iPhone notifications</h2>
+        <p class="mt-2 text-sm leading-6 text-slate-600">In Safari, add this admin site to your Home Screen. Open it from the new icon, then enable notifications below.</p>
+        <button id="enable-push" type="button" data-vapid-key={vapidPublicKey} disabled={!vapidPublicKey} class="mt-5 w-full rounded-xl bg-slate-950 px-5 py-3 font-bold text-white disabled:cursor-not-allowed disabled:bg-slate-300">
+          Enable phone notifications
+        </button>
+        <p id="push-status" class="mt-3 text-sm text-slate-500" aria-live="polite">{vapidPublicKey ? "Notifications are private to this admin account and device." : "Notification keys must be configured before this can be enabled."}</p>
+      </section>
+
+      <form action="/api/admin/chat-availability" method="POST" class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+        <h2 class="text-xl font-bold text-slate-900">Availability</h2>
+        <label class="mt-5 flex items-start gap-3">
+          <input type="checkbox" name="manual_available" checked={settings.manualAvailable} class="mt-1 h-5 w-5" />
+          <span><strong class="block text-slate-900">Accept team chats</strong><span class="text-sm text-slate-500">Turn this off whenever you do not want to reply.</span></span>
+        </label>
+        <label class="mt-5 flex items-start gap-3 border-t border-slate-200 pt-5">
+          <input type="checkbox" name="schedule_enabled" checked={settings.scheduleEnabled} class="mt-1 h-5 w-5" />
+          <span><strong class="block text-slate-900">Use business hours</strong><span class="text-sm text-slate-500">Automatically show unavailable outside this schedule.</span></span>
+        </label>
+        <div class="mt-5 grid grid-cols-2 gap-4">
+          <label class="text-sm font-bold text-slate-700">Start<input type="time" name="start_hour" value={settings.startHour} class="mt-2 w-full rounded-xl border border-slate-300 px-3 py-2.5" /></label>
+          <label class="text-sm font-bold text-slate-700">End<input type="time" name="end_hour" value={settings.endHour} class="mt-2 w-full rounded-xl border border-slate-300 px-3 py-2.5" /></label>
+        </div>
+        <div class="mt-5">
+          <span class="text-sm font-bold text-slate-700">Days</span>
+          <div class="mt-2 flex flex-wrap gap-2">
+            {dayOptions.map(([value, label]) => <label class="rounded-lg border border-slate-300 px-3 py-2 text-sm font-semibold"><input type="checkbox" name="weekdays" value={value} checked={settings.weekdays.includes(value)} class="mr-2" />{label}</label>)}
+          </div>
+        </div>
+        <p class="mt-4 text-xs text-slate-500">Timezone: Vancouver</p>
+        <button class="mt-5 w-full rounded-xl bg-yellow-400 px-5 py-3 font-bold text-slate-950 hover:bg-yellow-300">Save availability</button>
+      </form>
+    </div>
+  </div>
+
+  <script>
+    const button = document.querySelector<HTMLButtonElement>("#enable-push");
+    const status = document.querySelector<HTMLElement>("#push-status");
+    const toBytes = (value: string) => {
+      const padding = "=".repeat((4 - (value.length % 4)) % 4);
+      const raw = atob((value + padding).replace(/-/g, "+").replace(/_/g, "/"));
+      return Uint8Array.from(raw, (character) => character.charCodeAt(0));
+    };
+
+    button?.addEventListener("click", async () => {
+      if (!status || !("serviceWorker" in navigator) || !("PushManager" in window)) {
+        if (status) status.textContent = "This browser does not support phone notifications.";
+        return;
+      }
+      button.disabled = true;
+      status.textContent = "Enabling notifications…";
+      try {
+        const registration = await navigator.serviceWorker.register("/admin-sw.js");
+        const permission = await Notification.requestPermission();
+        if (permission !== "granted") throw new Error("Notification permission was not granted.");
+        const existing = await registration.pushManager.getSubscription();
+        const subscription = existing ?? await registration.pushManager.subscribe({
+          userVisibleOnly: true,
+          applicationServerKey: toBytes(button.dataset.vapidKey ?? ""),
+        });
+        const response = await fetch("/api/admin/push-subscription", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(subscription.toJSON()),
+        });
+        if (!response.ok) throw new Error("Unable to save this phone.");
+        status.textContent = "Phone notifications are enabled on this device.";
+      } catch (error) {
+        status.textContent = error instanceof Error ? error.message : "Unable to enable notifications.";
+        button.disabled = false;
+      }
+    });
+  </script>
+</AdminLayout>
+
