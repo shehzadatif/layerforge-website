@@ -93,6 +93,15 @@ describe("chat assistant topic matching", () => {
     );
   });
 
+  it.each(["mousepad", "mouse pad", "mousepads", "mouse pads"])(
+    "matches the common mouse pad spelling: %s",
+    (question) => {
+      expect(answerSiteQuestion(question, catalogue).matchedItem).toBe(
+        "Mouse pads",
+      );
+    },
+  );
+
   it("understands common product wording and small typos", () => {
     expect(
       answerSiteQuestion("Do you make Yeti style mugs?", catalogue).matchedItem,
