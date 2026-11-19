@@ -183,6 +183,7 @@ const projectTypes: Record<string, string> = {
   packages: "branding-package",
   custom: "custom-item",
 };
+const assistantCatalogueData = JSON.stringify(items).replace(/</g, "\\u003c");
 ---
 
 <MainLayout
@@ -190,6 +191,11 @@ const projectTypes: Record<string, string> = {
   description="Search items Layer Forge Canada can customize for businesses, gifts, events, teams, home, and office."
   image="/images/home/layer-forge-hero.webp"
 >
+  <script
+    id="catalogue-assistant-data"
+    type="application/json"
+    set:html={assistantCatalogueData}
+  />
   <section class="bg-slate-950 py-20 text-white sm:py-24">
     <div class="mx-auto max-w-7xl px-6">
       <p class="text-sm font-black uppercase tracking-[0.26em] text-yellow-400">What we customize</p>
