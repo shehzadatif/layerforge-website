@@ -1,30 +1,33 @@
 ---
-const categories = [
-  { title: "Personalized Products", description: "Thoughtful items made around your artwork, message, or occasion.", examples: ["Drinkware", "Phone cases", "Gifts & keepsakes", "Awards & plaques"], image: "/images/uv-printing/uv-tumbler.webp", href: "/what-we-make#personalized-products", action: "View product ideas" },
-  { title: "Business & Event Packages", description: "Put several matching products together for your team, clients, or event.", examples: ["Employee kits", "Client gifts", "Event products", "Team clothing"], image: "/images/solutions/promotional-products.png", href: "/custom-branding-printing#packages", action: "View package ideas" },
-  { title: "Custom Apparel", description: "Branded clothing and fabric products for businesses, teams, events, and individuals.", examples: ["T-shirts & polos", "Hoodies & sweatshirts", "Caps & aprons", "Workwear & uniforms"], image: "/images/apparel/custom-apparel-layerforge.webp", href: "/what-we-make#apparel", action: "View apparel options" },
-  { title: "Shop", description: "Products with available options that can be ordered and paid for online.", examples: ["Custom T-shirts", "Tool storage", "Automotive items", "Functional products"], image: "/images/3d-printing/functional-products.webp", href: "/shop", action: "Shop online" },
+const capabilities = [
+  { title: "3D Printing", description: "Custom parts and useful products made from your file, measurements, sample, or idea.", examples: ["Functional parts", "Prototypes", "Replacement parts", "Tool organizers"], image: "/images/3d-printing/functional-products.webp", href: "/3d-printing", action: "Explore 3D printing" },
+  { title: "Laser Engraving", description: "Permanent names, logos, messages, and artwork on suitable products and materials.", examples: ["Tumblers", "Wooden gifts", "Plaques & awards", "Tags & tools"], image: "/images/laser-engraving/engraved-products.webp", href: "/laser-engraving", action: "Explore laser engraving" },
+  { title: "UV Printing", description: "Full-colour printing directly on suitable products with a smooth, detailed finish.", examples: ["Phone cases", "Acrylic products", "Signs", "Promotional items"], image: "/images/uv-printing/uv-phone-cases.webp", href: "/custom-branding-printing#printing-options", action: "See UV printing options" },
+  { title: "Sublimation Printing", description: "Bright, long-lasting colour for specially coated products, photos, artwork, and branding.", examples: ["Coffee mugs", "Colour-changing mugs", "Tumblers", "Mouse pads & coasters"], image: "/images/catalogue/facebook/layer-forge-custom-tumbler.jpg", href: "/custom-branding-printing#sublimation-printing", action: "See sublimation products" },
+  { title: "Inkjet Printing", description: "Clear, colourful printing for stickers, labels, paper pieces, and other suitable media.", examples: ["Product labels", "Logo stickers", "Packaging inserts", "Paper prints"], image: "/images/solutions/promotional-products.png", href: "/custom-branding-printing#inkjet-printing", action: "See inkjet printing options" },
+  { title: "DTF Printing", description: "Full-colour designs transferred onto many common clothing fabrics and garment colours.", examples: ["T-shirts", "Hoodies", "Workwear", "Tote bags"], image: "/images/uv-printing/dtf-apparel.webp", href: "/custom-apparel#printing-methods", action: "See DTF apparel options" },
+  { title: "DTG Printing", description: "Detailed designs printed directly onto suitable garments for a soft, natural feel.", examples: ["Cotton T-shirts", "Detailed artwork", "Small apparel runs", "Personalized shirts"], image: "/images/uv-printing/dtg-apparel.webp", href: "/custom-apparel#printing-methods", action: "See DTG apparel options" },
 ];
 ---
 
 <section id="what-we-do" class="bg-white py-24 sm:py-28">
   <div class="mx-auto max-w-7xl px-6">
     <div class="max-w-3xl">
-      <p class="text-sm font-bold uppercase tracking-[0.28em] text-yellow-600">Custom product catalogue</p>
-      <h2 class="mt-4 text-4xl font-bold tracking-tight text-slate-950 sm:text-5xl">See what Layer Forge can create for you.</h2>
-      <p class="mt-6 text-lg leading-8 text-slate-600">Browse our main categories and real examples. Custom projects begin with a conversation; products shown in the Shop can be ordered online.</p>
+      <p class="text-sm font-bold uppercase tracking-[0.28em] text-yellow-600">What we can do</p>
+      <h2 class="mt-4 text-4xl font-bold tracking-tight text-slate-950 sm:text-5xl">Seven ways to create your custom product.</h2>
+      <p class="mt-6 text-lg leading-8 text-slate-600">Choose the type of service that fits your project, or simply tell us what you want made and we’ll help you choose.</p>
     </div>
-    <div class="mt-14 grid gap-6 md:grid-cols-2">
-      {categories.map((category) => (
-        <a href={category.href} class="group overflow-hidden rounded-3xl border border-slate-200 bg-slate-950 shadow-sm transition duration-300 hover:-translate-y-1 hover:shadow-xl">
-          <div class="relative h-72 overflow-hidden"><img src={category.image} alt="" loading="lazy" class="h-full w-full object-cover transition duration-500 group-hover:scale-105" /><div class="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/25 to-transparent"></div></div>
+    <div class="mt-14 grid gap-6 md:grid-cols-2 xl:grid-cols-3">
+      {capabilities.map((capability) => (
+        <a href={capability.href} class="group overflow-hidden rounded-3xl border border-slate-200 bg-slate-950 shadow-sm transition duration-300 hover:-translate-y-1 hover:shadow-xl">
+          <div class="relative h-64 overflow-hidden"><img src={capability.image} alt="" loading="lazy" class="h-full w-full object-cover transition duration-500 group-hover:scale-105" /><div class="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/25 to-transparent"></div></div>
           <div class="p-7 text-white">
-            <h3 class="text-2xl font-bold group-hover:text-yellow-400">{category.title}</h3>
-            <p class="mt-3 leading-7 text-slate-300">{category.description}</p>
-            <ul class="mt-5 flex flex-wrap gap-2" aria-label={`${category.title} examples`}>
-              {category.examples.map((example) => <li class="rounded-full border border-white/15 bg-white/10 px-3 py-1.5 text-sm font-semibold text-slate-100">{example}</li>)}
+            <h3 class="text-2xl font-bold group-hover:text-yellow-400">{capability.title}</h3>
+            <p class="mt-3 leading-7 text-slate-300">{capability.description}</p>
+            <ul class="mt-5 flex flex-wrap gap-2" aria-label={`${capability.title} examples`}>
+              {capability.examples.map((example) => <li class="rounded-full border border-white/15 bg-white/10 px-3 py-1.5 text-sm font-semibold text-slate-100">{example}</li>)}
             </ul>
-            <span class="mt-6 inline-flex font-bold text-yellow-400">{category.action} <span class="ml-2" aria-hidden="true">→</span></span>
+            <span class="mt-6 inline-flex font-bold text-yellow-400">{capability.action} <span class="ml-2" aria-hidden="true">→</span></span>
           </div>
         </a>
       ))}

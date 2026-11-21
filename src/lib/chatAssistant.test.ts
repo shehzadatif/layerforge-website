@@ -53,6 +53,8 @@ describe("chat assistant topic matching", () => {
     ["Do you make employee gifts?", "business"],
     ["I need this by next Friday. What is the turnaround?", "turnaround"],
     ["Can you help prepare my logo?", "artwork"],
+    ["Do you offer sublimation printing?", "printing-methods"],
+    ["Can you do DTF printing?", "printing-methods"],
     ["Do you make replacement parts?", "specialty"],
   ])("matches %s to %s", (question, expectedTopic) => {
     expect(findChatTopic(question)?.id).toBe(expectedTopic);
@@ -133,5 +135,12 @@ describe("chat assistant topic matching", () => {
 
     expect(response.text).toContain("Any extra work");
     expect(response.matchedItem).toBeUndefined();
+  });
+
+  it("explains the available printing methods", () => {
+    const response = answerSiteQuestion("What is the difference between DTF and DTG?", catalogue);
+
+    expect(response.text).toContain("DTF and DTG printing for apparel");
+    expect(response.actions?.[0]?.href).toContain("#printing-options");
   });
 });
