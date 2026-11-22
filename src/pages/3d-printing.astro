@@ -1,6 +1,8 @@
 ---
 import MainLayout from "../layouts/MainLayout.astro";
 
+// functional-products.webp: Jakub Zerdzicki via Pexels, free under the Pexels License.
+// https://www.pexels.com/photo/precision-3d-printing-in-a-modern-workshop-31121900/
 const applications = [
   ["Functional Parts", "Durable brackets, mounts, housings, adapters, and components made for real-world use."],
   ["Rapid Prototypes", "Test fit, form, and function quickly before committing to final production."],
@@ -45,7 +47,7 @@ const materials = ["PLA", "PETG", "ABS", "ASA", "TPU", "Nylon", "Carbon-fibre bl
       </div>
 
       <div class="mt-16 grid items-center gap-12 lg:grid-cols-2">
-        <img src="/images/3d-printing/functional-products.webp" alt="3D-printed workshop organizers, holders, clips, and enclosures" loading="lazy" class="aspect-square w-full rounded-3xl object-cover shadow-2xl" />
+        <img src="/images/3d-printing/functional-products.webp" alt="A functional component being produced on a 3D printer" loading="lazy" class="aspect-square w-full rounded-3xl object-cover shadow-2xl" />
         <div class="grid gap-5 sm:grid-cols-2">
           {applications.map(([title, description]) => (
             <article class="rounded-2xl border border-slate-200 bg-white p-7 shadow-sm">
