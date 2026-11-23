@@ -134,7 +134,7 @@ export const CHAT_TOPICS: ChatTopic[] = [
       "direct to garment",
     ],
     answer:
-      "We offer UV printing for suitable products, sublimation for mugs and other specially coated items, inkjet printing for stickers, labels and paper pieces, plus DTF and DTG printing for apparel. Tell us the product, artwork, quantity, and finish you want and we’ll recommend the best option.",
+      "We offer UV printing for suitable products, sublimation for mugs and other specially coated items, inkjet printing for stickers, labels, decals and paper pieces, plus DTF and DTG printing for apparel. Tell us the product, artwork, quantity, and finish you want and we’ll recommend the best option.",
     actions: [
       { label: "Compare printing options", href: "/custom-branding-printing#printing-options" },
       { label: "View apparel printing", href: "/custom-apparel#printing-methods" },
@@ -505,7 +505,7 @@ const CATEGORY_DETAILS: Record<
     queryWords: ["signs", "displays"],
   },
   labels: {
-    label: "stickers and labels",
+    label: "stickers, labels, and decals",
     queryWords: ["stickers", "labels", "decals"],
   },
   gifts: {
