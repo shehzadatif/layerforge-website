@@ -39,6 +39,14 @@ const catalogue: CatalogueItem[] = [
     detail: "Print or personalize suitable smooth wooden boxes.",
     terms: "wood keepsake storage box",
   },
+  {
+    category: "labels",
+    name: "Custom decals",
+    detail:
+      "Logos, artwork, text, or branding for vehicles, products, equipment, windows, and other suitable surfaces.",
+    terms:
+      "automobile automotive car truck vehicle product equipment window glass door wall floor vinyl sticker storefront branding",
+  },
 ];
 
 describe("chat assistant topic matching", () => {
@@ -142,5 +150,20 @@ describe("chat assistant topic matching", () => {
 
     expect(response.text).toContain("DTF and DTG printing for apparel");
     expect(response.actions?.[0]?.href).toContain("#printing-options");
+  });
+
+  it.each([
+    "Do you make decals?",
+    "Can I get a decal for my car?",
+    "I need branding decals for a product",
+    "Can you make equipment decals?",
+  ])("explains that custom decals work on many suitable surfaces: %s", (question) => {
+    const response = answerSiteQuestion(question, catalogue);
+
+    expect(response.text).toContain(
+      "vehicles, products, equipment, windows, walls, floors",
+    );
+    expect(response.actions?.[0]?.href).toBe("/what-we-make?search=decals");
+    expect(response.actions?.[1]?.href).toContain("item=Custom%20decals");
   });
 });

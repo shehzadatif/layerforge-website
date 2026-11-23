@@ -57,6 +57,44 @@ export const CHAT_TOPICS: ChatTopic[] = [
     ],
   },
   {
+    id: "decals",
+    title: "Custom decals",
+    summary: "Vehicles, products, equipment & more",
+    keywords: [
+      "decal",
+      "decals",
+      "custom decal",
+      "custom decals",
+      "vehicle decal",
+      "vehicle decals",
+      "car decal",
+      "car decals",
+      "automobile decal",
+      "automobile decals",
+      "product decal",
+      "product decals",
+      "equipment decal",
+      "equipment decals",
+      "window decal",
+      "window decals",
+      "wall decal",
+      "wall decals",
+      "floor decal",
+      "floor decals",
+      "vinyl decal",
+      "vinyl decals",
+    ],
+    answer:
+      "Yes—we make custom decals for vehicles, products, equipment, windows, walls, floors, storefronts, and other suitable surfaces. Share the surface, approximate size, quantity, artwork, and whether the decal will be used indoors or outdoors so we can recommend the right option.",
+    actions: [
+      { label: "Browse custom decals", href: "/what-we-make?search=decals" },
+      {
+        label: "Get a decal quote",
+        href: "/quote/custom-branding-printing?item=Custom%20decals",
+      },
+    ],
+  },
+  {
     id: "pricing",
     title: "Pricing & quotes",
     summary: "How custom project pricing works",
@@ -401,6 +439,7 @@ export const CHAT_MORE_TOPIC_IDS = [
   "minimum",
   "process",
   "business",
+  "decals",
   "supplied",
 ] as const;
 
@@ -646,6 +685,12 @@ export function answerSiteQuestion(
     };
   }
 
+  const directTopic = findChatTopic(question);
+
+  if (directTopic?.id === "decals") {
+    return { text: directTopic.answer, actions: directTopic.actions };
+  }
+
   const itemTokens = questionTokens(question);
   const category = categoryFromQuestion(question, itemTokens);
 
@@ -666,7 +711,6 @@ export function answerSiteQuestion(
     }
   }
 
-  const directTopic = findChatTopic(question);
   if (
     directTopic &&
     [
